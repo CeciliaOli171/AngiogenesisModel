@@ -1,5 +1,5 @@
-#ifndef TESTANGIOGENESISMODEL3_HPP_
-#define TESTANGIOGENESISMODEL3_HPP_
+#ifndef TESTANGIOGENESISMODEL_HPP_
+#define TESTANGIOGENESISMODEL_HPP_
 
 #include <cxxtest/TestSuite.h>
 
@@ -33,6 +33,7 @@
 #include "OffLatticeSimulation.hpp"
 #include "CellData.hpp"
 #include "CellId.hpp"
+#include "UniformCellCycleModel.hpp"
 
 #include "PetscSetupAndFinalize.hpp"
 
@@ -44,8 +45,9 @@
 #include "CellPhaseCycle.hpp"
 #include "Sprouting.hpp"
 
-class TestAngiogenesisModel3 : public AbstractCellBasedTestSuite
+class TestAngiogenesisModel : public AbstractCellBasedTestSuite
 {
+
 public:
 
     // we test each forces independently first, without division rule and with our cell cycle model
@@ -63,9 +65,9 @@ public:
 
             // creation of the cells 
             std::vector<CellPtr> cells;
-            MAKE_PTR(TransitCellProliferativeType, p_transit_type);
-            CellsGenerator<CellPhaseCycle, 2> cells_generator;
-            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_transit_type);
+            MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
+            CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
 
             // creation of a population of cells 
             NodeBasedCellPopulation<2> cell_population(mesh, cells);
@@ -100,9 +102,9 @@ public:
 
             // creation of the cells 
             std::vector<CellPtr> cells;
-            MAKE_PTR(TransitCellProliferativeType, p_transit_type);
-            CellsGenerator<CellPhaseCycle, 2> cells_generator;
-            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_transit_type);
+            MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
+            CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
 
             // creation of a population of cells 
             NodeBasedCellPopulation<2> cell_population(mesh, cells);
@@ -137,9 +139,9 @@ public:
 
             // creation of the cells 
             std::vector<CellPtr> cells;
-            MAKE_PTR(TransitCellProliferativeType, p_transit_type);
-            CellsGenerator<CellPhaseCycle, 2> cells_generator;
-            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_transit_type);
+            MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
+            CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
 
             // creation of a population of cells 
             NodeBasedCellPopulation<2> cell_population(mesh, cells);
@@ -200,7 +202,7 @@ public:
             // creation of the cells 
             std::vector<CellPtr> cells;
             MAKE_PTR(StemCellProliferativeType, p_stem_type);
-            CellsGenerator<FixedG1GenerationalCellCycleModel, 2> cells_generator;
+            CellsGenerator<UniformCellCycleModel, 2> cells_generator;
             cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_stem_type);
 
             // creation of a population of cells 
@@ -244,7 +246,7 @@ public:
            // creation of the cells 
            std::vector<CellPtr> cells;
            MAKE_PTR(StemCellProliferativeType, p_stem_type);
-           CellsGenerator<CellPhaseCycle, 2> cells_generator;
+           CellsGenerator<UniformCellCycleModel, 2> cells_generator;
            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_stem_type);
 
            // creation of a population of cells 
@@ -252,7 +254,7 @@ public:
            cell_population.Update(); // addition of this line compared to the sprouting test
 
            // we copy this cell population to obtain all the previous location index from the cell population before the division 
-           NodeBasedCellPopulation<2> old_cell_population = cell_population;
+           unsigned old_number_nodes = cell_population.GetNumNodes();
 
            // Set the division rule for our population to be the random direction division rule
            typedef SproutingRule<2,2> SproutingRule;
@@ -278,7 +280,7 @@ public:
            simulator.Solve();
 
            // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-           p_division_rule_to_set->DaughterTypeOfCell(cell_population, old_cell_population);
+           p_division_rule_to_set->DaughterTypeOfCell(cell_population, old_number_nodes);
 
            cout << "Size of new cell population = " << cell_population.GetNumNodes() << endl;
 
@@ -292,22 +294,16 @@ public:
 
             HoneycombMeshGenerator generator(3,1);
             std::vector<unsigned> location_indices = generator.GetCellLocationIndices();
-            std::vector<unsigned> location_indices_tip_cells;
-            location_indices_tip_cells.push_back(location_indices[0]);
-            location_indices_tip_cells.push_back(location_indices[2]);
-            std::vector<unsigned> location_indices_vessel_segment;
-            location_indices_vessel_segment.push_back(location_indices[1]);
             MutableMesh<2,2>* p_generating_mesh = generator.GetMesh(); //Mutable and not Tetrahedral Mesh compared to the Sprouting test
             NodesOnlyMesh<2> mesh;
             mesh.ConstructNodesWithoutMesh(*p_generating_mesh, 1); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal'sw model)
 
             // creation of the cells 
             std::vector<CellPtr> cells;
-            MAKE_PTR(TransitCellProliferativeType, p_transit_type); // tip cells
+            MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // tip cells
             MAKE_PTR(StemCellProliferativeType, p_stem_type); // vessel segment
-            CellsGenerator<CellPhaseCycle, 2> cells_generator;
-            cells_generator.GenerateGivenLocationIndices(cells, location_indices, p_transit_type);
-            //cells_generator.GenerateGivenLocationIndices(cells, location_indices_vessel_segment, p_stem_type);
+            CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+            cells_generator.GenerateGivenLocationIndices(cells, location_indices, p_differentiated_type);
             cells[1]->SetCellProliferativeType(p_stem_type);
            
            // creation of a population of cells 
@@ -315,7 +311,7 @@ public:
            cell_population.Update(); // addition of this line compared to the sprouting test
 
            // we copy this cell population to obtain all the previous location index from the cell population before the division 
-           NodeBasedCellPopulation<2> old_cell_population = cell_population;
+           unsigned old_number_nodes = cell_population.GetNumNodes();
 
            // Set the division rule for our population to be the random direction division rule
            typedef SproutingRule<2,2> SproutingRule;
@@ -341,7 +337,7 @@ public:
            simulator.Solve();
 
            // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-           p_division_rule_to_set->DaughterTypeOfCell(cell_population, old_cell_population);
+           p_division_rule_to_set->DaughterTypeOfCell(cell_population, old_number_nodes);
 
            cout << "Size of new cell population = " << cell_population.GetNumNodes() << endl;
 
@@ -364,11 +360,10 @@ public:
 
             // creation of the cells 
             std::vector<CellPtr> cells;
-            MAKE_PTR(TransitCellProliferativeType, p_transit_type); // tip cells
+            MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // tip cells
             MAKE_PTR(StemCellProliferativeType, p_stem_type); // vessel segment
-            CellsGenerator<CellPhaseCycle, 2> cells_generator;
-            cells_generator.GenerateGivenLocationIndices(cells, location_indices, p_transit_type);
-            //cells_generator.GenerateGivenLocationIndices(cells, location_indices_vessel_segment, p_stem_type);
+            CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+            cells_generator.GenerateGivenLocationIndices(cells, location_indices, p_differentiated_type);
             cells[1]->SetCellProliferativeType(p_stem_type);
            
            // creation of a population of cells 
@@ -376,7 +371,7 @@ public:
            cell_population.Update(); // addition of this line compared to the sprouting test
 
            // we copy this cell population to obtain all the previous location index from the cell population before the division 
-           NodeBasedCellPopulation<2> old_cell_population = cell_population;
+           unsigned old_number_nodes = cell_population.GetNumNodes();
 
            // Set the division rule for our population to be the random direction division rule
            typedef SproutingRule<2,2> SproutingRule;
@@ -418,14 +413,10 @@ public:
             cell_iter != cell_population.End();
             ++cell_iter) 
             {
-                // is it working or do we need to store the old coordinate for all the cells (vessel segment included)?
-                //if (cell_iter->GetCellProliferativeType()->IsType<TransitCellProliferativeType>())
-                //{
-                    CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
-                    c_vector<double, 2> new_r_cellmovement = cell_population.GetLocationOfCellCentre(p_cell);
-                    cell_iter->GetCellData()-> SetItem("old_x_coordinate", new_r_cellmovement(0));
-                    cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
-                //}
+                CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
+                c_vector<double, 2> new_r_cellmovement = cell_population.GetLocationOfCellCentre(p_cell);
+                cell_iter->GetCellData()-> SetItem("old_x_coordinate", new_r_cellmovement(0));
+                cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
                 ++node_index;
             }
 
@@ -443,15 +434,16 @@ public:
            cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
            //SproutingRule<2,2>* p_sprouting_division_rule; // do not function 
 
-            simulator.Solve();
-
             // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-           // PROBLEM : it is not done at each step, just at the first step 
-           p_division_rule_to_set->DaughterTypeOfCell(cell_population, old_cell_population);
+            p_division_rule_to_set->DaughterTypeOfCell(cell_population, old_number_nodes);
+
+            cell_population.Update();
+
+            simulator.Solve();
 
            SimulationTime::Destroy();
        }
 
 };
 
-#endif /*TESTANGIOGENESISMODEL3_HPP_*/
+#endif /*TESTANGIOGENESISMODEL_HPP_*/
