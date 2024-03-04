@@ -5,6 +5,7 @@
 
 #include "RandomNumberGenerator.hpp"
 #include <algorithm>
+#include "Debug.hpp"
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
@@ -35,6 +36,7 @@ double SproutingRule<ELEMENT_DIM, SPACE_DIM>::OptimalAngleVesselSegment(std::set
     u = rCellPopulation.rGetMesh().GetVectorFromAtoB(xi, xj);
     v = rCellPopulation.rGetMesh().GetVectorFromAtoB(xk, xj);
     double scalar_product_uv;
+    double alphangularmin = 0;
     if(SPACE_DIM == 2){
         scalar_product_uv = u[0]*v[0] + u[1]*v[1];
     } else if(SPACE_DIM == 3){
@@ -42,12 +44,16 @@ double SproutingRule<ELEMENT_DIM, SPACE_DIM>::OptimalAngleVesselSegment(std::set
     } else{
         scalar_product_uv = u[0]*v[0];
     }
-    double alphangularmin = std::acos(scalar_product_uv/(norm_2(u)*norm_2(v)));
+    if(norm_2(u) !=0 && norm_2(v) != 0){
+        alphangularmin = std::acos(scalar_product_uv/(norm_2(u)*norm_2(v)));
+    } else {
+        TRACE("0 norm found");
+    }
 
     if(neighbouring_node_indices.size() > 2){
         // if there are more than two neighbours, then we need to sort out which one are making the smallest angle 
-        c_vector<double, SPACE_DIM> ximin;
-        c_vector<double, SPACE_DIM> xkmin;
+        c_vector<double, SPACE_DIM> ximin = xi;
+        c_vector<double, SPACE_DIM> xkmin = xk;
         
         for(std::set<unsigned>::iterator i = neighbouring_node_indices.begin();
         i != neighbouring_node_indices.end();
@@ -99,6 +105,7 @@ double SproutingRule<ELEMENT_DIM, SPACE_DIM>::OptimalAngleVesselSegment(std::set
     } else if(neighbouring_node_indices.size() == 2){
         alphangular = alphangularmin;
     } 
+    PRINT_VARIABLE(alphangular);
     return alphangular;
 }
 
@@ -111,7 +118,7 @@ double SproutingRule<ELEMENT_DIM, SPACE_DIM>::LengthVesselSegment(std::set<unsig
     c_vector<double,SPACE_DIM> xj = rCellPopulation.GetLocationOfCellCentre(cell_ptr);
 
     // consider the neighbours of the element 
-    if(neighbouring_node_indices.size() > 2){
+    if(neighbouring_node_indices.size() > 2){ 
         for(std::set<unsigned>::iterator k = neighbouring_node_indices.begin();
         k != neighbouring_node_indices.end();
         ++k){
@@ -139,7 +146,7 @@ double SproutingRule<ELEMENT_DIM, SPACE_DIM>::LengthVesselSegment(std::set<unsig
 
 // function that set the new daughter cell property : tip cell or vessel segment
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-void SproutingRule<ELEMENT_DIM, SPACE_DIM>::DaughterTypeOfCell(AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rOldCellPopulation){
+void SproutingRule<ELEMENT_DIM, SPACE_DIM>::DaughterTypeOfCell(AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, unsigned OldNumNodes){
 
     cout << "Size of new cell population = " << rCellPopulation.GetNumNodes() << endl;
     NodeBasedCellPopulation<SPACE_DIM>* p_node_population = dynamic_cast<NodeBasedCellPopulation<SPACE_DIM>*>(&rCellPopulation);
@@ -149,47 +156,44 @@ void SproutingRule<ELEMENT_DIM, SPACE_DIM>::DaughterTypeOfCell(AbstractCentreBas
     }
 
     // we go through all the cells from the new cell population
-    for(unsigned node_index=0; node_index<rCellPopulation.GetNumNodes(); node_index++){
-        cout << rOldCellPopulation.IsCellAttachedToLocationIndex(node_index) << endl;
+    for(unsigned node_index = OldNumNodes; node_index<rCellPopulation.GetNumNodes(); node_index++){
         // if the old cell population does not have the index then we have the daughter cell's position 
-        if(rOldCellPopulation.IsCellAttachedToLocationIndex(node_index) != true){
-            CellPtr pDaughterCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
+        CellPtr pDaughterCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
 
-            // we check the angle made by the daughter cell with its neighbours
-            unsigned daughter_node_index = node_index; // node index
-            Node<SPACE_DIM>* p_daughter_cell = rCellPopulation.GetNode(daughter_node_index);
-            std::set<unsigned> neighbouring_node_indices = p_node_population->GetNeighbouringNodeIndices(daughter_node_index);
+        // we check the angle made by the daughter cell with its neighbours
+        unsigned daughter_node_index = node_index; // node index
+        Node<SPACE_DIM>* p_daughter_cell = rCellPopulation.GetNode(daughter_node_index);
+        std::set<unsigned> neighbouring_node_indices = p_node_population->GetNeighbouringNodeIndices(daughter_node_index);
 
-            double angle_vessel_segment = OptimalAngleVesselSegment(neighbouring_node_indices, pDaughterCell, rCellPopulation);
-            double random_angle = 2.0*M_PI*RandomNumberGenerator::Instance()->ranf(); 
-            cout << "random angle = " << random_angle << endl;
+        double angle_vessel_segment = OptimalAngleVesselSegment(neighbouring_node_indices, pDaughterCell, rCellPopulation);
+        double random_angle = 2.0*M_PI*RandomNumberGenerator::Instance()->ranf(); 
+        cout << "random angle = " << random_angle << endl;
 
-            // depending on the angle made by the random vector and the parent : 
-            // the new cell will start a new sprout and differentiate into a tip cell 
-            // or it will be incorporated into the parent vessel and differentiate into a vessel segment 
+        // depending on the angle made by the random vector and the parent : 
+        // the new cell will start a new sprout and differentiate into a tip cell 
+        // or it will be incorporated into the parent vessel and differentiate into a vessel segment 
 
-            // sprouting probability : to change because all the new cells are currently vessel segment 
-            double length_vessel_segment = LengthVesselSegment(neighbouring_node_indices, pDaughterCell, rCellPopulation);
-            double Rc = p_daughter_cell->GetRadius();
-            double kspr = 2e-4;
-            double Kspr = 0.01;
-            double Psprout = kspr/(Kspr + std::max(2*Rc-length_vessel_segment, 0.0));
-            
-            Psprout = 0.2;
-            double rand_number = RandomNumberGenerator::Instance()->ranf();
-            cout << "random number =" << rand_number << endl;
+        // sprouting probability : to change because all the new cells are currently vessel segment 
+        double length_vessel_segment = LengthVesselSegment(neighbouring_node_indices, pDaughterCell, rCellPopulation);
+        double Rc = p_daughter_cell->GetRadius();
+        double kspr = 2e-4;
+        double Kspr = 0.01;
+        double Psprout = kspr/(Kspr + std::max(2*Rc-length_vessel_segment, 0.0));
+        
+        Psprout = 0.5;
+        double rand_number = RandomNumberGenerator::Instance()->ranf();
+        cout << "random number =" << rand_number << endl;
 
-            if(rand_number < Psprout){ //random_angle >= (1-Psprout)*angle_vessel_segment/2 && random_angle <= (1+Psprout)*angle_vessel_segment/2){
-                // the new cell is a tip cell 
-                boost::shared_ptr<AbstractCellProperty> p_tipcell_type(CellPropertyRegistry::Instance()->Get<TransitCellProliferativeType>());
-                pDaughterCell->SetCellProliferativeType(p_tipcell_type);
-                cout << "test : new cell is a tip cell" << endl;
-            } else {
-                // the new cell is a vessel segment 
-                boost::shared_ptr<AbstractCellProperty> p_vesselsegment_type(CellPropertyRegistry::Instance()->Get<StemCellProliferativeType>());
-                pDaughterCell->SetCellProliferativeType(p_vesselsegment_type);
-                cout << "test : new cell is a vessel segment" << endl;
-            }
+        if(rand_number < Psprout){ //random_angle >= (1-Psprout)*angle_vessel_segment/2 && random_angle <= (1+Psprout)*angle_vessel_segment/2){
+            // the new cell is a tip cell 
+            boost::shared_ptr<AbstractCellProperty> p_tipcell_type(CellPropertyRegistry::Instance()->Get<DifferentiatedCellProliferativeType>());
+            pDaughterCell->SetCellProliferativeType(p_tipcell_type);
+            cout << "test : new cell is a tip cell" << endl;
+        } else {
+            // the new cell is a vessel segment 
+            boost::shared_ptr<AbstractCellProperty> p_vesselsegment_type(CellPropertyRegistry::Instance()->Get<StemCellProliferativeType>());
+            pDaughterCell->SetCellProliferativeType(p_vesselsegment_type);
+            cout << "test : new cell is a vessel segment" << endl;
         }
     }
 
@@ -199,6 +203,7 @@ void SproutingRule<ELEMENT_DIM, SPACE_DIM>::DaughterTypeOfCell(AbstractCentreBas
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRule<ELEMENT_DIM, SPACE_DIM>::CalculateCellDivisionVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation)
 {
+    TRACE("Begin");
     // consider a parent cell 
     c_vector<double, SPACE_DIM> parent_position = rCellPopulation.GetLocationOfCellCentre(pParentCell);
 
@@ -250,6 +255,8 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     }
 
     std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > positions(parent_position, daughter_position);
+
+    TRACE("End");
 
     return positions;
 }

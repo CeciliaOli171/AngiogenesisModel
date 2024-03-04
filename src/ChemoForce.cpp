@@ -34,7 +34,7 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
     {
         unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
         CellPtr cell_ptr = rCellPopulation.GetCellUsingLocationIndex(node_index); 
-        if (cell_ptr->GetCellProliferativeType()->IsType<TransitCellProliferativeType>())
+        if (cell_ptr->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
         {
             c_vector<double,DIM> r_gradient;
             double cx = 5.56E-4;

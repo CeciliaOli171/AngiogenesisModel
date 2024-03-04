@@ -5,7 +5,7 @@
 #include <boost/serialization/base_object.hpp>
 
 #include "AbstractForce.hpp"
-#include "TransitCellProliferativeType.hpp"
+#include "DifferentiatedCellProliferativeType.hpp"
 
 template<unsigned DIM>
 class ChemoForce  : public AbstractForce<DIM>

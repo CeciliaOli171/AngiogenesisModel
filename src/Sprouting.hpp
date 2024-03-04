@@ -14,7 +14,7 @@
 #include "CellPropertyCollection.hpp"
 #include "CellPropertyRegistry.hpp"
 #include "StemCellProliferativeType.hpp"
-#include "TransitCellProliferativeType.hpp"
+#include "DifferentiatedCellProliferativeType.hpp"
 #include "AbstractCentreBasedDivisionRule.hpp"
 #include "ClassIsAbstract.hpp"
 
@@ -54,7 +54,7 @@ public:
     double OptimalAngleVesselSegment(std::set<unsigned> neighbouring_node_indices, CellPtr cell_ptr, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation);
 
     // sprouting probability for the daughter cell 
-    void DaughterTypeOfCell(AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rOldCellPopulation);
+    void DaughterTypeOfCell(AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, unsigned OldNumNodes);
 
     // overrides CalculateCellDivisionVector
     std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > CalculateCellDivisionVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation);

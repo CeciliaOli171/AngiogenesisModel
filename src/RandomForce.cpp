@@ -40,7 +40,7 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
          ++node_iter)
     {
         CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
-        if (pCell->GetCellProliferativeType()->IsType<TransitCellProliferativeType>()){
+        if (pCell->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>()){
             //if(DIM == 2){
             //    rand_vector(0) =(float) std::rand()/RAND_MAX;
             //    rand_vector(1) =(float) std::rand()/RAND_MAX;

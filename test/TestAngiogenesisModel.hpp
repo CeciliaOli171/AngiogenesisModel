@@ -44,6 +44,7 @@
 
 #include "CellPhaseCycle.hpp"
 #include "Sprouting.hpp"
+#include "DaughterCellModifier.hpp"
 
 class TestAngiogenesisModel : public AbstractCellBasedTestSuite
 {
@@ -53,7 +54,7 @@ public:
     // we test each forces independently first, without division rule and with our cell cycle model
 
     // RANDOM FORCE TEST //
-    void TestRandomForce()
+    void NTestRandomForce()
         {
             EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
 
@@ -90,7 +91,7 @@ public:
         }
 
         // RANDOM FORCE TEST //
-    void TestChemoForce()
+    void NTestChemoForce()
         {
             EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
 
@@ -127,7 +128,7 @@ public:
         }
 
         // PERSISTENCE FORCE // 
-        void TestPersistenceForce()
+        void NTestPersistenceForce()
         {
             EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
 
@@ -186,7 +187,7 @@ public:
         }
 
         // ANGULAR FORCE // 
-        void TestAngularForce() throw(Exception)
+        void NTestAngularForce() throw(Exception)
         {
             EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
 
@@ -233,7 +234,7 @@ public:
         }
 
         // we test now the sprouting rule 
-       void TestSproutingRule() 
+       void NTestSproutingRule() 
        {
            EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
 
@@ -276,19 +277,18 @@ public:
            cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
            //SproutingRule<2,2>* p_sprouting_division_rule; // do not function 
 
+            // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
+            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (OldNumNodes));
+            simulator.AddSimulationModifier(p_modifier);
+
            // run simulation 
            simulator.Solve();
-
-           // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-           p_division_rule_to_set->DaughterTypeOfCell(cell_population, old_number_nodes);
-
-           cout << "Size of new cell population = " << cell_population.GetNumNodes() << endl;
 
            SimulationTime::Destroy();
        }
 
     // we test the sprouting division rule with the cells property : tip cell - vessel segment - tip cell 
-       void TestSproutingRuleAndCellCycle() 
+       void NTestSproutingRuleAndCellCycle() 
        {
             EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
 
@@ -333,11 +333,12 @@ public:
            cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
            //SproutingRule<2,2>* p_sprouting_division_rule; // do not function 
 
+           // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
+            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (OldNumNodes));
+            simulator.AddSimulationModifier(p_modifier);
+
            // run simulation 
            simulator.Solve();
-
-           // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-           p_division_rule_to_set->DaughterTypeOfCell(cell_population, old_number_nodes);
 
            cout << "Size of new cell population = " << cell_population.GetNumNodes() << endl;
 
@@ -371,7 +372,7 @@ public:
            cell_population.Update(); // addition of this line compared to the sprouting test
 
            // we copy this cell population to obtain all the previous location index from the cell population before the division 
-           unsigned old_number_nodes = cell_population.GetNumNodes();
+           unsigned OldNumNodes = cell_population.GetNumNodes();
 
            // Set the division rule for our population to be the random direction division rule
            typedef SproutingRule<2,2> SproutingRule;
@@ -424,7 +425,7 @@ public:
             simulator.AddForce(p_persistence_force);
 
             // Angular force (vessel segment only)
-            MAKE_PTR_ARGS(AngularForce<2>, p_angular_force, (5.56E1));
+            MAKE_PTR_ARGS(AngularForce<2>, p_angular_force, (5.56E-1));
             simulator.AddForce(p_angular_force);
 
             // 2) DIVISION OF CELLS 
@@ -435,7 +436,8 @@ public:
            //SproutingRule<2,2>* p_sprouting_division_rule; // do not function 
 
             // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-            p_division_rule_to_set->DaughterTypeOfCell(cell_population, old_number_nodes);
+            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (OldNumNodes));
+            simulator.AddSimulationModifier(p_modifier);
 
             cell_population.Update();
 

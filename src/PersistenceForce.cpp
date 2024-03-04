@@ -36,7 +36,7 @@ void PersistenceForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rC
     {
         unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
         CellPtr cell_ptr = rCellPopulation.GetCellUsingLocationIndex(node_index); 
-        if (cell_ptr->GetCellProliferativeType()->IsType<TransitCellProliferativeType>())
+        if (cell_ptr->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
         {
             // we find back the location of the cell at the previous time step by using CellData
             c_vector<double,DIM> old_r_cellmovement;

@@ -31,7 +31,7 @@ private:
 public:
 
     // constructor 
-    AngularForce(double omegaa = 5.56E1); // 5.56E-5 for Perfhal's paper
+    AngularForce(double omegaa = 5.56E-1); // 5.56E-5 for Perfhal's paper
 
     // destructor 
     ~AngularForce();

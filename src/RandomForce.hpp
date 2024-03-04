@@ -12,7 +12,7 @@
 #include "GeneralisedLinearSpringForce.hpp"
 #include "OffLatticeSimulation.hpp"
 #include "CellsGenerator.hpp"
-#include "TransitCellProliferativeType.hpp"
+#include "DifferentiatedCellProliferativeType.hpp"
 #include "SmartPointers.hpp"
 
 template<unsigned DIM>

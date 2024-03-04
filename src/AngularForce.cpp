@@ -5,6 +5,7 @@
 #include "NodeBasedCellPopulation.hpp"
 
 #include <tuple>
+#include "Debug.hpp"
 
 template<unsigned DIM>
 AngularForce<DIM>::AngularForce(double omegaa)
@@ -28,7 +29,10 @@ double AngularForce<DIM>::GetAngularPersistence()
 template<unsigned DIM>
 std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>::GetAngleVesselElement(CellPtr cell_ptr, std::set<unsigned> neighbouring_node_indices, AbstractCellPopulation<DIM>& rCellPopulation)
 {
+    TRACE("begin force angular");
     c_vector<double,DIM> xj = rCellPopulation.GetLocationOfCellCentre(cell_ptr);
+
+    PRINT_VARIABLE(neighbouring_node_indices.size());
 
     double alphangular = M_PI; // we initialise such as the force is equal to 0, geometrically, it means that the elements are aligned
     c_vector<double, DIM> u;
@@ -56,10 +60,17 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
         alphangularmin = std::acos(scalar_product_uv/(norm_2(u)*norm_2(v)));
     } 
 
+    PRINT_2_VARIABLES(scalar_product_uv, alphangularmin);
+    PRINT_VECTOR(xj);
+    PRINT_VECTOR(xi);
+    PRINT_VECTOR(xk);
+    PRINT_VECTOR(u);
+    PRINT_VECTOR(v);
+
     if(neighbouring_node_indices.size() > 2){
         // if there are more than two neighbours, then we need to sort out which one are making the smallest angle 
-        c_vector<double, DIM> ximin;
-        c_vector<double, DIM> xkmin;
+        c_vector<double, DIM> ximin = xi;
+        c_vector<double, DIM> xkmin = xk;
         
         for(std::set<unsigned>::iterator i = neighbouring_node_indices.begin();
         i != neighbouring_node_indices.end();
@@ -95,6 +106,8 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
                 }
             }
         } 
+        PRINT_VECTOR(ximin);
+        PRINT_VECTOR(xkmin);
         u = rCellPopulation.rGetMesh().GetVectorFromAtoB(ximin, xj);
         v = rCellPopulation.rGetMesh().GetVectorFromAtoB(xkmin, xj);
         double scalar_product_uv;
@@ -112,6 +125,9 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
         alphangular = alphangularmin;
     } 
 
+    PRINT_VARIABLE(alphangular);
+    PRINT_VECTOR(u);
+    PRINT_VECTOR(v);
     return std::make_tuple(alphangular, u, v);
 }
 

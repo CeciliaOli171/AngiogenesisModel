@@ -33,22 +33,20 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef HELLO_ANGIOGENESISMODEL3_HPP_
-#define HELLO_ANGIOGENESISMODEL3_HPP_
+#include "Hello_AngiogenesisModel.hpp"
+#include "Exception.hpp"
 
-#include <string>
-
-class Hello_AngiogenesisModel3
+Hello_AngiogenesisModel::Hello_AngiogenesisModel(const std::string& rMessage)
+    : mMessage(rMessage)
 {
-private:
-    std::string mMessage;
+}
 
-public:
-    Hello_AngiogenesisModel3(const std::string& rMessage);
+std::string Hello_AngiogenesisModel::GetMessage()
+{
+    return mMessage;
+}
 
-    std::string GetMessage();
-
-    void Complain(const std::string& rComplaint);
-};
-
-#endif /*HELLO_ANGIOGENESISMODEL3_HPP_*/
+void Hello_AngiogenesisModel::Complain(const std::string& rComplaint)
+{
+    EXCEPTION(rComplaint);
+}

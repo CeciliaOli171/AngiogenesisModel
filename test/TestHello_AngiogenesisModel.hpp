@@ -33,15 +33,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TESTHELLO_ANGIOGENESISMODEL3_HPP_
-#define TESTHELLO_ANGIOGENESISMODEL3_HPP_
+#ifndef TESTHELLO_ANGIOGENESISMODEL_HPP_
+#define TESTHELLO_ANGIOGENESISMODEL_HPP_
 
 #include <cxxtest/TestSuite.h>
 /* Most Chaste code uses PETSc to solve linear algebra problems.  This involves starting PETSc at the beginning of a test-suite
  * and closing it at the end.  (If you never run code in parallel then it is safe to replace PetscSetupAndFinalize.hpp with FakePetscSetup.hpp)
  */
 #include "PetscSetupAndFinalize.hpp"
-#include "Hello_AngiogenesisModel3.hpp"
+#include "Hello_AngiogenesisModel.hpp"
 
 /**
  * @file
@@ -60,14 +60,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * components of Chaste.
  */
 
-class TestHello_AngiogenesisModel3 : public CxxTest::TestSuite
+class TestHello_AngiogenesisModel : public CxxTest::TestSuite
 {
 public:
-    void TestHello_AngiogenesisModel3Class()
+    void TestHello_AngiogenesisModelClass()
     {
         // Create an object called 'world' of class 'Hello',
         // (Hello_AngiogenesisModel3.hpp is #included from the 'src' folder.)
-        Hello_AngiogenesisModel3 world("Hello world!");
+        Hello_AngiogenesisModel world("Hello world!");
 
         // The TS_ASSERT macros are used to test that the object performs as expected
         TS_ASSERT_EQUALS(world.GetMessage(), "Hello world!");
@@ -76,4 +76,4 @@ public:
     }
 };
 
-#endif /*TESTHELLO_ANGIOGENESISMODEL3_HPP_*/
+#endif /*TESTHELLO_ANGIOGENESISMODEL_HPP_*/
