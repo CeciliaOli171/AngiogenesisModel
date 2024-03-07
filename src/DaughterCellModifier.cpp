@@ -52,7 +52,7 @@ double DaughterCellModifier<DIM>::OptimalAngleVesselSegment(std::set<unsigned> n
     c_vector<double, DIM> v;
 
     CellPtr p_neighbour_cell_i = rCellPopulation.GetCellUsingLocationIndex(*neighbouring_node_indices.begin());
-    CellPtr p_neighbour_cell_k = rCellPopulation.GetCellUsingLocationIndex(*neighbouring_node_indices.end());
+    CellPtr p_neighbour_cell_k = rCellPopulation.GetCellUsingLocationIndex(*neighbouring_node_indices.begin()+1);
     c_vector<double,DIM> xi = rCellPopulation.GetLocationOfCellCentre(p_neighbour_cell_i);
     c_vector<double,DIM> xk = rCellPopulation.GetLocationOfCellCentre(p_neighbour_cell_k);
     
@@ -103,7 +103,7 @@ double DaughterCellModifier<DIM>::OptimalAngleVesselSegment(std::set<unsigned> n
                     if(norm_2(xij) != 0 && norm_2(xkj) != 0){
                         alpha = std::acos(scalar_product_xijk/(norm_2(xij)*norm_2(xkj)));
                     }
-                    if(alpha < alphangularmin){
+                    if(std::abs(alpha) < std::abs(alphangularmin)){
                         alphangularmin = alpha;
                         ximin = xi;
                         xkmin = xk;
@@ -124,10 +124,10 @@ double DaughterCellModifier<DIM>::OptimalAngleVesselSegment(std::set<unsigned> n
         if(norm_2(u) != 0 && norm_2(v) != 0){
             alphangular = std::acos(scalar_product_uv/(norm_2(u)*norm_2(v)));
         }
-        cout << alphangular << endl; 
     } else if(neighbouring_node_indices.size() == 2){
         alphangular = alphangularmin;
     } 
+    PRINT_VARIABLE(mOldNumNodes);
     PRINT_VARIABLE(alphangular);
     return alphangular;
 }
@@ -191,9 +191,10 @@ void DaughterCellModifier<DIM>::UpdateCellData(AbstractCellPopulation<DIM,DIM>& 
         Node<DIM>* p_daughter_cell = rCellPopulation.GetNode(daughter_node_index);
         std::set<unsigned> neighbouring_node_indices = p_node_population->GetNeighbouringNodeIndices(daughter_node_index);
 
+        TRACE("Begin Modifier");
+        PRINT_VARIABLE(neighbouring_node_indices.size());
+
         double angle_vessel_segment = OptimalAngleVesselSegment(neighbouring_node_indices, pDaughterCell, rCellPopulation);
-        double random_angle = 2.0*M_PI*RandomNumberGenerator::Instance()->ranf(); 
-        cout << "random angle = " << random_angle << endl;
 
         // depending on the angle made by the random vector and the parent : 
         // the new cell will start a new sprout and differentiate into a tip cell 
@@ -205,12 +206,13 @@ void DaughterCellModifier<DIM>::UpdateCellData(AbstractCellPopulation<DIM,DIM>& 
         // double kspr = 2e-4;
         // double Kspr = 0.01;
         // double Psprout = kspr/(Kspr + std::max(2*Rc-length_vessel_segment, 0.0));
-        
-        double Psprout = 0.5;
-        double rand_number = RandomNumberGenerator::Instance()->ranf();
-        // cout << "random number =" << rand_number << endl;
 
-        if(rand_number < Psprout){ //random_angle >= (1-Psprout)*angle_vessel_segment/2 && random_angle <= (1+Psprout)*angle_vessel_segment/2){
+        if(angle_vessel_segment >= 2*M_PI/6 && angle_vessel_segment <= 4*M_PI/6){
+            // the new cell is a tip cell 
+            boost::shared_ptr<AbstractCellProperty> p_tipcell_type(CellPropertyRegistry::Instance()->Get<DifferentiatedCellProliferativeType>());
+            pDaughterCell->SetCellProliferativeType(p_tipcell_type);
+            cout << "test : new cell is a tip cell" << endl;
+        } else if (angle_vessel_segment >= -4*M_PI/6 && angle_vessel_segment <= -2*M_PI/6){
             // the new cell is a tip cell 
             boost::shared_ptr<AbstractCellProperty> p_tipcell_type(CellPropertyRegistry::Instance()->Get<DifferentiatedCellProliferativeType>());
             pDaughterCell->SetCellProliferativeType(p_tipcell_type);

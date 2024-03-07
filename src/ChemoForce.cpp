@@ -4,11 +4,13 @@
 #include "CellLabel.hpp"
 
 template<unsigned DIM>
-ChemoForce<DIM>::ChemoForce(double chi)
+ChemoForce<DIM>::ChemoForce(double chi, double cx)
     : AbstractForce<DIM>()
 {
     assert(chi>0);
+    assert(cx>0);
     mChi = chi;
+    mCX = cx;
 }
 
 template<unsigned DIM>
@@ -37,19 +39,15 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
         if (cell_ptr->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
         {
             c_vector<double,DIM> r_gradient;
-            double cx = 5.56E-4;
             if(DIM == 3){
-                r_gradient(0) = -cx; 
+                r_gradient(0) = -mCX; 
                 r_gradient(1) = 0.0; 
                 r_gradient(2) = 0.0; 
-                //cout << "r_gradient = " << r_gradient(0) << ";" << r_gradient(1) << ";" << r_gradient(2) << endl;
             } else if (DIM == 2){
-                r_gradient(0) = -cx; 
+                r_gradient(0) = -mCX; 
                 r_gradient(1) = 0.0; 
-                //cout << "r_gradient = " << r_gradient(0) << ";" << r_gradient(1) << endl;
             } else {
-                r_gradient(0) = -cx; 
-                //cout << "r_gradient = " << r_gradient(0) << endl;
+                r_gradient(0) = -mCX; 
             }
 
             // force += chi * gradC

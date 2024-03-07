@@ -41,6 +41,7 @@
 #include "RandomForce.hpp"
 #include "PersistenceForce.hpp"
 #include "AngularForce.hpp"
+#include "MechanicalForce.hpp"
 
 #include "CellPhaseCycle.hpp"
 #include "Sprouting.hpp"
@@ -81,7 +82,7 @@ public:
             simulator.SetEndTime(5.0);
 
             // we apply the random force law 
-            MAKE_PTR_ARGS(RandomForce<2>, p_random_force, ());
+            MAKE_PTR_ARGS(RandomForce<2>, p_random_force, (0.4));
             simulator.AddForce(p_random_force);
 
             // run simulation 
@@ -90,7 +91,44 @@ public:
             SimulationTime::Destroy();
         }
 
-        // RANDOM FORCE TEST //
+    // MECHANICAL FORCE TEST //
+    void NTestMechanicalForce()
+        {
+            EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
+
+            // creation of the mesh
+            HoneycombMeshGenerator generator(3,1);
+            MutableMesh<2,2>* p_generating_mesh = generator.GetMesh();
+            NodesOnlyMesh<2> mesh;
+            mesh.ConstructNodesWithoutMesh(*p_generating_mesh, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal'sw model)
+
+            // creation of the cells 
+            std::vector<CellPtr> cells;
+            MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
+            CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
+
+            // creation of a population of cells 
+            NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+            // creation of the simulation 
+            SimulationTime::Instance() -> SetStartTime(0.0);
+            OffLatticeSimulation<2> simulator(cell_population);
+            simulator.SetOutputDirectory("TestMechanicalForce");
+            simulator.SetSamplingTimestepMultiple(12);
+            simulator.SetEndTime(5.0);
+
+            // we apply the random force law 
+            MAKE_PTR_ARGS(MechanicalForce<2>, p_mechanical_force, (5.56E-6));
+            simulator.AddForce(p_mechanical_force);
+
+            // run simulation 
+            simulator.Solve();
+
+            SimulationTime::Destroy();
+        }
+
+    // CHEMOTACTIC FORCE TEST //
     void NTestChemoForce()
         {
             EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
@@ -118,7 +156,7 @@ public:
             simulator.SetEndTime(5.0);
 
             // we apply the random force law 
-            MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (0.1));
+            MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (0.1, 5.56));
             simulator.AddForce(p_chemo_force);
 
             // run simulation 
@@ -160,8 +198,10 @@ public:
                 cell_population.GetNode(i)->ClearAppliedForce();
             }
 
-            MAKE_PTR_ARGS(GeneralisedLinearSpringForce<2>, p_linear_force, ());
-            simulator.AddForce(p_linear_force);
+            // MAKE_PTR_ARGS(GeneralisedLinearSpringForce<2>, p_linear_force, ());
+            // simulator.AddForce(p_linear_force);
+            MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (0.1, 5.56));
+            simulator.AddForce(p_chemo_force);
 
             unsigned node_index = 0;
             // Set up cell data on the cell population
@@ -195,7 +235,8 @@ public:
             std::vector<Node<2>*> nodes;
             nodes.push_back(new Node<2>(0u, false, 1.0, 0.0));
             nodes.push_back(new Node<2>(1u, false, 1.0, 1.5));
-            nodes.push_back(new Node<2>(2u, false, 1.5, 0.7));
+            nodes.push_back(new Node<2>(2u, false, 1.5, 0.6));
+            nodes.push_back(new Node<2>(3u, false, 0.6, 1.0));
 
             NodesOnlyMesh<2> mesh;
             mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal'sw model)
@@ -203,8 +244,11 @@ public:
             // creation of the cells 
             std::vector<CellPtr> cells;
             MAKE_PTR(StemCellProliferativeType, p_stem_type);
+            MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
             CellsGenerator<UniformCellCycleModel, 2> cells_generator;
-            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_stem_type);
+            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
+            cells[2]->SetCellProliferativeType(p_stem_type);
+            cells[3]->SetCellProliferativeType(p_stem_type);
 
             // creation of a population of cells 
             NodeBasedCellPopulation<2> cell_population(mesh, cells);
@@ -224,7 +268,7 @@ public:
             simulator.SetEndTime(5.0);
 
             // we apply the angular force law 
-            MAKE_PTR_ARGS(AngularForce<2>, p_angular_force, (5.56E1));
+            MAKE_PTR_ARGS(AngularForce<2>, p_angular_force, (5.56));
             simulator.AddForce(p_angular_force);
 
             // run simulation 
@@ -278,7 +322,7 @@ public:
            //SproutingRule<2,2>* p_sprouting_division_rule; // do not function 
 
             // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (OldNumNodes));
+            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (old_number_nodes));
             simulator.AddSimulationModifier(p_modifier);
 
            // run simulation 
@@ -334,7 +378,7 @@ public:
            //SproutingRule<2,2>* p_sprouting_division_rule; // do not function 
 
            // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (OldNumNodes));
+            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (old_number_nodes));
             simulator.AddSimulationModifier(p_modifier);
 
            // run simulation 
@@ -357,7 +401,7 @@ public:
             std::vector<unsigned> location_indices = generator.GetCellLocationIndices();
             MutableMesh<2,2>* p_generating_mesh = generator.GetMesh(); //Mutable and not Tetrahedral Mesh compared to the Sprouting test
             NodesOnlyMesh<2> mesh;
-            mesh.ConstructNodesWithoutMesh(*p_generating_mesh, 1); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal'sw model)
+            mesh.ConstructNodesWithoutMesh(*p_generating_mesh, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal'sw model)
 
             // creation of the cells 
             std::vector<CellPtr> cells;
@@ -366,6 +410,7 @@ public:
             CellsGenerator<UniformCellCycleModel, 2> cells_generator;
             cells_generator.GenerateGivenLocationIndices(cells, location_indices, p_differentiated_type);
             cells[1]->SetCellProliferativeType(p_stem_type);
+            //cells[4]->SetCellProliferativeType(p_stem_type);
            
            // creation of a population of cells 
            NodeBasedCellPopulation<2> cell_population(mesh, cells);
@@ -387,7 +432,7 @@ public:
            OffLatticeSimulation<2> simulator(cell_population);
            simulator.SetOutputDirectory("TestSproutingRuleAndCellCycleAndForcesAllCells");
            simulator.SetSamplingTimestepMultiple(12);
-           simulator.SetEndTime(400.0);
+           simulator.SetEndTime(50.0);
 
             /////////////////
             // SIMULATION // 
@@ -395,16 +440,12 @@ public:
 
             // 1) UPDATING CELL POSITION 
 
-            // Mechanical force (all cells)
-            MAKE_PTR_ARGS(GeneralisedLinearSpringForce<2>, p_mechanical_force, ());
-            simulator.AddForce(p_mechanical_force);
-
             // Random force (all cells)
             MAKE_PTR_ARGS(RandomForce<2>, p_random_force, (0.4));
             simulator.AddForce(p_random_force);
 
             // Chemotactic force (tip cells only) 
-            MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (0.1));
+            MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (0.1, 5.56E-3));
             simulator.AddForce(p_chemo_force);
 
             // Persistence force (tip cells only)
@@ -421,11 +462,15 @@ public:
                 ++node_index;
             }
 
-            MAKE_PTR_ARGS(PersistenceForce<2>, p_persistence_force, (0.4));
+            MAKE_PTR_ARGS(PersistenceForce<2>, p_persistence_force, (0.4E-2));
             simulator.AddForce(p_persistence_force);
 
+            // Mechanical force (all cells)
+            MAKE_PTR_ARGS(MechanicalForce<2>, p_mechanical_force, (5.56E-4));
+            simulator.AddForce(p_mechanical_force);
+
             // Angular force (vessel segment only)
-            MAKE_PTR_ARGS(AngularForce<2>, p_angular_force, (5.56E-1));
+            MAKE_PTR_ARGS(AngularForce<2>, p_angular_force, (5.56));
             simulator.AddForce(p_angular_force);
 
             // 2) DIVISION OF CELLS 
@@ -438,6 +483,10 @@ public:
             // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
             MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (OldNumNodes));
             simulator.AddSimulationModifier(p_modifier);
+
+            // Angular force (vessel segment only)
+            MAKE_PTR_ARGS(AngularForce<2>, p_angular_force_2, (5.56));
+            simulator.AddForce(p_angular_force_2);
 
             cell_population.Update();
 

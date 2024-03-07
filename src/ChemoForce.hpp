@@ -15,6 +15,7 @@ friend class TestForces;
 private:
 
     double mChi;
+    double mCX;
     double GetChemotacticSensitivity();
 
     friend class boost::serialization::access;
@@ -27,7 +28,7 @@ private:
 public:
 
     // constructor
-    ChemoForce(double chi = 0.1);
+    ChemoForce(double chi = 0.1, double cx = 5.56E-4);
 
     // destructor
     ~ChemoForce();

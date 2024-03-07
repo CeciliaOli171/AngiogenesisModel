@@ -80,7 +80,7 @@ double SproutingRule<ELEMENT_DIM, SPACE_DIM>::OptimalAngleVesselSegment(std::set
                     if(norm_2(xij) != 0 && norm_2(xkj) != 0){
                         alpha = std::acos(scalar_product_xijk/(norm_2(xij)*norm_2(xkj)));
                     }
-                    if(alpha < alphangularmin){
+                    if(std::abs(alpha) < std::abs(alphangularmin)){
                         alphangularmin = alpha;
                         ximin = xi;
                         xkmin = xk;
@@ -238,7 +238,7 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     //double angle_vessel_segment = OptimalAngleVesselSegment(neighbouring_node_indices, pParentCell, rCellPopulation); 
 
     // creation of the daughter cell to the map
-    c_vector<double, SPACE_DIM> daughter_position = parent_position + 2.0*random_vector; 
+    c_vector<double, SPACE_DIM> daughter_position = parent_position + 3.0*random_vector; 
 
     if(SPACE_DIM == 2){
         cout << "parent position = " << parent_position(0) << ';' << parent_position(1) << endl;

@@ -29,10 +29,7 @@ double AngularForce<DIM>::GetAngularPersistence()
 template<unsigned DIM>
 std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>::GetAngleVesselElement(CellPtr cell_ptr, std::set<unsigned> neighbouring_node_indices, AbstractCellPopulation<DIM>& rCellPopulation)
 {
-    TRACE("begin force angular");
     c_vector<double,DIM> xj = rCellPopulation.GetLocationOfCellCentre(cell_ptr);
-
-    PRINT_VARIABLE(neighbouring_node_indices.size());
 
     double alphangular = M_PI; // we initialise such as the force is equal to 0, geometrically, it means that the elements are aligned
     c_vector<double, DIM> u;
@@ -59,13 +56,6 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
     if(norm_2(u)!= 0 && norm_2(v) != 0){
         alphangularmin = std::acos(scalar_product_uv/(norm_2(u)*norm_2(v)));
     } 
-
-    PRINT_2_VARIABLES(scalar_product_uv, alphangularmin);
-    PRINT_VECTOR(xj);
-    PRINT_VECTOR(xi);
-    PRINT_VECTOR(xk);
-    PRINT_VECTOR(u);
-    PRINT_VECTOR(v);
 
     if(neighbouring_node_indices.size() > 2){
         // if there are more than two neighbours, then we need to sort out which one are making the smallest angle 
@@ -98,7 +88,7 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
                         alpha = std::acos(scalar_product_xijk/(norm_2(xij)*norm_2(xkj)));
                     }
 
-                    if(alpha < alphangularmin){
+                    if(std::abs(alpha) < std::abs(alphangularmin)){
                         alphangularmin = alpha;
                         ximin = xi;
                         xkmin = xk;
@@ -106,8 +96,6 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
                 }
             }
         } 
-        PRINT_VECTOR(ximin);
-        PRINT_VECTOR(xkmin);
         u = rCellPopulation.rGetMesh().GetVectorFromAtoB(ximin, xj);
         v = rCellPopulation.rGetMesh().GetVectorFromAtoB(xkmin, xj);
         double scalar_product_uv;
@@ -125,9 +113,6 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
         alphangular = alphangularmin;
     } 
 
-    PRINT_VARIABLE(alphangular);
-    PRINT_VECTOR(u);
-    PRINT_VECTOR(v);
     return std::make_tuple(alphangular, u, v);
 }
 
@@ -135,6 +120,7 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
 template<unsigned DIM>
 void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
+    //TRACE("Begin Angular Force");
     // we create the vector force 
     c_vector<double, DIM> angularforce = zero_vector<double>(DIM); 
     
@@ -144,8 +130,6 @@ void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellP
         EXCEPTION("NodeBasedCellPopulation only valid for node.");
     }
 
-    //cout << "number of nodes in cell population :" << rCellPopulation.GetNumNodes() << endl;
-
     for (unsigned node_index=0; node_index<rCellPopulation.GetNumNodes(); node_index++)
     {
         CellPtr cell_ptr = rCellPopulation.GetCellUsingLocationIndex(node_index);
@@ -153,11 +137,14 @@ void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellP
         {
             std::set<unsigned> neighbouring_node_indices = p_node_population->GetNeighbouringNodeIndices(node_index);
 
+            //PRINT_VARIABLE(neighbouring_node_indices.size());
+
             if(neighbouring_node_indices.size() >= 2){
                 double alphangular;
                 c_vector<double, DIM> u;
                 c_vector<double, DIM> v;
                 std::tie(alphangular, u, v) = GetAngleVesselElement(cell_ptr, neighbouring_node_indices, rCellPopulation);
+                //PRINT_VARIABLE(alphangular);
 
                 c_vector<double, DIM> r_angularneighbours = u + v;
                 double magnitude_of_angularneighbours = norm_2(r_angularneighbours);
@@ -175,6 +162,7 @@ void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellP
             }
         }
     }
+    //TRACE("End");
 }
 
 template<unsigned DIM>
