@@ -2,6 +2,7 @@
 
 #include "CellwiseDataGradient.hpp"
 #include "CellLabel.hpp"
+#include "NodeBasedCellPopulation.hpp"
 
 template<unsigned DIM>
 MechanicalForce<DIM>::MechanicalForce(double Sc)
@@ -24,13 +25,14 @@ double MechanicalForce<DIM>::GetSpringConstant()
 
 // function that returns the approximation of the length of the vessel element k
 template<unsigned DIM>
-double MechanicalForce<DIM>::LengthVesselSegment(std::set<unsigned> neighbouring_node_indices, CellPtr cell_ptr, AbstractCellPopulation<DIM, DIM>& rCellPopulation){
+double MechanicalForce<DIM>::LengthVesselSegment(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices){
+    // initialisation
     double length_vessel_segment = 0; 
 
-    // select the element 
-    c_vector<double,DIM> xj = rCellPopulation.GetLocationOfCellCentre(cell_ptr);
+    // we select the coordinates of the element 
+    c_vector<double,DIM> xj = rCellPopulation.GetLocationOfCellCentre(pCell);
 
-    // consider the neighbours of the element 
+    // we consider the neighbours of the element 
     if(neighbouring_node_indices.size() > 2){ 
         for(std::set<unsigned>::iterator k = neighbouring_node_indices.begin();
         k != neighbouring_node_indices.end();
@@ -63,9 +65,9 @@ double MechanicalForce<DIM>::SpringFunction(double x, double lc, double Rc){
     double S;
 
     if(x > 0){
-        S = mSc*x;
-    } else if (x <= 0 && x > 2*Rc-lc){
-        S = 100*mSc*x;
+        S = mSc*x; // compressed 
+    } else if (x <= 0 && x > 2*Rc-lc){ 
+        S = 100*mSc*x; // elongated 
     } else {
         S = 0;
     }
@@ -77,8 +79,8 @@ double MechanicalForce<DIM>::SpringFunction(double x, double lc, double Rc){
 template<unsigned DIM>
 void MechanicalForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
-    // we create the vector force 
-    c_vector<double, DIM> mechanicalforce = zero_vector<double>(DIM);
+    // initialisation 
+    c_vector<double, DIM> mechanicalforce;
 
     NodeBasedCellPopulation<DIM>* p_node_population = dynamic_cast<NodeBasedCellPopulation<DIM>*>(&rCellPopulation);
     if (!p_node_population)
@@ -86,7 +88,6 @@ void MechanicalForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCe
         EXCEPTION("NodeBasedCellPopulation only valid for node");
     }
  
-
     // we applied the force to the cell population corresponding 
     // here, the random force is applied to every cell 
     unsigned node_index = 0;
@@ -94,18 +95,15 @@ void MechanicalForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCe
          node_iter != rCellPopulation.rGetMesh().GetNodeIteratorEnd();
          ++node_iter)
     {
+        // we collect cell data (pointer, indice, coordinates, neighbours, radius, length)
         CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
         Node<DIM>* pNodeCell = rCellPopulation.GetNode(node_index);
         c_vector<double,DIM> xk = rCellPopulation.GetLocationOfCellCentre(pCell);
-
-        // 1) list of neighbouring nodes 
         std::set<unsigned> neighbouring_node_indices = p_node_population->GetNeighbouringNodeIndices(node_index);
-
-        // 2) Radius of cell 
         double Rc = pNodeCell->GetRadius();
+        double lc = LengthVesselSegment(rCellPopulation, pCell, neighbouring_node_indices);
 
-        // 3) Length of vessel 
-        double lc = LengthVesselSegment(neighbouring_node_indices, pCell, rCellPopulation);
+        mechanicalforce = zero_vector<double>(DIM);
 
         for(std::set<unsigned>::iterator j = neighbouring_node_indices.begin();
         j != neighbouring_node_indices.end();
@@ -140,4 +138,3 @@ template class MechanicalForce<3>;
 // Serialization for Boost >= 1.36
 #include "SerializationExportWrapperForCpp.hpp"
 EXPORT_TEMPLATE_CLASS_SAME_DIMS(MechanicalForce)
-//CHASTE_CLASS_EXPORT(MechanicalForce)

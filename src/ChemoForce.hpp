@@ -16,7 +16,10 @@ private:
 
     double mChi;
     double mCX;
+    double mCY;
     double GetChemotacticSensitivity();
+    double GetChemotacticGradientCoefficientXAxis();
+    double GetChemotacticGradientCoefficientYAxis();
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -28,7 +31,7 @@ private:
 public:
 
     // constructor
-    ChemoForce(double chi = 0.1, double cx = 5.56E-4);
+    ChemoForce(double chi = 0.1, double cx = 5.56E-4, double cy = 5.56E-4);
 
     // destructor
     ~ChemoForce();

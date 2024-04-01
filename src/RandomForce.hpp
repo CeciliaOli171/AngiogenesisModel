@@ -5,15 +5,9 @@
 #include <boost/serialization/base_object.hpp>
 
 #include "AbstractForce.hpp"
-
-/* Header Files */
-#include "HoneycombMeshGenerator.hpp"
-#include "FixedG1GenerationalCellCycleModel.hpp"
-#include "GeneralisedLinearSpringForce.hpp"
-#include "OffLatticeSimulation.hpp"
-#include "CellsGenerator.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
 #include "SmartPointers.hpp"
+#include "SimulationTime.hpp"
 
 template<unsigned DIM>
 class RandomForce  : public AbstractForce<DIM>
@@ -52,6 +46,5 @@ public:
 
 #include "SerializationExportWrapper.hpp"
 EXPORT_TEMPLATE_CLASS_SAME_DIMS(RandomForce) 
-//CHASTE_CLASS_EXPORT(RandomForce)
 
 #endif /*RANDOMFORCE_HPP_*/

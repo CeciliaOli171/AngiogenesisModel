@@ -4,13 +4,14 @@
 #include "CellLabel.hpp"
 
 template<unsigned DIM>
-ChemoForce<DIM>::ChemoForce(double chi, double cx)
+ChemoForce<DIM>::ChemoForce(double chi, double cx, double cy)
     : AbstractForce<DIM>()
 {
     assert(chi>0);
     assert(cx>0);
     mChi = chi;
     mCX = cx;
+    mCY = cy;
 }
 
 template<unsigned DIM>
@@ -25,27 +26,41 @@ double ChemoForce<DIM>::GetChemotacticSensitivity()
 }
 
 template<unsigned DIM>
+double ChemoForce<DIM>::GetChemotacticGradientCoefficientXAxis()
+{
+    return mCX;
+}
+
+template<unsigned DIM>
+double ChemoForce<DIM>::GetChemotacticGradientCoefficientYAxis()
+{
+    return mCY;
+}
+
+template<unsigned DIM>
 void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
-    // we create the vector force 
-    c_vector<double, DIM> chemoforce = zero_vector<double>(DIM);
+    // initialisation 
+    c_vector<double, DIM> chemoforce;
+    c_vector<double,DIM> r_gradient;
     
     for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin();
          cell_iter != rCellPopulation.End();
          ++cell_iter)
     {
+        // we collect the cell data necessary (node index and cell pointer)
         unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-        CellPtr cell_ptr = rCellPopulation.GetCellUsingLocationIndex(node_index); 
-        if (cell_ptr->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
+        CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index); 
+
+        if (pCell->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
         {
-            c_vector<double,DIM> r_gradient;
             if(DIM == 3){
                 r_gradient(0) = -mCX; 
-                r_gradient(1) = 0.0; 
+                r_gradient(1) = -mCY; 
                 r_gradient(2) = 0.0; 
             } else if (DIM == 2){
                 r_gradient(0) = -mCX; 
-                r_gradient(1) = 0.0; 
+                r_gradient(1) = -mCY; 
             } else {
                 r_gradient(0) = -mCX; 
             }
@@ -60,7 +75,9 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
 template<unsigned DIM>
 void ChemoForce<DIM>::OutputForceParameters(out_stream& rParamsFile)
 {
-    // No parameters to include
+    *rParamsFile << "\t\t\t<Chemotactic Sensitivity>" << mChi << "</Chi>\n";
+    *rParamsFile << "\t\t\t<Chemotactic Gradient Coefficient X Axis>" << mCX << "</CX>\n";
+    *rParamsFile << "\t\t\t<Chemotactic Gradient Coefficient Y Axis>" << mCY << "</CY>\n";
 
     // Call method on direct parent class
     AbstractForce<DIM>::OutputForceParameters(rParamsFile);

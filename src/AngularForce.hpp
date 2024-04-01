@@ -5,8 +5,9 @@
 #include <boost/serialization/base_object.hpp>
 
 #include "AbstractForce.hpp"
-#include "StemCellProliferativeType.hpp"
 #include "AbstractCellProliferativeType.hpp"
+#include "StemCellProliferativeType.hpp"
+#include "TransitCellProliferativeType.hpp"
 
 
 template<unsigned DIM>
@@ -30,14 +31,23 @@ private:
 
 public:
 
-    // constructor 
-    AngularForce(double omegaa = 5.56E-1); // 5.56E-5 for Perfhal's paper
+    // constructor (default value according to Perfhal's parameters)
+    AngularForce(double omegaa = 5.56E-5); 
 
     // destructor 
     ~AngularForce();
 
-    // smallest branching angle between vessel elements
-    std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> GetAngleVesselElement(CellPtr cell_ptr, std::set<unsigned> neighbouring_node_indices, AbstractCellPopulation<DIM>& rCellPopulation); 
+    // calculates the nth value of a neighbouring node indices set 
+    unsigned GetNthNeighbourIndice(std::set<unsigned> neighbouring_node_indices, int n);
+
+    // function calculating the angle between two vectors u and v 
+    double GetAngleFromVectors(c_vector<double,DIM> u, c_vector<double,DIM> v);
+
+    // function calculating the angle and the two closest nodes to a third one 
+    std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> ClosestAngleVesselSegment(AbstractCellPopulation<DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
+
+    // function calculating the smallest angle made by a node with its neighbours 
+    std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> OptimalAngleVesselElement(AbstractCellPopulation<DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices); 
 
     // overrides AddForceContribution
     void AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation);
@@ -49,6 +59,5 @@ public:
 
 #include "SerializationExportWrapper.hpp"
 EXPORT_TEMPLATE_CLASS_SAME_DIMS(AngularForce) 
-//CHASTE_CLASS_EXPORT(AngularForce)
 
 #endif /*ANGULARFORCE_HPP_*/

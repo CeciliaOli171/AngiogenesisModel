@@ -1,150 +1,135 @@
 #ifndef CELLPHASECYCLE_HPP_
 #define CELLPHASECYCLE_HPP_
 
-#include "ChasteSerialization.hpp"
-#include <boost/serialization/base_object.hpp>
-
-#include "CheckpointArchiveTypes.hpp"
-
+#include "AbstractSimpleCellCycleModel.hpp"
 #include "RandomNumberGenerator.hpp"
 
-#include "SmartPointers.hpp"
-#include "Exception.hpp"
+// Cell cycle that is equal to the UniformCellCycleModel except for the transit cells that are now constrained and cannot divide
 
-#include "AbstractCellCycleModel.hpp"
-#include "AbstractSimpleGenerationalCellCycleModel.hpp"
-
-#include "StemCellProliferativeType.hpp"
-#include "TransitCellProliferativeType.hpp"
-#include "DifferentiatedCellProliferativeType.hpp"
-
-class CellPhaseCycle  : public AbstractSimpleGenerationalCellCycleModel
+class CellPhaseCycle : public AbstractSimpleCellCycleModel
 {
+    friend class TestSimpleCellCycleModels;
 
 private:
 
-    // allow to archive the force model object in a cell-based simulation 
+    /**
+     * The minimum cell cycle duration. Used to define the uniform distribution.
+     * Defaults to 12 hours.
+     */
+    double mMinCellCycleDuration;
+
+    /**
+     * The maximum cell cycle duration. Used to define the uniform distribution.
+     * Defaults to 14 hours.
+     */
+    double mMaxCellCycleDuration;
+
+    /** Needed for serialization. */
     friend class boost::serialization::access;
+    /**
+     * Archive the cell-cycle model and random number generator, never used directly - boost uses this.
+     *
+     * @param archive the archive
+     * @param version the current version of this class
+     */
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
     {
-        archive & boost::serialization::base_object<AbstractSimpleGenerationalCellCycleModel>(*this);
-        RandomNumberGenerator* p_gen = RandomNumberGenerator::Instance();
-        archive & *p_gen;
-        archive & p_gen;
+        archive & boost::serialization::base_object<AbstractSimpleCellCycleModel>(*this);
+
+        // Make sure the RandomNumberGenerator singleton gets saved too
+        SerializableSingleton<RandomNumberGenerator>* p_wrapper = RandomNumberGenerator::Instance()->GetSerializationWrapper();
+        archive & p_wrapper;
+        archive & mMinCellCycleDuration;
+        archive & mMaxCellCycleDuration;
     }
 
-    void SetG1Duration()
-    {
-        assert(mpCell != NULL);
+protected:
 
-        double uniform_random_number_G1 = RandomNumberGenerator::Instance()->ranf();
-
-        if (mpCell->GetCellProliferativeType()->IsType<StemCellProliferativeType>())
-        {
-            mG1Duration = -log(uniform_random_number_G1)*GetStemCellG1Duration();
-        }
-        else if (mpCell->GetCellProliferativeType()->IsType<TransitCellProliferativeType>())
-        {
-            mG1Duration = DBL_MAX;
-        }
-        else if (mpCell->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
-        {
-            mG1Duration = DBL_MAX;
-        }
-        else
-        {
-            NEVER_REACHED;
-        }
-    }
-
-    void SetSDuration()
-    {
-        assert(mpCell != NULL);
-
-        double uniform_random_number_S = RandomNumberGenerator::Instance()->ranf();
-
-        if (mpCell->GetCellProliferativeType()->IsType<StemCellProliferativeType>())
-        {
-            mSDuration = -log(uniform_random_number_S)*GetSDuration();
-        }
-        else if (mpCell->GetCellProliferativeType()->IsType<TransitCellProliferativeType>())
-        {
-            mSDuration = DBL_MAX;
-        }
-        else if (mpCell->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
-        {
-            mSDuration = DBL_MAX;
-        }
-        else
-        {
-            NEVER_REACHED;
-        }
-    }
-
-    void SetG2Duration()
-    {
-        assert(mpCell != NULL);
-
-        double uniform_random_number_G2 = RandomNumberGenerator::Instance()->ranf();
-
-        if (mpCell->GetCellProliferativeType()->IsType<StemCellProliferativeType>())
-        {
-            mG2Duration = -log(uniform_random_number_G2)*GetG2Duration();
-        }
-        else if (mpCell->GetCellProliferativeType()->IsType<TransitCellProliferativeType>())
-        {
-            mG2Duration = DBL_MAX;
-        }
-        else if (mpCell->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
-        {
-            mG2Duration = DBL_MAX;
-        }
-        else
-        {
-            NEVER_REACHED;
-        }
-    }
-
-    void SetMDuration()
-    {
-        assert(mpCell != NULL);
-
-        double uniform_random_number_M = RandomNumberGenerator::Instance()->ranf();
-
-        if (mpCell->GetCellProliferativeType()->IsType<StemCellProliferativeType>())
-        {
-            mMDuration = -log(uniform_random_number_M)*GetMDuration();
-        }
-        else if (mpCell->GetCellProliferativeType()->IsType<TransitCellProliferativeType>())
-        {
-            mMDuration = DBL_MAX;
-        }
-        else if (mpCell->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
-        {
-            mMDuration = DBL_MAX;
-        }
-        else
-        {
-            NEVER_REACHED;
-        }
-    }
+    /**
+     * Protected copy-constructor for use by CreateCellCycleModel().
+     *
+     * The only way for external code to create a copy of a cell cycle model
+     * is by calling that method, to ensure that a model of the correct subclass is created.
+     * This copy-constructor helps subclasses to ensure that all member variables are correctly copied when this happens.
+     *
+     * This method is called by child classes to set member variables for a daughter cell upon cell division.
+     * Note that the parent cell cycle model will have had ResetForDivision() called just before CreateCellCycleModel() is called,
+     * so performing an exact copy of the parent is suitable behaviour. Any daughter-cell-specific initialisation
+     * can be done in InitialiseDaughterCell().
+     *
+     * @param rModel the cell cycle model to copy.
+     */
+    CellPhaseCycle(const CellPhaseCycle& rModel);
 
 public:
 
-    // constructor 
+    /**
+     * Constructor - just a default, mBirthTime is set in the AbstractCellCycleModel class.
+     */
     CellPhaseCycle();
 
-    // destructor 
-    ~CellPhaseCycle();
+    /**
+     * Overridden SetCellCycleDuration() method to add stochastic cell cycle times
+     */
+    void SetCellCycleDuration();
 
-    // overrides CreateCellCycleModel
+    /**
+     * Overridden builder method to create new copies of
+     * this cell-cycle model.
+     *
+     * @return new cell-cycle model
+     */
     AbstractCellCycleModel* CreateCellCycleModel();
 
+    /**
+     * @return mMinCellCycleDuration
+     */
+    double GetMinCellCycleDuration();
+
+    /**
+     * Set mMinCellCycleDuration.
+     *
+     * @param minCellCycleDuration
+     */
+    void SetMinCellCycleDuration(double minCellCycleDuration);
+
+    /**
+     * @return mMaxCellCycleDuration
+     */
+    double GetMaxCellCycleDuration();
+
+    /**
+     * Set mMaxCellCycleDuration.
+     *
+     * @param maxCellCycleDuration
+     */
+    void SetMaxCellCycleDuration(double maxCellCycleDuration);
+
+    /**
+     * Overridden GetAverageTransitCellCycleTime() method.
+     *
+     * @return the average of mMinCellCycleDuration and mMaxCellCycleDuration
+     */
+    double GetAverageTransitCellCycleTime();
+
+    /**
+     * Overridden GetAverageStemCellCycleTime() method.
+     *
+     * @return the average of mMinCellCycleDuration and mMaxCellCycleDuration
+     */
+    double GetAverageStemCellCycleTime();
+
+    /**
+     * Overridden OutputCellCycleModelParameters() method.
+     *
+     * @param rParamsFile the file stream to which the parameters are output
+     */
+    virtual void OutputCellCycleModelParameters(out_stream& rParamsFile);
 };
 
 #include "SerializationExportWrapper.hpp"
-//EXPORT_TEMPLATE_CLASS_SAME_DIMS(CellPhaseCycle) 
+// Declare identifier for the serializer
 CHASTE_CLASS_EXPORT(CellPhaseCycle)
 
 #endif /*CELLPHASECYCLE_HPP_*/

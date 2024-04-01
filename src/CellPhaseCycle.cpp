@@ -1,45 +1,100 @@
 #include "CellPhaseCycle.hpp"
-
-#include "CheckpointArchiveTypes.hpp"
-
-#include "SmartPointers.hpp"
-#include "Exception.hpp"
-
-#include "AbstractCellCycleModel.hpp"
-#include "AbstractSimpleGenerationalCellCycleModel.hpp"
-
-#include "StemCellProliferativeType.hpp"
-#include "TransitCellProliferativeType.hpp"
+#include "CellData.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
-
+#include "Debug.hpp"
 
 CellPhaseCycle::CellPhaseCycle()
-//   : AbstractCellCycleModel()
+    : AbstractSimpleCellCycleModel(),
+      mMinCellCycleDuration(12.0), // Hours
+      mMaxCellCycleDuration(14.0)  // Hours
 {
 }
 
-CellPhaseCycle::~CellPhaseCycle()
+CellPhaseCycle::CellPhaseCycle(const CellPhaseCycle& rModel)
+   : AbstractSimpleCellCycleModel(rModel),
+     mMinCellCycleDuration(rModel.mMinCellCycleDuration),
+     mMaxCellCycleDuration(rModel.mMaxCellCycleDuration)
 {
+    /*
+     * Initialize only those member variables defined in this class.
+     *
+     * The member variable mCellCycleDuration is initialized in the
+     * AbstractSimpleCellCycleModel constructor.
+     *
+     * The member variables mBirthTime, mReadyToDivide and mDimension
+     * are initialized in the AbstractCellCycleModel constructor.
+     *
+     * Note that mCellCycleDuration is (re)set as soon as
+     * InitialiseDaughterCell() is called on the new cell-cycle model.
+     */
 }
 
-// overrides CreateCellCycleModel()
 AbstractCellCycleModel* CellPhaseCycle::CreateCellCycleModel()
 {
-    CellPhaseCycle* p_model = new CellPhaseCycle();
+    return new CellPhaseCycle(*this);
+}
 
-    p_model->SetBirthTime(mBirthTime);
-    p_model->SetMinimumGapDuration(mMinimumGapDuration);
-    p_model->SetStemCellG1Duration(mStemCellG1Duration);
-    p_model->SetGeneration(mGeneration);
-    //p_model->GetG1Duration();
-    //p_model->SetSDuration();
-    //p_model->SetG2Duration();
-    //p_model->SetMDuration();
+void CellPhaseCycle::SetCellCycleDuration()
+{
+    RandomNumberGenerator* p_gen = RandomNumberGenerator::Instance();
+    double division_number = mpCell->GetCellData()->GetItem("DivisionNumber");
 
-    return p_model;
+    // test : to be removed
+    PRINT_VARIABLE(division_number);
+
+    if (mpCell->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
+    {
+        mCellCycleDuration = DBL_MAX;
+    }
+    else if (division_number > 2.0)
+    {
+        mCellCycleDuration = DBL_MAX;
+    }
+    else
+    {
+        mCellCycleDuration = mMinCellCycleDuration + (mMaxCellCycleDuration - mMinCellCycleDuration) * p_gen->ranf(); // U[MinCCD,MaxCCD]
+    }
+}
+
+double CellPhaseCycle::GetMinCellCycleDuration()
+{
+    return mMinCellCycleDuration;
+}
+
+void CellPhaseCycle::SetMinCellCycleDuration(double minCellCycleDuration)
+{
+    mMinCellCycleDuration = minCellCycleDuration;
+}
+
+double CellPhaseCycle::GetMaxCellCycleDuration()
+{
+    return mMaxCellCycleDuration;
+}
+
+void CellPhaseCycle::SetMaxCellCycleDuration(double maxCellCycleDuration)
+{
+    mMaxCellCycleDuration = maxCellCycleDuration;
+}
+
+double CellPhaseCycle::GetAverageTransitCellCycleTime()
+{
+    return 0.0;
+}
+
+double CellPhaseCycle::GetAverageStemCellCycleTime()
+{
+    return 0.5*(mMinCellCycleDuration + mMaxCellCycleDuration);
+}
+
+void CellPhaseCycle::OutputCellCycleModelParameters(out_stream& rParamsFile)
+{
+    *rParamsFile << "\t\t\t<MinCellCycleDuration>" << mMinCellCycleDuration << "</MinCellCycleDuration>\n";
+    *rParamsFile << "\t\t\t<MaxCellCycleDuration>" << mMaxCellCycleDuration << "</MaxCellCycleDuration>\n";
+
+    // Call method on direct parent class
+    AbstractSimpleCellCycleModel::OutputCellCycleModelParameters(rParamsFile);
 }
 
 // Serialization for Boost >= 1.36
 #include "SerializationExportWrapperForCpp.hpp"
-//EXPORT_TEMPLATE_CLASS_SAME_DIMS(CellPhaseCycle)
 CHASTE_CLASS_EXPORT(CellPhaseCycle)

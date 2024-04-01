@@ -4,11 +4,7 @@
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
 
-#include "AbstractCellBasedSimulationModifier.hpp"
-
 /* Header Files */
-#include "FixedG1GenerationalCellCycleModel.hpp"
-#include "OffLatticeSimulation.hpp"
 #include "TransitCellProliferativeType.hpp"
 #include "SmartPointers.hpp"
 #include "ArchiveOpener.hpp"
@@ -18,11 +14,15 @@
 #include "StemCellProliferativeType.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
 #include "AbstractCentreBasedDivisionRule.hpp"
+#include "AbstractCellBasedSimulationModifier.hpp"
 
 template<unsigned DIM>
-class DaughterCellModifier : public AbstractCellBasedSimulationModifier<DIM,DIM>
+class DaughterCellModifier : public AbstractCellBasedSimulationModifier<DIM, DIM>
 {
+private:
+
     double mOldNumNodes;
+    double GetOldNumberofNodes();
 
     friend class boost::serialization::access;
 
@@ -38,15 +38,17 @@ public:
 
     ~DaughterCellModifier();
 
-    double GetOldNumberofNodes();
-
     void UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
     void SetupSolve(AbstractCellPopulation<DIM,DIM>& rCellPopulation, std::string outputDirectory);
 
-    double OptimalAngleVesselSegment(std::set<unsigned> neighbouring_node_indices, CellPtr cell_ptr, AbstractCellPopulation<DIM, DIM>& rCellPopulation);
+    double GetAngleFromVectors(c_vector<double,DIM> u, c_vector<double,DIM> v);
 
-    double LengthVesselSegment(std::set<unsigned> neighbouring_node_indices, CellPtr cell_ptr, AbstractCellPopulation<DIM, DIM>& rCellPopulation);
+    double ClosestAngleVesselSegment(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr cell_ptr, std::set<unsigned> neighbouring_node_indices);
+
+    double OptimalAngleVesselSegment(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr cell_ptr, std::set<unsigned> neighbouring_node_indices);
+
+    double LengthVesselSegment(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr cell_ptr, std::set<unsigned> neighbouring_node_indices);
 
     void UpdateCellData(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 

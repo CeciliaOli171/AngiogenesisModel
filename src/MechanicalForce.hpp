@@ -5,13 +5,6 @@
 #include <boost/serialization/base_object.hpp>
 
 #include "AbstractForce.hpp"
-
-/* Header Files */
-#include "HoneycombMeshGenerator.hpp"
-#include "FixedG1GenerationalCellCycleModel.hpp"
-#include "GeneralisedLinearSpringForce.hpp"
-#include "OffLatticeSimulation.hpp"
-#include "CellsGenerator.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
 #include "SmartPointers.hpp"
 
@@ -42,7 +35,8 @@ public:
     // destructor 
     ~MechanicalForce();
 
-    double LengthVesselSegment(std::set<unsigned> neighbouring_node_indices, CellPtr cell_ptr, AbstractCellPopulation<DIM, DIM>& rCellPopulation);
+    // calculates the length of a vessel element 
+    double LengthVesselSegment(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
 
     // Spring function 
     double SpringFunction(double x, double lc, double Rc);
@@ -57,6 +51,5 @@ public:
 
 #include "SerializationExportWrapper.hpp"
 EXPORT_TEMPLATE_CLASS_SAME_DIMS(MechanicalForce) 
-//CHASTE_CLASS_EXPORT(MechanicalForce)
 
 #endif /*MECHANICALFORCE_HPP_*/

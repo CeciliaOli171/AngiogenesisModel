@@ -1,5 +1,5 @@
-#ifndef PERSISTENCEFORCE_HPP_
-#define PERSISTENCEFORCE_HPP_
+#ifndef PERSISTENCEANDCHEMOTACTICFORCE_HPP_
+#define PERSISTENCEANDCHEMOTACTICFORCE_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
@@ -12,14 +12,14 @@
 
 
 template<unsigned DIM>
-class PersistenceForce  : public AbstractForce<DIM>
+class PersistenceAndChemotacticForce  : public AbstractForce<DIM>
 {
 friend class TestForces;
 
 private:
 
-    double mOmegap;
-    double GetPersistenceCoefficient(); // directional persistence coefficient 
+    double mCp;
+    double GetPersistenceAndChemotacticCoefficient(); // directional persistence coefficient 
 
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
@@ -27,16 +27,19 @@ private:
     void serialize(Archive & archive, const unsigned int version)
     {
         archive & boost::serialization::base_object<AbstractForce<DIM> >(*this);
-        archive & mOmegap;
+        archive & mCp;
     }
 
 public:
 
     // constructor 
-    PersistenceForce(double omegap = 0.4);
+    PersistenceAndChemotacticForce(double cp = 0.4);
 
     // destructor 
-    ~PersistenceForce();
+    ~PersistenceAndChemotacticForce();
+
+    // calculates the closest neighbour to the tip cell 
+    c_vector<double, DIM> ClosestNeighbour(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
 
     // overrides AddForceContribution
     void AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation);
@@ -47,6 +50,6 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(PersistenceForce) 
+EXPORT_TEMPLATE_CLASS_SAME_DIMS(PersistenceAndChemotacticForce) 
 
 #endif /*PERSISTENCEFORCE_HPP_*/
