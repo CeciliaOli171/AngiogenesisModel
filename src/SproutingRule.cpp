@@ -235,8 +235,6 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     // we generate a random number that will set the type of daughter cell 
     double random_proba = RandomNumberGenerator::Instance()->ranf();
 
-    PRINT_VARIABLE(random_proba);
-
     // we check the neighbours of the parent cell 
     NodeBasedCellPopulation<SPACE_DIM>* p_node_population = dynamic_cast<NodeBasedCellPopulation<SPACE_DIM>*>(&rCellPopulation);
     if (!p_node_population)
@@ -255,11 +253,8 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     c_vector<double, SPACE_DIM> random_neighbour;
     std::tie(pRandomNeighbour, random_indice, random_neighbour) = RandomNeighbour(rCellPopulation, pParentCell, neighbouring_node_indices);
     unsigned branch_leader_random_neighbour_indice = static_cast<unsigned>(pRandomNeighbour->GetCellData()->GetItem("BranchLeader"));
-    CellPtr p_branch_leader_random_neighbour = rCellPopulation.GetCellUsingLocationIndex(branch_leader_random_neighbour_indice);
-    c_vector<double, SPACE_DIM> branch_leader_random_neighbour_position = rCellPopulation.GetLocationOfCellCentre(p_branch_leader_random_neighbour); 
 
     // if the daughter cell is a vessel segment, its position will be inside the vessel, hence, along the vector between the parent cell and its closest neighbour 
-    //c_vector<double, SPACE_DIM> daughter_direction = rCellPopulation.rGetMesh().GetVectorFromAtoB(parent_position, branch_leader_random_neighbour_position)/norm_2(rCellPopulation.rGetMesh().GetVectorFromAtoB(parent_position, branch_leader_random_neighbour_position));
     c_vector<double, SPACE_DIM> daughter_direction = rCellPopulation.rGetMesh().GetVectorFromAtoB(parent_position, random_neighbour)/norm_2(rCellPopulation.rGetMesh().GetVectorFromAtoB(parent_position, random_neighbour));
 
     // if the daughter cell is a tip cell, its position will be perpendicular to the vector between the parent cell and its closest neighbour 
@@ -293,7 +288,7 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
         daughter_position = parent_position + mDirectionCoeff*daughter_direction;
         pParentCell->GetCellData()->SetItem("daughter_type", 0.0);
         if(pParentCell->GetCellData()->GetItem("BranchingPoint") == 1.0){
-            pParentCell->GetCellData()->SetItem("BranchNeighbourLeader", random_indice);
+            pParentCell->GetCellData()->SetItem("BranchNeighbourLeader", branch_leader_random_neighbour_indice);
         }
     }
 

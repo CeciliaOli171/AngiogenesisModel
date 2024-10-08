@@ -279,22 +279,22 @@ void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellP
         }
     }
 
-    // for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
-    // {
-    //     unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-    //     CellPtr p_cell = rCellPopulation.GetCellUsingLocationIndex(node_index);
-    //     c_vector<double, DIM> new_r_cellmovement = rCellPopulation.GetLocationOfCellCentre(p_cell);
-    //     if(DIM == 2){
-    //         cell_iter->GetCellData()-> SetItem("old_x_coordinate", new_r_cellmovement(0));
-    //         cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
-    //     } else if (DIM == 3){
-    //         cell_iter->GetCellData()-> SetItem("old_x_coordinate", new_r_cellmovement(0));
-    //         cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
-    //         cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(2));
-    //     } else {
-    //         cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(0));
-    //     }
-    // }
+    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
+    {
+        unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
+        CellPtr p_cell = rCellPopulation.GetCellUsingLocationIndex(node_index);
+        c_vector<double, DIM> new_r_cellmovement = rCellPopulation.GetLocationOfCellCentre(p_cell);
+        if(DIM == 2){
+            cell_iter->GetCellData()-> SetItem("old_x_coordinate", new_r_cellmovement(0));
+            cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
+        } else if (DIM == 3){
+            cell_iter->GetCellData()-> SetItem("old_x_coordinate", new_r_cellmovement(0));
+            cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
+            cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(2));
+        } else {
+            cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(0));
+        }
+    }
 }
 
 template<unsigned DIM>

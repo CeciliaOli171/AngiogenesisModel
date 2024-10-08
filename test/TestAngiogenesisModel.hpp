@@ -498,8 +498,8 @@ public:
             // creation of the mesh
             std::vector<Node<2>*> nodes;
             nodes.push_back(new Node<2>(0u, false, 0.0, 0.0));
-            nodes.push_back(new Node<2>(1u, false, -1, 0.0));
-            nodes.push_back(new Node<2>(2u, false, -2, 0.0));
+            nodes.push_back(new Node<2>(1u, false, -1.0, 0.0));
+            nodes.push_back(new Node<2>(2u, false, -2.0, 0.0));
             std::vector<unsigned> location_indices = generator.GetCellLocationIndices();
 
             NodesOnlyMesh<2> mesh;
@@ -556,7 +556,7 @@ public:
                 cell_iter->GetCellData()->SetItem("daughter_type", 0.0);
                 cell_iter->GetCellData()->SetItem("BranchLeader", node_index_tip_cell);
                 cell_iter->GetCellData()->SetItem("BranchingPoint", 0.0);
-                cell_iter->GetCellData()->SetItem("BranchNeighbourLeader", -10.0);
+                cell_iter->GetCellData()->SetItem("BranchNeighbourLeader", node_index_tip_cell);
                 cell_iter->GetCellData()->SetItem("OriginalParent", node_index);
                 cell_iter->GetCellData()->SetItem("DivisionNumber", 0.0);
             }
@@ -571,7 +571,7 @@ public:
            simulator.SetOutputDirectory("TestSproutingRuleAndCellCycleAndForcesAllCells");
            simulator.SetSamplingTimestepMultiple(12);
            simulator.SetEndTime(100.0);
-           simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
+           //simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
 
             /////////////////
             // SIMULATION // 
@@ -584,7 +584,7 @@ public:
             // simulator.AddForce(p_random_force);
 
             // Chemotactic force (tip cells only) 
-            MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (3.0, 5.56E-3, 0.0));
+            MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (3.0, 5.56E-2, 0.0));
             simulator.AddForce(p_chemo_force);
 
             //Persistence force (tip cells only)
@@ -598,7 +598,7 @@ public:
                 cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
             }
 
-            MAKE_PTR_ARGS(PersistenceForce<2>, p_persistence_force, (9.0E-4));
+            MAKE_PTR_ARGS(PersistenceForce<2>, p_persistence_force, (1.0E-3));
             simulator.AddForce(p_persistence_force);
 
             // Mechanical force (all cells)
