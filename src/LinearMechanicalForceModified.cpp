@@ -22,6 +22,8 @@ LinearMechanicalForceModified<ELEMENT_DIM, SPACE_DIM>::~LinearMechanicalForceMod
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 double LinearMechanicalForceModified<ELEMENT_DIM, SPACE_DIM>::VariableSpringConstantMultiplicationFactor(unsigned nodeAGlobalIndex, unsigned nodeBGlobalIndex, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, bool isCloserThanRestLength)
 {
+    //TRACE("Begin Mechanical Force");
+
     // initialisation
     double ConstMultiFactor = 1.0;
 
@@ -29,26 +31,22 @@ double LinearMechanicalForceModified<ELEMENT_DIM, SPACE_DIM>::VariableSpringCons
     CellPtr pCellA = rCellPopulation.GetCellUsingLocationIndex(nodeAGlobalIndex);
     CellPtr pCellB = rCellPopulation.GetCellUsingLocationIndex(nodeBGlobalIndex);
 
-    double branch_leader_A = pCellA->GetCellData()->GetItem("BranchLeader");
-    double branch_leader_B = pCellB->GetCellData()->GetItem("BranchLeader");
-
-    double branching_point_A = pCellA->GetCellData()->GetItem("BranchingPoint");
-    double branching_point_B = pCellA->GetCellData()->GetItem("BranchingPoint");
-
-    unsigned original_parent_A = static_cast<unsigned>(pCellA->GetCellData()->GetItem("OriginalParent"));
-    unsigned original_parent_B = static_cast<unsigned>(pCellB->GetCellData()->GetItem("OriginalParent"));
+    double branch_number_A = pCellA->GetCellData()->GetItem("BranchNumber");
+    double branch_number_B = pCellB->GetCellData()->GetItem("BranchNumber");
 
     // if both the cells are on the same branch, then the factor is equal to 1
     // if the cells are not on the same branch, then they exert no attraction or repulsion to each other 
-    if(branch_leader_A == branch_leader_B){
+    if(branch_number_A == branch_number_B){
         ConstMultiFactor = 1.0;
-    } else if (branching_point_A == 1.0 && original_parent_B == nodeAGlobalIndex){
+    } else if (pCellA->GetMutationState() ->IsType<BranchingCellMutationState>()){
         ConstMultiFactor = 1.0;
-    } else if (branching_point_B == 1.0 && original_parent_A == nodeBGlobalIndex){
+    } else if (pCellB->GetMutationState() ->IsType<BranchingCellMutationState>()){
         ConstMultiFactor = 1.0;
     } else if (!isCloserThanRestLength)  {
         ConstMultiFactor = 0.0;
     }
+
+    //TRACE("End Mechanical Force");
 
     return ConstMultiFactor;
 }

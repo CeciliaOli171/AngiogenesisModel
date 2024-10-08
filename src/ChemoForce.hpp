@@ -6,6 +6,8 @@
 
 #include "AbstractForce.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
+#include "TipCellMutationState.hpp"
+#include "VesselCellMutationState.hpp"
 
 template<unsigned DIM>
 class ChemoForce  : public AbstractForce<DIM>

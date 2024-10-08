@@ -31,11 +31,7 @@ class SproutingRule  : public AbstractCentreBasedDivisionRule<ELEMENT_DIM, SPACE
 private:
 
     double mPsprout;
-    double mDirectionCoeff;
-    double mPerpendicularDirectionCoeff;
     double GetSproutingProbability();
-    double GetDirectionCoefficient();
-    double GetPerpendicularDirectionCoefficient();
 
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
@@ -49,22 +45,26 @@ private:
 public:
 
     // constructor 
-    SproutingRule(double Psprout = 0.1, double directioncoeff = 0.1, double perpendiculardirectioncoeff = 0.1);
+    SproutingRule(double Psprout = 0.1);
 
     // destructor 
     ~SproutingRule();
 
     // send the nth value of the neighbouring nodes set 
     unsigned GetNthNeighbourIndice(std::set<unsigned> neighbouring_node_indices, int n);
-
-    // calculates the coordinates of a random neighbour of a cell 
-    std::tuple<CellPtr, unsigned, c_vector<double, SPACE_DIM>> RandomNeighbour(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
     
     // calculates the coordinates of the closest neighbour of a cell 
-    c_vector<double, SPACE_DIM> ClosestNeighbour(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
+    std::pair<c_vector<double, SPACE_DIM>, unsigned> ClosestNeighbour(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
 
-    // calculates the vector between the two closest neighbours of a cell 
-    c_vector<double, SPACE_DIM> TwoClosestNeighbours(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
+    // calculates the coordinates of the perpendicular vector to the daughter position 
+    c_vector<double, SPACE_DIM> PerpendicularDaughterDirection(c_vector<double, SPACE_DIM> daughter_direction, c_vector<double, SPACE_DIM> closest_neighbour);
+
+    // calculates the daughter and parent position for a vessel segment division 
+    // to modify and apply it to our model : for now no division of vessel segments 
+    std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > CalculateCellDivisionVesselCellVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation);
+
+    // calculates the daughter and parent position for a tip cell division 
+    std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > CalculateCellDivisionTipCellVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation);
 
     // overrides CalculateCellDivisionVector
     std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > CalculateCellDivisionVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation);

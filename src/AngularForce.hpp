@@ -8,6 +8,8 @@
 #include "AbstractCellProliferativeType.hpp"
 #include "StemCellProliferativeType.hpp"
 #include "TransitCellProliferativeType.hpp"
+#include "VesselCellMutationState.hpp"
+#include "TipCellMutationState.hpp"
 
 
 template<unsigned DIM>
@@ -44,9 +46,12 @@ public:
     double GetAngleFromVectors(c_vector<double,DIM> u, c_vector<double,DIM> v);
 
     // function calculating the angle and the two closest nodes to a third one 
+    // should be renamed since vessel segments can only have 2 neighbours 
+    // (we do not count the neighbour that is a branching point)
     std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> ClosestAngleVesselSegment(AbstractCellPopulation<DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
 
     // function calculating the smallest angle made by a node with its neighbours 
+    // not used for now 
     std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> OptimalAngleVesselElement(AbstractCellPopulation<DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices); 
 
     // overrides AddForceContribution

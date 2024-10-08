@@ -3,6 +3,8 @@
 #include "CellwiseDataGradient.hpp"
 #include "CellLabel.hpp"
 
+#include "Debug.hpp"
+
 template<unsigned DIM>
 ChemoForce<DIM>::ChemoForce(double chi, double cx, double cy)
     : AbstractForce<DIM>()
@@ -40,6 +42,8 @@ double ChemoForce<DIM>::GetChemotacticGradientCoefficientYAxis()
 template<unsigned DIM>
 void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
+    //TRACE("Begin Chemotactic Force");
+
     // initialisation 
     c_vector<double, DIM> chemoforce;
     c_vector<double,DIM> r_gradient;
@@ -52,7 +56,7 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
         unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
         CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index); 
 
-        if (pCell->GetCellProliferativeType()->IsType<DifferentiatedCellProliferativeType>())
+        if (pCell->GetMutationState()->IsType<TipCellMutationState>())
         {
             if(DIM == 3){
                 r_gradient(0) = -mCX; 
@@ -70,6 +74,8 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
             rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(chemoforce);
         }
     }
+
+    //TRACE("End Chemotactic Force");
 }
 
 template<unsigned DIM>

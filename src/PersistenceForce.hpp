@@ -7,6 +7,8 @@
 #include "AbstractForce.hpp"
 #include "AbstractCellProliferativeType.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
+#include "TipCellMutationState.hpp"
+#include "VesselCellMutationState.hpp"
 
 #include "SmartPointers.hpp"
 

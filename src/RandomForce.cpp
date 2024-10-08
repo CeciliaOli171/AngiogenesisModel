@@ -31,6 +31,8 @@ double RandomForce<DIM>::GetRandomSensitivity()
 template<unsigned DIM>
 void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
+    //TRACE("Begin Random Force");
+
     // initialisation 
     c_vector<double, DIM> randomforce; 
     c_vector<double, DIM> rand_vector; 
@@ -46,14 +48,10 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
         // we collect the node data (index)
         unsigned node_index = (node_iter)->GetIndex();
 
-        // test : to be removed 
-        //PRINT_VARIABLE(node_index);
-        //PRINT_VECTOR(rCellPopulation.GetNode(node_index)->rGetAppliedForce());
-
         // Initialise a force vector
         for (unsigned i=0; i<DIM; i++)
         {
-            double rand_norm = 1.0 - 2.0*RandomNumberGenerator::Instance()->ranf();
+            double rand_norm = 1.0 - 2.0*(RandomNumberGenerator::Instance()->ranf());
             rand_vector[i] =  rand_norm;
         }
 
@@ -64,7 +62,10 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
             randomforce = zero_vector<double>(DIM);
         }
         node_iter->AddAppliedForceContribution(randomforce);
+        //PRINT_VECTOR(randomforce);
     }
+
+    //TRACE("End Random Force");
 }
 
 template<unsigned DIM>

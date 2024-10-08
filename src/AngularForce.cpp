@@ -5,6 +5,10 @@
 #include "NodeBasedCellPopulation.hpp"
 #include <tuple>
 
+#include "BranchingCellMutationState.hpp"
+#include "VesselCellMutationState.hpp"
+#include "TipCellMutationState.hpp"
+
 #include "Debug.hpp"
 
 template<unsigned DIM>
@@ -67,9 +71,6 @@ double AngularForce<DIM>::GetAngleFromVectors(c_vector<double,DIM> u, c_vector<d
         // we have to compare the previous value in case it is not between -1 and 1 (due to computational error)
         double test_value_uv = std::min(1.0, std::max(-1.0, value_uv));
         angle_uv = std::acos(test_value_uv);
-
-        // test : to be removed 
-        //PRINT_4_VARIABLES(angle_uv, scalar_product_uv, norm_2(u), norm_2(v));
     } else {
         angle_uv = 0;
     }
@@ -95,13 +96,11 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
     for(std::set<unsigned>::iterator k = neighbouring_node_indices.begin(); k != neighbouring_node_indices.end(); ++k){
         // we collect the cell pointer 
         CellPtr pNeighbourCell = rCellPopulation.GetCellUsingLocationIndex(*k);
-        if (pNeighbourCell->GetCellData()->GetItem("BranchLeader") == pCell->GetCellData()->GetItem("BranchLeader")){
+        if (pNeighbourCell->GetCellData()->GetItem("BranchNumber") == pCell->GetCellData()->GetItem("BranchNumber")){
             // we add the cell to the new neighbour set 
             neighbouring_node_indices_same_branch.insert(*k);
-        // } else if (pNeighbourCell->GetCellData()->GetItem("BranchLeader") == -10.0){
-        //     neighbouring_node_indices_same_branch.insert(*k);
-        // } else if (pCell->GetCellData()->GetItem("BranchLeader") == -10.0){
-        //     neighbouring_node_indices_same_branch.insert(*k);
+        } else if (pNeighbourCell->GetMutationState() ->IsType<BranchingCellMutationState>() && pCell->GetCellData()->GetItem("BranchingLeader") == *k){
+            neighbouring_node_indices_same_branch.insert(*k);
         }
     }
 
@@ -240,6 +239,8 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
 template<unsigned DIM>
 void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
+    //TRACE("Begin Angular Force");
+
     // initialisation  
     c_vector<double, DIM> angularforce; 
     
@@ -257,9 +258,14 @@ void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellP
         unsigned node_index = (node_iter)->GetIndex();
         CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
 
-        if (pCell->GetCellProliferativeType()->IsType<TransitCellProliferativeType>())
+        if (pCell->GetMutationState()->IsType<VesselCellMutationState>())
         {
-            std::set<unsigned> neighbouring_node_indices = p_node_population->GetNeighbouringNodeIndices(node_index);
+            //std::set<unsigned> neighbouring_node_indices = p_node_population->GetNeighbouringNodeIndices(node_index);
+
+            // std::set<unsigned> neighbours_set = p_node_population->GetNodesWithinNeighbourhoodRadius(pParentCell->GetCellId(),1.5);
+            // std::vector<unsigned> neighbouring_node_indices = std::vector<unsigned>(neighbours_set.begin(), neighbours_set.end());
+
+            std::set<unsigned> neighbouring_node_indices = p_node_population->GetNodesWithinNeighbourhoodRadius(pCell->GetCellId(),1.5);
 
             // we calculate the two neigbours and the angle they make with the node considered
             double alphangular;
@@ -270,31 +276,20 @@ void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellP
             c_vector<double, DIM> r_angularneighbours = u + v;
             double magnitude_of_angularneighbours = norm_2(r_angularneighbours);
 
+            //PRINT_VARIABLE(alphangular);
+            //PRINT_VARIABLE(magnitude_of_angularneighbours);
+            //PRINT_VECTOR(r_angularneighbours);
+
             if(magnitude_of_angularneighbours != 0){
                 angularforce = mOmegaa*(M_PI-alphangular)/magnitude_of_angularneighbours*r_angularneighbours;
             } else{
                 angularforce = zero_vector<double>(DIM);
             }
             rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(angularforce);
+            //PRINT_VECTOR(angularforce);
         }
     }
-
-    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
-    {
-        unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-        CellPtr p_cell = rCellPopulation.GetCellUsingLocationIndex(node_index);
-        c_vector<double, DIM> new_r_cellmovement = rCellPopulation.GetLocationOfCellCentre(p_cell);
-        if(DIM == 2){
-            cell_iter->GetCellData()-> SetItem("old_x_coordinate", new_r_cellmovement(0));
-            cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
-        } else if (DIM == 3){
-            cell_iter->GetCellData()-> SetItem("old_x_coordinate", new_r_cellmovement(0));
-            cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
-            cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(2));
-        } else {
-            cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(0));
-        }
-    }
+    //TRACE("End Angular Force");
 }
 
 template<unsigned DIM>

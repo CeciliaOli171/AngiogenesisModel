@@ -1,5 +1,7 @@
 #include "PinnedCellsBoundaryCondition.hpp"
 #include "NodeBasedCellPopulation.hpp"
+#include "DifferentiatedCellProliferativeType.hpp"
+#include "VesselCellMutationState.hpp"
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 PinnedCellsBoundaryCondition<ELEMENT_DIM,SPACE_DIM>::PinnedCellsBoundaryCondition(AbstractCellPopulation<ELEMENT_DIM,SPACE_DIM>* pCellPopulation,
@@ -21,6 +23,8 @@ PinnedCellsBoundaryCondition<ELEMENT_DIM,SPACE_DIM>::PinnedCellsBoundaryConditio
         // Get the node's location
         Node<SPACE_DIM>* pNode = pNodeBasedPopulation->GetNode(*it);
         c_vector<double,SPACE_DIM> node_location = pNode->rGetLocation();
+        CellPtr pCell = pCellPopulation->GetCellUsingLocationIndex(*it);
+
         // Add it to the map
         mPinnedNodes[*it]=node_location;
     }

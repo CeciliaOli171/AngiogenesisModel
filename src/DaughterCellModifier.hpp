@@ -22,6 +22,7 @@ class DaughterCellModifier : public AbstractCellBasedSimulationModifier<DIM, DIM
 private:
 
     double mOldNumNodes;
+    unsigned mHighestBranch;
     double GetOldNumberofNodes();
 
     friend class boost::serialization::access;
@@ -41,14 +42,6 @@ public:
     void UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
     void SetupSolve(AbstractCellPopulation<DIM,DIM>& rCellPopulation, std::string outputDirectory);
-
-    double GetAngleFromVectors(c_vector<double,DIM> u, c_vector<double,DIM> v);
-
-    double ClosestAngleVesselSegment(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr cell_ptr, std::set<unsigned> neighbouring_node_indices);
-
-    double OptimalAngleVesselSegment(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr cell_ptr, std::set<unsigned> neighbouring_node_indices);
-
-    double LengthVesselSegment(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr cell_ptr, std::set<unsigned> neighbouring_node_indices);
 
     void UpdateCellData(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
