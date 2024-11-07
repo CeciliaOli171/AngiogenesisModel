@@ -14,8 +14,7 @@ In our model, we do not consider individual cells but sections of the vessel; ho
 
 ### Cell Types
 
-We distinguish three types of cell which have different mechanical and division prop- erties: Tip Cells (TCs), Stalk Cells (SCs), branching cells. 
-
+We distinguish three types of cell which have different mechanical and division properties: Tip Cells (TCs), Stalk Cells (SCs), branching cells. 
 
 TCs are a section of vasculature. They are composed of several type of cells and are located at the end of blood vessel branches. Activated by VEGF released by the lesion, they lead the movement of the vessel toward it.
 
@@ -31,12 +30,12 @@ We use a stochastic cell cycle implemented within Chaste as “Uniform Cell Cycl
 
 In our model, TCs can divide into either a SC or another TC. When the daughter cell is a SC, it is added in the vessel branch. When it divides into a TC, the two daughter cells are positioned on the same plane, with the same distance separating them from the closest SC. This SC becomes a branching point; we say that the vessel is sprouting or that it creates a new sprout. In order to do that, we follow the following steps:
 
-1. we start by calculating the vector $x_{branch}$ describing the branch direction using the coordinates of the parent before division cell $x_{parent}$ and of its closest neighbour in the branch $x_{neighbour}$:
-   ```math
-   x_{branch} &= x_{neighbour} - x_{parent} = (a, b, c)^T, \; a, b, c \in \mathbb{R}
-   ```
+1. we start by calculating the vector $x_{branch}$ describing the branch direction using the coordinates of the parent before division cell $x_{parent}$ and of its closest neighbour in the branch $x_{neighbour}$ which gives us the following expression:
+  ```math
+   x_{branch} = x_{neighbour} - x_{parent} = (a, b, c)^T, \; a, b, c \in \mathbb{R}
+  ```
    
-2. from the $x_{branch}$ vector, we can calculate a perpendicular vector:
+3. from the $x_{branch}$ vector, we can calculate a perpendicular vector:
   ```math
   x_{perpendicular} = \lambda (-b, a, 0)^T + \mu (0, -c, b)^T + \nu (-c, 0, a)^T
   ```
@@ -44,8 +43,10 @@ with $\lambda, \mu, \nu$ chosen randomly in the interval $\[-1, 1\]$.
 
 3. we obtain finally the daughter cells coordinates:
    ```math
-   x_{daughter}^{1} = x_{parent} - 0.5 x_{perpendicular} + 0.5 x_{branch} 
-	 x_{daughter}^2 = x_{parent} + 0.5 x_{perpendicular} + 0.5 x_{branch}
+   x_{daughter}^{1} = x_{parent} - 0.5 x_{perpendicular} + 0.5 x_{branch}
+   ```
+   ```math
+   x_{daughter}^2 = x_{parent} + 0.5 x_{perpendicular} + 0.5 x_{branch}
    ```
 
 We set up the following division property: the leading cell of the branch divides. To decide if the resulting daughter cell discretises into a TC or a SC, we set a probability to sprout $=P_{sprout}$.
@@ -54,8 +55,11 @@ We set up the following division property: the leading cell of the branch divide
 ### Forces 
 
 We define:
+
 • $\mathcal{C}$ the set containing all the cells of the system 
+
 • $\mathcal{P}$ the subset containing all the tip cells
+
 • $\mathcal{S}$ the subset containing all the stalk cells
 
 
