@@ -65,45 +65,57 @@ We define:
 
 #### Mechanical Force
 
-We suppose that the cell connectivity can be represented by a spring. Cells interact with each other only if their centre are separated by less than a cut-off distance $l_d$. We use the  mechanical force already implemented in Chaste. We add the following condition:  if two cells belong to the same branch or at least one of them is a branching cell then they are connected and exert a force on each other. For all cells, we use Meineke et al. \cite{Meineke} mechanical force: 
-	```math
-		=  \sum_{n \in \mathcal{N}} S_d l_d \log(1 + \frac{|x_n - x_c| - l_{n, c}}{l_{n, c}}) && if \; |x_n - x_c| < l_{n,c}  
-		F_{M, c} = \sum_{n \in \mathcal{N}} S_d (|x_n - x_c| - l_{n, c}) \exp(-\frac{|x_n - x_c| - l_{n, c}}{2 l_d}) && if \; l_{n,c} < |x_n - x_c| < l_d 
-		 = \textbf{0} && if \; |x_n - x_c| > l_d
-	```
+We suppose that the cell connectivity can be represented by a spring. Cells interact with each other only if their centre are separated by less than a cut-off distance $l_d$. We use the  mechanical force already implemented in Chaste. We add the following condition:  if two cells belong to the same branch or at least one of them is a branching cell then they are connected and exert a force on each other. For all cells, we use Meineke et al. [35] mechanical force: 
+
+$F_{M, c} =$
+
+```math 
+\sum_{n \in \mathcal{N}} S_d l_d \log(1 + \frac{|x_n - x_c| - l_{n, c}}{l_{n, c}}) if |x_n - x_c| < l_{n,c}
+```
+
+```math
+\sum_{n \in \mathcal{N}} S_d (|x_n - x_c| - l_{n, c}) \exp(-\frac{|x_n - x_c| - l_{n, c}}{2 l_d}) if l_{n,c} < |x_n - x_c| < l_d
+```
+
+```math
+\textbf{0} if |x_n - x_c| > l_d
+```
+
 with $c \in \mathcal{C}$. $\mathcal{N}$ is the set of the node's neighbours in the same branch, $S_d$ is the spring stiffness, $l_d$ is the cut-off distance for the connectivity of the nodes and $l_{n,c}$ is the rest length of the spring between the cells $n$ and $c$. 
 
 #### Random Force
 
 All the cells are interacting with their environment and those interactions are represented by a random force. For all cells, the random force is:
-	```math
-		F_{R, c} =  \sigma \mathbf{\xi}_c, \; c \in \mathcal{C}
-	```
-	with $\sigma$ the sensitivity of the cell to random fluctuations and $\mathbf{\xi}_c$ a random unit vector. 
+
+```math
+	F_{R, c} =  \sigma \mathbf{\xi}_c, \; c \in \mathcal{C}
+```
+
+with $\sigma$ the sensitivity of the cell to random fluctuations and $\mathbf{\xi}_c$ a random unit vector. 
 
 #### Chemotactic Force
 
 TC's movement is subject to the chemicals present around them. In the case of endometriosis, the lesions are releasing VEGF that induces the blood vessel growth towards it. For TCs, the chemotactic force is:
-	```math
-		F_{H, p} = \chi (c_x, 0, 0)^T, \; p \in \mathcal{P}
-	```
-	with $\chi$ the chemotactic sensitivity and $c_x$ the VEGF gradient.  
+```math
+	F_{H, p} = \chi (c_x, 0, 0)^T, \; p \in \mathcal{P}
+```
+with $\chi$ the chemotactic sensitivity and $c_x$ the VEGF gradient.  
 
 #### Persistence Force
 
 TCs tend to move toward the same direction through the extra-cellular matrix fibres. The persistence force describe this motion. For TCs, the persistence force is:
-	```math
-		F_{P, p} &= \omega_p \frac{x_p(t) - x_p(t-\tau)}{|x_p(t) - x_p(t-\tau)|}, \; p \in \mathcal{P}
-	```
-	with $\omega_p$ the persistence coefficient and $\tau$ the timescale.
+```math
+	F_{P, p} = \omega_p \frac{x_p(t) - x_p(t-\tau)}{|x_p(t) - x_p(t-\tau)|}, \; p \in \mathcal{P}
+```
+with $\omega_p$ the persistence coefficient and $\tau$ the timescale.
 
 #### Angular Force
 
 The angular force describes the interactions between the \acrshort{sc} and its micro-environment which makes it stabilise and align with its neighbours. For SCs, the angular force is: 
-	```math
-		F_{A, s} &= \omega_a (\alpha_{angular} - \pi) \frac{(x_b - x_s) + (x_c - x_s)}{|(x_b - x_s) + (x_c - x_s)|}, \; s \in \mathcal{S}, \; b,c \in \mathcal{C}-\{s\} 
-	```
-	with $\omega_a$ the angular spring constant. $\alpha_{angular}$ is the angle made by the SC considered and its two closest neighbours in the same branch. 
+```math
+	F_{A, s} = \omega_a (\alpha_{angular} - \pi) \frac{(x_b - x_s) + (x_c - x_s)}{|(x_b - x_s) + (x_c - x_s)|}, \; s \in \mathcal{S}, \; b,c \in \mathcal{C}-\{s\} 
+```
+with $\omega_a$ the angular spring constant. $\alpha_{angular}$ is the angle made by the SC considered and its two closest neighbours in the same branch. 
 
 ## Code 
 
@@ -117,6 +129,8 @@ I plan to:
 ## Bibliography
 
 [2] J. Ahrens, B. Geveci, and C. Law. Paraview: An end-user tool for large-data visualization. in visualization handbook. Elsevier, pages 717–731, 2005.
+
+[35] F. A. Meineke, C. S. Potten, and M. Loeffler. Cell migration and organization in the intestinal crypt using a lattice-free model. Cell Proliferation, 34(4):253–266, 2001.
 
 [37] G. R. Mirams, C. J. Arthurs, M. O. Bernabeu, R. Bordas, J. Cooper, A. Corrias, Y. Davit, S.-J. Dunn, A. G. Fletcher, D. G. Harvey, M. E. Marsh, J. M. Osborne, P. Pathmanathan, J. Pitt-Francis, J. Southern, N. Zemzemi, and D. J Gavaghan. Chaste: An open source c++ library for computational physiology and biology. PLOS Computational Biology, 9(3)(e1002970), 2013.
 
