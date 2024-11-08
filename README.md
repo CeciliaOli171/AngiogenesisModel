@@ -119,6 +119,35 @@ with $\omega_a$ the angular spring constant. $\alpha_{angular}$ is the angle mad
 
 ## Code 
 
+### Image Analysis Pipeline
+
+To be modified and completed for the comparison between the mathematical model and the image analysis.
+
+### Model Analysis 
+
+ParametersSensitivityRunner: class written for the model analysis. 
+
+Model analysis files:
+
+* Sprouting probability tests
+* Forces coefficients tests
+
+### Source 
+
+Source files:
+
+* Forces: angular, chemotactic, directional persistence, linear mechanical force, persistence, random
+* Cell cycle: sprouting
+* Cell mutation: branching cells, daughter cell, pinned cell (BC), tip cell, vessel segment
+* Writers: birth time cells, branches nymber, consecutive branches, tortuosity
+
+### Test
+
+Test files:
+
+* Test of all the forces in the model individually
+* Test of the model in 2D and 3D 
+
 ## Future Goals 
 
 I plan to: 
