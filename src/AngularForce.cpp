@@ -91,15 +91,22 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
     // coordinates of the cell that we consider 
     c_vector<double,DIM> xj = rCellPopulation.GetLocationOfCellCentre(pCell);
 
-    // we start by creating a new set with the cell's neighbour from the same branch 
+    // we start by creating a new set with the cell's neighbour from the same branch or loop
     std::set<unsigned> neighbouring_node_indices_same_branch;
     for(std::set<unsigned>::iterator k = neighbouring_node_indices.begin(); k != neighbouring_node_indices.end(); ++k){
         // we collect the cell pointer 
         CellPtr pNeighbourCell = rCellPopulation.GetCellUsingLocationIndex(*k);
+
+        unsigned NeighbourLoopNb = pNeighbourCell->GetCellData()->GetItem("LoopNumber");
+        unsigned CellLoopNb = pCell->GetCellData()->GetItem("LoopNumber");
+
         if (pNeighbourCell->GetCellData()->GetItem("BranchNumber") == pCell->GetCellData()->GetItem("BranchNumber")){
             // we add the cell to the new neighbour set 
             neighbouring_node_indices_same_branch.insert(*k);
         } else if (pNeighbourCell->GetMutationState() ->IsType<BranchingCellMutationState>() && pCell->GetCellData()->GetItem("BranchingLeader") == *k){
+            neighbouring_node_indices_same_branch.insert(*k);
+        } else if (NeighbourLoopNb == CellLoopNb && NeighbourLoopNb != 0) {
+            // case of the cells in the same loop but with different branches number: use loop number 
             neighbouring_node_indices_same_branch.insert(*k);
         }
     }

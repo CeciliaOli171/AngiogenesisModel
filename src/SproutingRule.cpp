@@ -34,6 +34,22 @@ double SproutingRule<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbability(){
 }
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
+std::set<unsigned> SproutingRule<ELEMENT_DIM, SPACE_DIM>::GetVesselSegmentNeighbours(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation,NodeBasedCellPopulation<SPACE_DIM>* p_node_population, CellPtr pParentCell){  
+    std::set<unsigned> neighbours_set = p_node_population->GetNodesWithinNeighbourhoodRadius(pParentCell->GetCellId(),1.5);
+    std::set<unsigned> neighbours_set_without_tip;
+
+    for(std::set<unsigned>::iterator k = neighbours_set.begin(); k != neighbours_set.end(); ++k){
+        // we collect the cell pointer 
+        CellPtr pNeighbourCell = rCellPopulation.GetCellUsingLocationIndex(*k);
+        if (pNeighbourCell->GetMutationState()->IsType<TipCellMutationState>() == false){
+            // we add the cell to the new neighbour set 
+            neighbours_set_without_tip.insert(*k);
+        } 
+    }
+    return neighbours_set_without_tip;
+}
+
+template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 unsigned SproutingRule<ELEMENT_DIM, SPACE_DIM>::GetNthNeighbourIndice(std::set<unsigned> neighbouring_node_indices, int n){
     // initialisation
     int neighbour_indice = *neighbouring_node_indices.begin();
@@ -103,12 +119,13 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     c_vector<double, SPACE_DIM> daughter_position;
 
     // consider a parent cell 
-    //unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(pParentCell);
     parent_position = rCellPopulation.GetLocationOfCellCentre(pParentCell);
     daughter_position = zero_vector<double>(SPACE_DIM);
 
     // we return the coordinates of the parent cell and daughter cell 
     std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > positions(parent_position, daughter_position);
+
+    TRACE("Test NO division of vessel segment");
 
     return positions;
 }
@@ -140,45 +157,23 @@ c_vector<double, SPACE_DIM> SproutingRule<ELEMENT_DIM, SPACE_DIM>::Perpendicular
 }
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRule<ELEMENT_DIM, SPACE_DIM>::CalculateCellDivisionTipCellVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation)
-{
+std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRule<ELEMENT_DIM, SPACE_DIM>::CalculateGrowthVector( AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, NodeBasedCellPopulation<SPACE_DIM>* p_node_population, CellPtr pParentCell){
     // initialisation 
     c_vector<double, SPACE_DIM> parent_position;
     c_vector<double, SPACE_DIM> daughter_position;
     double mDirectionCoeff = rCellPopulation.GetMeinekeDivisionSeparation();
     double mPerpendicularDirectionCoeff = rCellPopulation.GetMeinekeDivisionSeparation();
 
-    // consider a parent cell 
-    //unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(pParentCell);
-    parent_position = rCellPopulation.GetLocationOfCellCentre(pParentCell);
-    daughter_position = zero_vector<double>(SPACE_DIM);
-
-    // we generate a probability for the cell to be a tip cell and create a new sprout 
-    // the location of the daughter cell will depend on the type of the daughter cell 
-    // if the daughter cell is a vessel segment, we incorporate it directly inside the vessel 
-    // if the daughter cell is a tip cell, we add it perpendicularly to the vector between the parent cell and its closest neighbour 
-
     // we generate a random number that will set the type of daughter cell 
     double random_proba = RandomNumberGenerator::Instance()->ranf();
 
-    // we check the neighbours of the parent cell 
-    NodeBasedCellPopulation<SPACE_DIM>* p_node_population = dynamic_cast<NodeBasedCellPopulation<SPACE_DIM>*>(&rCellPopulation);
-    if (!p_node_population)
-    {
-        EXCEPTION("NodeBasedCellPopulation only valid for node");
-    }
+    // consider a parent cell 
+    parent_position = rCellPopulation.GetLocationOfCellCentre(pParentCell);
+    daughter_position = zero_vector<double>(SPACE_DIM);
 
-    // to start, we select the neighbours of the cell that are just vessel segments
-    std::set<unsigned> neighbours_set = p_node_population->GetNodesWithinNeighbourhoodRadius(pParentCell->GetCellId(),1.5);
-    std::set<unsigned> neighbours_set_without_tip;
-    for(std::set<unsigned>::iterator k = neighbours_set.begin(); k != neighbours_set.end(); ++k){
-        // we collect the cell pointer 
-        CellPtr pNeighbourCell = rCellPopulation.GetCellUsingLocationIndex(*k);
-        if (pNeighbourCell->GetMutationState()->IsType<TipCellMutationState>() == false){
-            // we add the cell to the new neighbour set 
-            neighbours_set_without_tip.insert(*k);
-        } 
-    }
+    // we select the neighbours of the cell that are just vessel segments
+    std::set<unsigned> neighbours_set_without_tip = GetVesselSegmentNeighbours(rCellPopulation, p_node_population, pParentCell);
+
     std::vector<unsigned> neighbouring_node_indices = std::vector<unsigned>(neighbours_set_without_tip.begin(), neighbours_set_without_tip.end());
     
     // we look for a random neighbour to have a landmark 
@@ -198,7 +193,6 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     // we collect the closest neighbour data (cell pointer, coordinates, indice)
     CellPtr pClosestNeighbour = rCellPopulation.GetCellUsingLocationIndex(closest_indice);
     c_vector<double, SPACE_DIM> closest_neighbour = rCellPopulation.GetLocationOfCellCentre(pClosestNeighbour);
-    //unsigned parent_indice = pParentCell->GetCellId();
 
     // if the daughter cell is a vessel segment, its position will be inside the vessel, hence, along the vector between the parent cell and its closest neighbour 
     c_vector<double, SPACE_DIM> daughter_direction = rCellPopulation.rGetMesh().GetVectorFromAtoB(parent_position, closest_neighbour)/norm_2(rCellPopulation.rGetMesh().GetVectorFromAtoB(parent_position, closest_neighbour));
@@ -206,26 +200,19 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     if(random_proba < mPsprout){
         // tip cell : new sprout
 
-        TRACE("Begin Sprouting Rule"); 
-
         // if the daughter cell is a tip cell, its position will be perpendicular to the vector between the parent cell and its closest neighbour 
         c_vector<double, SPACE_DIM> perpendicular_daughter_direction = PerpendicularDaughterDirection(daughter_direction, parent_position);
-
-        PRINT_VECTOR(daughter_direction);
-        PRINT_VECTOR(perpendicular_daughter_direction);
 
         // addition of the daughter cell to the map
         daughter_position = parent_position - 0.5*mPerpendicularDirectionCoeff*perpendicular_daughter_direction + 0.5*mDirectionCoeff*daughter_direction;
         parent_position = parent_position + 0.5*mPerpendicularDirectionCoeff*perpendicular_daughter_direction + 0.5*mDirectionCoeff*daughter_direction;
         pParentCell->GetCellData()->SetItem("daughter_type", 1.0);
 
-        PRINT_VARIABLE(norm_2(daughter_position-closest_neighbour));
-        PRINT_VARIABLE(norm_2(parent_position-closest_neighbour));
-
         MAKE_PTR(BranchingCellMutationState, p_branching_state);
         pClosestNeighbour->SetMutationState(p_branching_state);
         pClosestNeighbour->GetCellData()->SetItem("BranchingPoint", 1.0);
         pParentCell->GetCellData()->SetItem("BranchingLeader", closest_indice);
+        pParentCell->GetCellData()->SetItem("BranchingCell", closest_indice);
 
         double tortuosity = pParentCell->GetCellData()->GetItem("TortuosityParent");
         double tortuosity_parent = tortuosity + norm_2(parent_position-closest_neighbour);
@@ -235,10 +222,10 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
 
         TRACE("NEW SPROUT INCOMING");
 
-        PRINT_VECTOR(daughter_position);
-        PRINT_VECTOR(parent_position);
-
-        TRACE("End Sprouting Rule");
+        // PRINT_VECTOR(daughter_position);
+        // PRINT_VECTOR(parent_position);
+        // PRINT_VARIABLE(norm_2(daughter_position-closest_neighbour));
+        // PRINT_VARIABLE(norm_2(parent_position-closest_neighbour));
 
     } else {
         // vessel segment : incorporation in the vessel 
@@ -265,10 +252,33 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     return positions;
 }
 
+template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
+std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRule<ELEMENT_DIM, SPACE_DIM>::CalculateCellDivisionTipCellVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation)
+{
+    // we generate a probability for the cell to be a tip cell and create a new sprout 
+    // the location of the daughter cell will depend on the type of the daughter cell 
+    // if the daughter cell is a vessel segment, we incorporate it directly inside the vessel 
+    // if the daughter cell is a tip cell, we add it perpendicularly to the vector between the parent cell and its closest neighbour 
+    std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > positions;
+
+    // we check the neighbours of the parent cell 
+    NodeBasedCellPopulation<SPACE_DIM>* p_node_population = dynamic_cast<NodeBasedCellPopulation<SPACE_DIM>*>(&rCellPopulation);
+    if (!p_node_population)
+    {
+        EXCEPTION("NodeBasedCellPopulation only valid for node");
+    }
+
+    positions = CalculateGrowthVector(rCellPopulation, p_node_population, pParentCell);
+
+    return positions;
+}
+
 // Overridden CalculateCellDivisionVector() method, return the daughter cell positions
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRule<ELEMENT_DIM, SPACE_DIM>::CalculateCellDivisionVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation)
 {
+    // TRACE("Begin Sprouting Rule"); 
+
     // initialisation 
     std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > positions;
 
@@ -292,6 +302,8 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
         // if this case is reached then we send back an error 
         NEVER_REACHED;
     }
+
+    // TRACE("End Sprouting Rule");
 
     return positions;
 }

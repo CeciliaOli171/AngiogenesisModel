@@ -23,6 +23,7 @@ private:
 
     double mOldNumNodes;
     unsigned mHighestBranch;
+    unsigned mHighestLoop;
     double GetOldNumberofNodes();
 
     friend class boost::serialization::access;
@@ -40,6 +41,15 @@ public:
     ~DaughterCellModifier();
 
     void UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
+
+    // calculates the neighbours in the anastomosis cut-off length that belong to a different branch
+    std::set<unsigned> GetAnastomosisNeighbours(AbstractCellPopulation<DIM, DIM>& rCellPopulation,NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pParentCell);
+
+    // calculates the coordinates of the closest neighbour of a cell 
+    std::pair<c_vector<double, DIM>, unsigned> ClosestNeighbour(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
+
+    // calculates the daughter and parent position for a tip cell division in the case of anastomosis
+    void CalculateAnastomosisVector(AbstractCellPopulation<DIM, DIM>& rCellPopulation, NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pParentCell);
 
     void SetupSolve(AbstractCellPopulation<DIM,DIM>& rCellPopulation, std::string outputDirectory);
 

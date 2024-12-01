@@ -22,8 +22,6 @@ LinearMechanicalForceModified<ELEMENT_DIM, SPACE_DIM>::~LinearMechanicalForceMod
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 double LinearMechanicalForceModified<ELEMENT_DIM, SPACE_DIM>::VariableSpringConstantMultiplicationFactor(unsigned nodeAGlobalIndex, unsigned nodeBGlobalIndex, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, bool isCloserThanRestLength)
 {
-    //TRACE("Begin Mechanical Force");
-
     // initialisation
     double ConstMultiFactor = 1.0;
 
@@ -45,8 +43,6 @@ double LinearMechanicalForceModified<ELEMENT_DIM, SPACE_DIM>::VariableSpringCons
     } else if (!isCloserThanRestLength)  {
         ConstMultiFactor = 0.0;
     }
-
-    //TRACE("End Mechanical Force");
 
     return ConstMultiFactor;
 }

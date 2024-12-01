@@ -50,6 +50,9 @@ public:
     // destructor 
     ~SproutingRule();
 
+    // calculates the set of all the vessel segment neighbours of the tip cell
+    std::set<unsigned> GetVesselSegmentNeighbours(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation,NodeBasedCellPopulation<SPACE_DIM>* p_node_population, CellPtr pParentCell); 
+
     // send the nth value of the neighbouring nodes set 
     unsigned GetNthNeighbourIndice(std::set<unsigned> neighbouring_node_indices, int n);
     
@@ -62,6 +65,9 @@ public:
     // calculates the daughter and parent position for a vessel segment division 
     // to modify and apply it to our model : for now no division of vessel segments 
     std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > CalculateCellDivisionVesselCellVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation);
+
+    // calculates the daughter and parent position for a tip cell division in the general case 
+    std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > CalculateGrowthVector( AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, NodeBasedCellPopulation<SPACE_DIM>* p_node_population, CellPtr pParentCell);
 
     // calculates the daughter and parent position for a tip cell division 
     std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > CalculateCellDivisionTipCellVector(CellPtr pParentCell, AbstractCentreBasedCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation);
