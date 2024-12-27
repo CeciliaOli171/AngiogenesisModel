@@ -51,6 +51,8 @@ with $\lambda, \mu, \nu$ chosen randomly in the interval $\[-1, 1\]$.
 
 We set up the following division property: the leading cell of the branch divides. To decide if the resulting daughter cell discretises into a TC or a SC, we set a probability to sprout $=P_{sprout}$.
 
+We consider in our model the anastomosis event, necessary to implement the blood flow in our blood network. If the mature TC has a distance smaller than a cut-off length $l_{merge}$, then two scenarios can hapen. If the neighbour cell is another TC, then the two branches merge and create a loop; the TCs become SCs. If the neighbour cell is a SC, then the cells connect; the TC becomes a SC and the neighbour cell becomes a branching cell if it was not already the case. 
+
 
 ### Forces 
 
