@@ -11,6 +11,8 @@
 #include "CommandLineArguments.hpp"
 
 // Geometry
+#include "TetrahedralMesh.hpp"
+#include "AbstractTetrahedralMesh.hpp"
 #include "CellsGenerator.hpp"
 #include "MeshBasedCellPopulationWithGhostNodes.hpp"
 #include "NodeBasedCellPopulation.hpp"
@@ -66,6 +68,16 @@
 #include "CellMutationStatesWriter.hpp"
 #include "BirthTimeCellWriter.hpp"
 #include "TortuosityWriter.hpp"
+
+
+// PDE solvers
+#include "BoundaryConditionsContainer.hpp"
+#include "ConstBoundaryCondition.hpp"
+#include "SimpleNonlinearEllipticSolver.hpp"
+#include "FunctionalBoundaryCondition.hpp"
+#include "SimpleNewtonNonlinearSolver.hpp"
+#include "VegfEquationPde.hpp"
+#include "TrianglesMeshReader.hpp"
 
 
 class TestAngiogenesisModel : public AbstractCellBasedTestSuite
@@ -235,6 +247,8 @@ public:
             NodesOnlyMesh<3> mesh;
             mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
 
+            // initialisation of PDEs and their solvers
+
             // creation of the cells
             std::vector<CellPtr> cells;
 
@@ -336,11 +350,14 @@ public:
 
             simulator.Solve();
 
+            // PDE solver (VEGF and MMP concentrations) 
+            // TO WRITE
+
             // Output run time data
             CellBasedEventHandler::Headings();
             CellBasedEventHandler::Report();
 
-           SimulationTime::Destroy();
+            SimulationTime::Destroy();
        }
 
 };

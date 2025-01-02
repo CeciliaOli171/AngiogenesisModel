@@ -49,7 +49,15 @@ with $\lambda, \mu, \nu$ chosen randomly in the interval $\[-1, 1\]$.
    x_{daughter}^2 = x_{parent} + 0.5 x_{perpendicular} + 0.5 x_{branch}
    ```
 
-We set up the following division property: the leading cell of the branch divides. To decide if the resulting daughter cell discretises into a TC or a SC, we set a probability to sprout $=P_{sprout}$.
+We set up the following division property: the leading cell of the branch divides. To decide if the resulting daughter cell discretises into a TC or a SC, we set a probability to sprout $=P_{sprout}$. This probability depends on the molecular concentration of VEGF as developped in the next section.
+
+We consider in our model the apoptosis event, necessary to implement the blood flow in our blood network. If the mature TC has a distance smaller than a cut-off length $l_{merge}$, then two scenarios can happen. If the neighbour cell is another TC, then the two branches merge and create a loop; the TCs become SCs. If the neighbour cell is a SC, then the cells connect; the TC becomes a SC and the neighbour cell becomes a branching cell (if it was not already the case).
+
+### Molecular Concentrations 
+
+#### Vascular Endothelial Growth Factor (VEGF)
+
+#### Matrix-Metallo Proteinase (MMP)
 
 
 ### Forces 
@@ -123,34 +131,34 @@ with $\omega_a$ the angular spring constant. $\alpha_{angular}$ is the angle mad
 
 To be modified and completed for the comparison between the mathematical model and the image analysis.
 
+Quantitative comparison: 
+* number of cells in one plane 
+* neighbouring distance 
+
 ### Model Analysis 
 
 ParametersSensitivityRunner: class written for the model analysis. 
 
 Model analysis files:
-
 * Sprouting probability tests
 * Forces coefficients tests
 
 ### Source 
 
 Source files:
-
 * Forces: angular, chemotactic, directional persistence, linear mechanical force, persistence, random
-* Cell cycle: sprouting
+* Cell cycle: sprouting, anastomosis (comprised inside daughter cell file)
 * Cell mutation: branching cells, daughter cell, pinned cell (BC), tip cell, vessel segment
-* Writers: birth time cells, branches nymber, consecutive branches, tortuosity
+* Writers (used for the analysis of the model): birth time cells, branches number, consecutive branches, tortuosity
 
 ### Test
 
 Test files:
-
 * Test of all the forces in the model individually
 * Test of the model in 2D and 3D 
 
 ## Future Goals 
-
-I plan to: 
+ 
 1. continue the quantitative analysis to establish the parameters.
 2. adapt the model to endometriotic lesions.
 3. couple this angiogenesis model with blood flow model for resulting nutrient transport to the lesion.
