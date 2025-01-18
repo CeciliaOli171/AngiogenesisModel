@@ -1,17 +1,12 @@
 #include "MolecularConcentrationsDomainPdeModifier.hpp"
-#include "CellBasedParabolicPdeSolver.hpp"
-#include "AveragedSourceParabolicPde.hpp"
-#include "VegfEquationPde.hpp"
+#include "SimpleLinearParabolicSolver.hpp"
+#include "TipCellMutationState.hpp"
+
+#include "Debug.hpp"
 
 template<unsigned DIM>
-MolecularConcentrationsDomainPdeModifier<DIM>::MolecularConcentrationsDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde,
-                                                                          boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition,
-                                                                          bool isNeumannBoundaryCondition,
-                                                                          Vec solution)
-    : AbstractGrowingDomainPdeModifier<DIM>(pPde,
-                                            pBoundaryCondition,
-                                            isNeumannBoundaryCondition,
-                                            solution)
+MolecularConcentrationsDomainPdeModifier<DIM>::MolecularConcentrationsDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde, boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition, bool isNeumannBoundaryCondition, boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid, double stepSize, Vec solution, double boundaryCuboidMax, double initialValue)
+    : AbstractBoxDomainPdeModifier<DIM>(pPde, pBoundaryCondition, isNeumannBoundaryCondition, pMeshCuboid, stepSize, solution), mBoundaryCuboidMax(boundaryCuboidMax), mInitialValue(initialValue)
 {
 }
 
@@ -23,16 +18,19 @@ MolecularConcentrationsDomainPdeModifier<DIM>::~MolecularConcentrationsDomainPde
 template<unsigned DIM>
 void MolecularConcentrationsDomainPdeModifier<DIM>::UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
 {
-    this->GenerateFeMesh(rCellPopulation);
-
     // Set up boundary conditions
-    std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > p_bcc = ConstructBoundaryConditionsContainer();
+    std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > p_bcc = ConstructBoundaryConditionsContainer(rCellPopulation);
 
-    // Construct the solution vector from cell data (takes care of cells dividing);
-    UpdateSolutionVector(rCellPopulation);
+    this->UpdateCellPdeElementMap(rCellPopulation);
 
-    // Use CellBasedParabolicPdeSolver as cell wise PDE
-    CellBasedParabolicPdeSolver<DIM> solver(this->mpFeMesh, boost::static_pointer_cast<AbstractLinearParabolicPde<DIM,DIM> >(this->mpPde).get(), p_bcc.get());
+    // When using a PDE mesh which doesn't coincide with the cells, we must set up the source terms before solving the PDE.
+    // Pass in already updated CellPdeElementMap to speed up finding cells.
+    this->SetUpSourceTermsForAveragedSourcePde(this->mpFeMesh, &this->mCellPdeElementMap);
+
+    // Use SimpleLinearParabolicSolver as averaged Source PDE
+    SimpleLinearParabolicSolver<DIM,DIM> solver(this->mpFeMesh,
+                                                boost::static_pointer_cast<AbstractLinearParabolicPde<DIM,DIM> >(this->GetPde()).get(),
+                                                p_bcc.get());
 
     ///\todo Investigate more than one PDE time step per spatial step
     SimulationTime* p_simulation_time = SimulationTime::Instance();
@@ -55,46 +53,45 @@ void MolecularConcentrationsDomainPdeModifier<DIM>::UpdateAtEndOfTimeStep(Abstra
 template<unsigned DIM>
 void MolecularConcentrationsDomainPdeModifier<DIM>::SetupSolve(AbstractCellPopulation<DIM,DIM>& rCellPopulation, std::string outputDirectory)
 {
-    AbstractGrowingDomainPdeModifier<DIM>::SetupSolve(rCellPopulation, outputDirectory);
-
-    if (boost::dynamic_pointer_cast<VegfEquationPde<DIM> >(this->mpPde))
-    {
-        EXCEPTION("MolecularConcentrationsDomainPdeModifier cannot be used with an AveragedSourceParabolicPde. Use a ParabolicBoxDomainPdeModifier instead.");
-    }
-
-    // Setup a finite element mesh on which to save the initial condition
-    this->GenerateFeMesh(rCellPopulation);
+    AbstractBoxDomainPdeModifier<DIM>::SetupSolve(rCellPopulation,outputDirectory);
 
     // Copy the cell data to mSolution (this is the initial condition)
-    UpdateSolutionVector(rCellPopulation);
+    SetupInitialSolutionVector(rCellPopulation);
 
     // Output the initial conditions on FeMesh
     this->UpdateAtEndOfOutputTimeStep(rCellPopulation);
 }
 
 template<unsigned DIM>
-std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > MolecularConcentrationsDomainPdeModifier<DIM>::ConstructBoundaryConditionsContainer()
+std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > MolecularConcentrationsDomainPdeModifier<DIM>::ConstructBoundaryConditionsContainer(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
 {
     std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > p_bcc(new BoundaryConditionsContainer<DIM,DIM,1>(false));
 
-    if (this->IsNeumannBoundaryCondition())
+    if (!this->mSetBcsOnBoxBoundary)
     {
-        // Impose any Neumann boundary conditions
-        for (typename TetrahedralMesh<DIM,DIM>::BoundaryElementIterator elem_iter = this->mpFeMesh->GetBoundaryElementIteratorBegin();
-             elem_iter != this->mpFeMesh->GetBoundaryElementIteratorEnd();
-             ++elem_iter)
-        {
-            p_bcc->AddNeumannBoundaryCondition(*elem_iter, this->mpBoundaryCondition.get());
-        }
+        EXCEPTION("Boundary conditions cannot yet be set on the cell population boundary for a MolecularConcentrationsDomainPdeModifier");
     }
-    else
+    else // Apply BC at boundary nodes of box domain FE mesh
     {
-        // Impose any Dirichlet boundary conditions
-        for (typename TetrahedralMesh<DIM,DIM>::BoundaryNodeIterator node_iter = this->mpFeMesh->GetBoundaryNodeIteratorBegin();
-             node_iter != this->mpFeMesh->GetBoundaryNodeIteratorEnd();
-             ++node_iter)
+        if (this->IsNeumannBoundaryCondition())
         {
-            p_bcc->AddDirichletBoundaryCondition(*node_iter, this->mpBoundaryCondition.get());
+            // Impose any Neumann boundary conditions
+            for (typename TetrahedralMesh<DIM,DIM>::BoundaryElementIterator elem_iter = this->mpFeMesh->GetBoundaryElementIteratorBegin();
+                 elem_iter != this->mpFeMesh->GetBoundaryElementIteratorEnd();
+                 ++elem_iter)
+            {
+                p_bcc->AddNeumannBoundaryCondition(*elem_iter, this->mpBoundaryCondition.get());
+            }
+        }
+        else
+        {
+            // Impose any Dirichlet boundary conditions
+            for (typename TetrahedralMesh<DIM,DIM>::BoundaryNodeIterator node_iter = this->mpFeMesh->GetBoundaryNodeIteratorBegin();
+                 node_iter != this->mpFeMesh->GetBoundaryNodeIteratorEnd();
+                 ++node_iter)
+            {
+                p_bcc->AddDirichletBoundaryCondition(*node_iter, this->mpBoundaryCondition.get());
+            }
         }
     }
 
@@ -102,42 +99,57 @@ std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > MolecularConcentrations
 }
 
 template<unsigned DIM>
-void MolecularConcentrationsDomainPdeModifier<DIM>::UpdateSolutionVector(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
+void MolecularConcentrationsDomainPdeModifier<DIM>::SetupInitialSolutionVector(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
 {
-    // Clear (if it's not the first time) and resize the solution vector
-    if (this->mSolution)
-    {
-        PetscTools::Destroy(this->mSolution);
-    }
-    this->mSolution = PetscTools::CreateAndSetVec(this->mpFeMesh->GetNumNodes(), 0.0);
+    double init_cond_value = mInitialValue;
+    std::vector<double> init_cond(this->mpFeMesh->GetNumNodes());
 
-    std::string& variable_name = this->mDependentVariableName;
+    // TIP CELL INITIAL CONDITION TO MODIFY 
+    // double TipCellXCoord = 2.0;
+    // double TipCellYCoord = 0.0;
+    // double TipCellZCoord = 0.0;
 
-    for (typename TetrahedralMesh<DIM,DIM>::NodeIterator node_iter = this->mpFeMesh->GetNodeIteratorBegin();
-         node_iter != this->mpFeMesh->GetNodeIteratorEnd();
-         ++node_iter)
-    {
-        // Loop over nodes of the finite element mesh and get appropriate solution values from CellData
-        for (typename TetrahedralMesh<DIM,DIM>::NodeIterator node_iter = this->mpFeMesh->GetNodeIteratorBegin();
-             node_iter != this->mpFeMesh->GetNodeIteratorEnd();
-             ++node_iter)
-        {
-            unsigned node_index = node_iter->GetIndex();
-            bool dirichlet_bc_applies = (node_iter->IsBoundaryNode()) && (!(this->IsNeumannBoundaryCondition()));
-            double boundary_value = this->GetBoundaryCondition()->GetValue(node_iter->rGetLocation());
+    // // initial coordinates of the tip cell (we suppose that there is only one tip cell at t=0 for the moment)
+    // for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
+    // {
+    //     unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
+    //     CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
 
-            double solution_at_node = rCellPopulation.GetCellDataItemAtPdeNode(node_index, variable_name, dirichlet_bc_applies, boundary_value);
+    //     if (pCell->GetCellProliferativeType()->IsType<TipCellMutationState>()){
+    //         TipCellXCoord = rCellPopulation.GetLocationOfCellCentre(pCell)[0];
+    //         TipCellYCoord = rCellPopulation.GetLocationOfCellCentre(pCell)[1];
+    //         TipCellZCoord = rCellPopulation.GetLocationOfCellCentre(pCell)[2];
+    //     }
+    // }
 
-            PetscVecTools::SetElement(this->mSolution, node_index, solution_at_node);
+    // PRINT_VARIABLE(TipCellXCoord)
+    // PRINT_VARIABLE(TipCellYCoord)
+    // PRINT_VARIABLE(TipCellZCoord)
+
+    // initial coordinates of the endometriotic lesion 
+    for(unsigned i=0; i<this->mpFeMesh->GetNumNodes(); i++){
+        if(this->mpFeMesh->GetNode(i)->rGetLocation()[0] == mBoundaryCuboidMax){
+            init_cond[i] = init_cond_value;
+        } else {
+            init_cond[i] = 0.0;
         }
+
+        // TIP CELL INITIAL CONDITION TO MODIFY
+        // if(this->mpFeMesh->GetNode(i)->rGetLocation()[0] == TipCellXCoord && this->mpFeMesh->GetNode(i)->rGetLocation()[1] == TipCellYCoord && this->mpFeMesh->GetNode(i)->rGetLocation()[2] == TipCellZCoord){
+        //     init_cond[i] = 0.1*init_cond_value;
+        // }
     }
+
+    // Initialise mSolution
+    this->mSolution = PetscTools::CreateVec(init_cond);
+
 }
 
 template<unsigned DIM>
 void MolecularConcentrationsDomainPdeModifier<DIM>::OutputSimulationModifierParameters(out_stream& rParamsFile)
 {
     // No parameters to output, so just call method on direct parent class
-    AbstractGrowingDomainPdeModifier<DIM>::OutputSimulationModifierParameters(rParamsFile);
+    AbstractBoxDomainPdeModifier<DIM>::OutputSimulationModifierParameters(rParamsFile);
 }
 
 // Explicit instantiation

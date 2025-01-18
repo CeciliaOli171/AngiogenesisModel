@@ -3,3 +3,4 @@ TestAngiogenesisModel.hpp
 TestForcesModel.hpp
 TestSolvingMolecularConcentrationsPdes.hpp
 TestSpheroidExperimentsMirams09Paper.hpp
+TestAngiogenesisModelWithMolecularConcentrationsPdes.hpp

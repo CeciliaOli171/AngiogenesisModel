@@ -20,6 +20,7 @@
 #include "ClassIsAbstract.hpp"
 #include "CellData.hpp"
 
+
 // Forward declaration prevents circular include chain
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedCellPopulation;
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedDivisionRule;
@@ -30,8 +31,7 @@ class SproutingRule  : public AbstractCentreBasedDivisionRule<ELEMENT_DIM, SPACE
 
 private:
 
-    double mPsprout;
-    double GetSproutingProbability();
+    double mMaxSproutingRate;
 
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
@@ -45,13 +45,16 @@ private:
 public:
 
     // constructor 
-    SproutingRule(double Psprout = 0.1);
+    SproutingRule(double maxSproutingRate = 0.1);
 
     // destructor 
     ~SproutingRule();
 
+    // calculates the sprouting probability depending on the vegf concentration around the tip cell 
+    virtual double GetSproutingProbability(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell);
+
     // calculates the set of all the vessel segment neighbours of the tip cell
-    std::set<unsigned> GetVesselSegmentNeighbours(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation,NodeBasedCellPopulation<SPACE_DIM>* p_node_population, CellPtr pParentCell); 
+    std::set<unsigned> GetVesselSegmentNeighbours(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, NodeBasedCellPopulation<SPACE_DIM>* p_node_population, CellPtr pParentCell); 
 
     // send the nth value of the neighbouring nodes set 
     unsigned GetNthNeighbourIndice(std::set<unsigned> neighbouring_node_indices, int n);

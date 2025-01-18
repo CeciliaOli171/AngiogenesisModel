@@ -2,18 +2,19 @@
 
 #include "CellwiseDataGradient.hpp"
 #include "CellLabel.hpp"
+#include "VegfEquationPde.hpp"
+#include "LinearBasisFunction.hpp"
+#include "ReplicatableVector.hpp"
 
 #include "Debug.hpp"
 
 template<unsigned DIM>
-ChemoForce<DIM>::ChemoForce(double chi, double cx, double cy)
-    : AbstractForce<DIM>()
+ChemoForce<DIM>::ChemoForce(double chi, double cx)
+    : AbstractForce<DIM>(), mChi(chi)
 {
     assert(chi>0);
     assert(cx>0);
-    mChi = chi;
     mCX = cx;
-    mCY = cy;
 }
 
 template<unsigned DIM>
@@ -34,9 +35,40 @@ double ChemoForce<DIM>::GetChemotacticGradientCoefficientXAxis()
 }
 
 template<unsigned DIM>
-double ChemoForce<DIM>::GetChemotacticGradientCoefficientYAxis()
+c_vector<double, DIM>& ChemoForce<DIM>::GetGradient(unsigned node_index)
 {
-    return mCY;
+    return mGradients[node_index];
+}
+
+template<unsigned DIM>
+void ChemoForce<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPopulation)
+{
+    // Initialise gradients size
+    unsigned num_nodes = rCellPopulation.GetNumNodes();
+    mGradients.resize(num_nodes, zero_vector<double>(DIM));
+
+    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
+    {
+        // we collect the cell data necessary (node index and cell pointer)
+        unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
+        CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index); 
+
+        c_vector<double, DIM> r_gradient_cell = zero_vector<double>(DIM);
+
+        if (pCell->GetMutationState()->IsType<TipCellMutationState>())
+        {
+            if(DIM == 3){
+                r_gradient_cell(0) = -mCX; 
+                r_gradient_cell(1) = 0.0; 
+                r_gradient_cell(2) = 0.0; 
+            } else if (DIM == 2){
+                r_gradient_cell(0) = -mCX; 
+                r_gradient_cell(1) = 0.0; 
+            } else {
+                r_gradient_cell(0) = -mCX; 
+            }
+        }
+    }
 }
 
 template<unsigned DIM>
@@ -46,7 +78,10 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
 
     // initialisation 
     c_vector<double, DIM> chemoforce;
-    c_vector<double,DIM> r_gradient;
+    c_vector<double, DIM> r_gradient;
+
+    // we calculate the gradient of the solution of the vegf pde 
+    CalculateVegfGradient(rCellPopulation);
     
     for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin();
          cell_iter != rCellPopulation.End();
@@ -58,19 +93,17 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
 
         if (pCell->GetMutationState()->IsType<TipCellMutationState>())
         {
-            if(DIM == 3){
-                r_gradient(0) = -mCX; 
-                r_gradient(1) = -mCY; 
-                r_gradient(2) = 0.0; 
-            } else if (DIM == 2){
-                r_gradient(0) = -mCX; 
-                r_gradient(1) = -mCY; 
-            } else {
-                r_gradient(0) = -mCX; 
-            }
+            // we collect the gradient at the cell position 
+            c_vector<double, DIM> r_gradient_cell = GetGradient(node_index);
+            double magnitude_gradient_cell = norm_2(r_gradient_cell);
 
             // force += chi * gradC
-            chemoforce = mChi*r_gradient;
+            if(magnitude_gradient_cell != 0.0){
+                chemoforce = mChi*r_gradient_cell/magnitude_gradient_cell;
+            } else {
+                chemoforce = zero_vector<double>(DIM);
+            }
+            
             rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(chemoforce);
         }
     }
@@ -83,7 +116,6 @@ void ChemoForce<DIM>::OutputForceParameters(out_stream& rParamsFile)
 {
     *rParamsFile << "\t\t\t<Chemotactic Sensitivity>" << mChi << "</Chi>\n";
     *rParamsFile << "\t\t\t<Chemotactic Gradient Coefficient X Axis>" << mCX << "</CX>\n";
-    *rParamsFile << "\t\t\t<Chemotactic Gradient Coefficient Y Axis>" << mCY << "</CY>\n";
 
     // Call method on direct parent class
     AbstractForce<DIM>::OutputForceParameters(rParamsFile);

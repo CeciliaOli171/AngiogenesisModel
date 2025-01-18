@@ -9,19 +9,8 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-VegfEquationPde<DIM>::VegfEquationPde(AbstractCellPopulation<DIM,DIM>& rCellPopulation,
-                                                            double duDtCoefficient,
-                                                            double diffusionCoefficient,
-                                                            double sourceCoefficient,
-                                                            double creationCoefficient,
-                                                            double consumptionCoefficient)
-    : AveragedSourceParabolicPde<DIM>(rCellPopulation, duDtCoefficient, diffusionCoefficient, sourceCoefficient),
-      mrCellPopulation(rCellPopulation),
-      mDuDtCoefficient(duDtCoefficient),
-      mDiffusionCoefficient(diffusionCoefficient),
-      mSourceCoefficient(sourceCoefficient),
-      mCreationCoefficient(creationCoefficient),
-      mConsumptionCoefficient(consumptionCoefficient)
+VegfEquationPde<DIM>::VegfEquationPde(AbstractCellPopulation<DIM,DIM>& rCellPopulation, double duDtCoefficient, double diffusionCoefficient, double sourceCoefficient, double creationCoefficient, double consumptionCoefficient)
+    : AveragedSourceParabolicPde<DIM>(rCellPopulation, duDtCoefficient, diffusionCoefficient, sourceCoefficient), mrCellPopulation(rCellPopulation), mDuDtCoefficient(duDtCoefficient), mDiffusionCoefficient(diffusionCoefficient), mSourceCoefficient(sourceCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient)
 {
 }
 
@@ -63,7 +52,7 @@ void VegfEquationPde<DIM>::SetupSourceTerms(TetrahedralMesh<DIM,DIM>& rCoarseMes
         }
 
         //test for angiogenesis model pde
-        if (pCell->GetCellProliferativeType()->IsType<TipCellMutationState>()){
+        if (pCell->GetMutationState()->IsType<TipCellMutationState>()){
             mCellDensityOnCoarseElements[elem_index] += 1.0;
         }
     }

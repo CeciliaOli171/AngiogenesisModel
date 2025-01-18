@@ -87,7 +87,7 @@ public:
 
     // we test the different forces with the cell cycle and the new division rule 
     // we need to check for each cell if it is a tip cell or a vessel segment 
-    void NoTestSproutingRuleAndCellCycleAndForcesForAllCellsIN2D() 
+    void NoTestAngiogenesisModelIn2D() 
        {
             // to change the values of the test directly on the command line 
             CommandLineArguments* command_line = CommandLineArguments::Instance();
@@ -95,7 +95,7 @@ public:
             double input_val_chi = command_line->GetDoubleCorrespondingToOption("-chi");
             double input_val_omegap = command_line->GetDoubleCorrespondingToOption("-omegap");
             double input_val_omegaa = command_line->GetDoubleCorrespondingToOption("-omegaa");
-            double input_val_Psprout = command_line->GetDoubleCorrespondingToOption("-Psprout");
+            double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate");
             double input_val_time = command_line->GetDoubleCorrespondingToOption("-time");
             double input_val_seed = command_line->GetIntCorrespondingToOption("-seed");
 
@@ -145,9 +145,6 @@ public:
             cell_population.AddCellWriter<BirthTimeCellWriter>();
             cell_population.AddCellWriter<TortuosityWriter>();
 
-            // we copy this cell population to obtain all the previous location index from the cell population before the division 
-            unsigned OldNumNodes = cell_population.GetNumNodes();
-
             unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
 
             // fully constrain the first cell using the boundary condition 
@@ -174,7 +171,7 @@ public:
             simulator.AddForce(p_random_force);
 
             // Chemotactic force (tip cells only) 
-            MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (-input_val_chi, 1E-2, 0.0));
+            MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (-input_val_chi, 1E-2));
             simulator.AddForce(p_chemo_force);
 
             //Persistence force (tip cells only)
@@ -198,13 +195,13 @@ public:
 
             // Set the division rule for our population to be the random direction division rule
             typedef SproutingRule<2,2> SproutingRule;
-            MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_Psprout));
+            MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_maxsproutingrate));
 
             // Set the division rule for our population to be the new division rule implemented earlier 
             cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
             // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (OldNumNodes));
+            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, ());
             simulator.AddSimulationModifier(p_modifier);
 
             MAKE_PTR_ARGS(DirectionalPersistenceCellModifier<2>, p_modifier_2, ());
@@ -221,7 +218,7 @@ public:
            SimulationTime::Destroy();
        }
 
-       void TestSproutingRuleAndCellCycleAndForcesForAllCellsIN3D() 
+       void TestAngiogenesisModelIn3D() 
        {
             // to change the values of the test directly on the command line 
             CommandLineArguments* command_line = CommandLineArguments::Instance();
@@ -229,7 +226,7 @@ public:
             double input_val_chi = command_line->GetDoubleCorrespondingToOption("-chi");
             double input_val_omegap = command_line->GetDoubleCorrespondingToOption("-omegap");
             double input_val_omegaa = command_line->GetDoubleCorrespondingToOption("-omegaa");
-            double input_val_Psprout = command_line->GetDoubleCorrespondingToOption("-Psprout");
+            double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate");
             double input_val_time = command_line->GetDoubleCorrespondingToOption("-time");
             double input_val_seed = command_line->GetIntCorrespondingToOption("-seed");
 
@@ -281,9 +278,6 @@ public:
             cell_population.AddCellWriter<BirthTimeCellWriter>();
             cell_population.AddCellWriter<TortuosityWriter>();
 
-            // we copy this cell population to obtain all the previous location index from the cell population before the division 
-            unsigned OldNumNodes = cell_population.GetNumNodes();
-
             unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
 
             // fully constrain the first cell using the boundary condition 
@@ -310,7 +304,7 @@ public:
             simulator.AddForce(p_random_force);
 
             // Chemotactic force (tip cells only) 
-            MAKE_PTR_ARGS(ChemoForce<3>, p_chemo_force, (-input_val_chi, 1.0E-2, 0.0));
+            MAKE_PTR_ARGS(ChemoForce<3>, p_chemo_force, (-input_val_chi, 1.0E-2));
             simulator.AddForce(p_chemo_force);
 
             //Persistence force (tip cells only)
@@ -334,13 +328,13 @@ public:
 
             // Set the division rule for our population to be the random direction division rule
             typedef SproutingRule<3,3> SproutingRule;
-            MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_Psprout));
+            MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_maxsproutingrate));
 
             // Set the division rule for our population to be the new division rule implemented earlier 
             cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
             // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-            MAKE_PTR_ARGS(DaughterCellModifier<3>, p_modifier, (OldNumNodes));
+            MAKE_PTR_ARGS(DaughterCellModifier<3>, p_modifier, ());
             simulator.AddSimulationModifier(p_modifier);
 
             MAKE_PTR_ARGS(DirectionalPersistenceCellModifier<3>, p_modifier_2, ());

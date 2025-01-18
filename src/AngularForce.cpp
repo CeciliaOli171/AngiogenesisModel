@@ -103,7 +103,7 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
         if (pNeighbourCell->GetCellData()->GetItem("BranchNumber") == pCell->GetCellData()->GetItem("BranchNumber")){
             // we add the cell to the new neighbour set 
             neighbouring_node_indices_same_branch.insert(*k);
-        } else if (pNeighbourCell->GetMutationState() ->IsType<BranchingCellMutationState>() && pCell->GetCellData()->GetItem("BranchingLeader") == *k){
+        } else if (pNeighbourCell->GetMutationState() ->IsType<BranchingCellMutationState>() && pCell->GetCellData()->GetItem("BranchingCell") == *k){
             neighbouring_node_indices_same_branch.insert(*k);
         } else if (NeighbourLoopNb == CellLoopNb && NeighbourLoopNb != 0) {
             // case of the cells in the same loop but with different branches number: use loop number 
@@ -292,6 +292,7 @@ void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellP
             } else{
                 angularforce = zero_vector<double>(DIM);
             }
+
             rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(angularforce);
             //PRINT_VECTOR(angularforce);
         }

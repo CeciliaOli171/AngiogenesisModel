@@ -7,6 +7,7 @@
 #include "RandomNumberGenerator.hpp"
 #include "Debug.hpp"
 #include "SimulationTime.hpp"
+#include "BranchingCellMutationState.hpp"
 
 template<unsigned DIM>
 RandomForce<DIM>::RandomForce(double sigma)
@@ -31,7 +32,7 @@ double RandomForce<DIM>::GetRandomSensitivity()
 template<unsigned DIM>
 void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
-    //TRACE("Begin Random Force");
+    // TRACE("Begin Random Force");
 
     // initialisation 
     c_vector<double, DIM> randomforce; 
@@ -47,6 +48,7 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
     {
         // we collect the node data (index)
         unsigned node_index = (node_iter)->GetIndex();
+        CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
 
         // Initialise a force vector
         for (unsigned i=0; i<DIM; i++)
@@ -61,6 +63,11 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
         } else {
             randomforce = zero_vector<double>(DIM);
         }
+
+        if(pCell->GetMutationState()->IsType<BranchingCellMutationState>() && pCell->GetCellData()->GetItem("LoopNumber") != 0.0){
+            randomforce = zero_vector<double>(DIM);
+        }
+
         node_iter->AddAppliedForceContribution(randomforce);
         //PRINT_VECTOR(randomforce);
     }

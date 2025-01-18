@@ -21,10 +21,8 @@ class DaughterCellModifier : public AbstractCellBasedSimulationModifier<DIM, DIM
 {
 private:
 
-    double mOldNumNodes;
     unsigned mHighestBranch;
     unsigned mHighestLoop;
-    double GetOldNumberofNodes();
 
     friend class boost::serialization::access;
 
@@ -36,7 +34,7 @@ private:
 
 public:
 
-    DaughterCellModifier(double mOldNumNodes = 3);
+    DaughterCellModifier();
 
     ~DaughterCellModifier();
 

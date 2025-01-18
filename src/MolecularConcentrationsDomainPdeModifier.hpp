@@ -4,83 +4,48 @@
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
 
-#include "AbstractGrowingDomainPdeModifier.hpp"
+#include "AbstractBoxDomainPdeModifier.hpp"
 #include "BoundaryConditionsContainer.hpp"
 
 
 template<unsigned DIM>
-class MolecularConcentrationsDomainPdeModifier : public AbstractGrowingDomainPdeModifier<DIM>
+class MolecularConcentrationsDomainPdeModifier : public AbstractBoxDomainPdeModifier<DIM>
 {
 private:
+    double mBoundaryCuboidMax;
+    double mInitialValue;
 
     friend class boost::serialization::access;
-   
+
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
     {
-        archive & boost::serialization::base_object<AbstractGrowingDomainPdeModifier<DIM> >(*this);
+        archive & boost::serialization::base_object<AbstractBoxDomainPdeModifier<DIM> >(*this);
     }
 
 public:
 
-    /**
-     * Constructor.
-     *
-     * @param pPde A shared pointer to a linear PDE object (defaults to NULL)
-     * @param pBoundaryCondition A shared pointer to an abstract boundary condition
-     *     (defaults to NULL, corresponding to a constant boundary condition with value zero)
-     * @param isNeumannBoundaryCondition Whether the boundary condition is Neumann (defaults to true)
-     * @param solution solution vector (defaults to NULL)
-     */
+    // constructor
     MolecularConcentrationsDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(),
-                                      boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(),
-                                      bool isNeumannBoundaryCondition=true,
-                                      Vec solution=nullptr);
+                                  boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(),
+                                  bool isNeumannBoundaryCondition=true,
+                                  boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid=boost::shared_ptr<ChasteCuboid<DIM> >(),
+                                  double stepSize=1.0,
+                                  Vec solution=nullptr, 
+                                  double boundaryCuboidMax=20.0,
+                                  double initialValue=0.1);
 
-    /**
-     * Destructor.
-     */
-    virtual ~MolecularConcentrationsDomainPdeModifier();
+    // destructor
+    ~MolecularConcentrationsDomainPdeModifier();
 
-    /**
-     * Overridden UpdateAtEndOfTimeStep() method.
-     *
-     * Specifies what to do in the simulation at the end of each time step.
-     *
-     * @param rCellPopulation reference to the cell population
-     */
     void UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
-    /**
-     * Overridden SetupSolve() method.
-     *
-     * Specifies what to do in the simulation before the start of the time loop.
-     *
-     * @param rCellPopulation reference to the cell population
-     * @param outputDirectory the output directory, relative to where Chaste output is stored
-     */
     void SetupSolve(AbstractCellPopulation<DIM,DIM>& rCellPopulation, std::string outputDirectory);
 
-    /**
-     * Helper method to construct the boundary conditions container for the PDE.
-     *
-     * @return the full boundary conditions container
-     */
-    std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > ConstructBoundaryConditionsContainer();
+    std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > ConstructBoundaryConditionsContainer(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
-    /**
-     * Helper method to copy the CellData to the PDE solution.
-     *
-     * @param rCellPopulation reference to the cell population
-     */
-    void UpdateSolutionVector(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
+    void SetupInitialSolutionVector(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
-    /**
-     * Overridden OutputSimulationModifierParameters() method.
-     * Output any simulation modifier parameters to file.
-     *
-     * @param rParamsFile the file stream to which the parameters are output
-     */
     void OutputSimulationModifierParameters(out_stream& rParamsFile);
 };
 
@@ -117,11 +82,13 @@ inline void load_construct_data(
     }
 
     ::new(t)MolecularConcentrationsDomainPdeModifier<DIM>(boost::shared_ptr<AbstractLinearPde<DIM, DIM> >(),
-                                                   boost::shared_ptr<AbstractBoundaryCondition<DIM> >(),
-                                                   true,
-                                                   solution);
+                                               boost::shared_ptr<AbstractBoundaryCondition<DIM> >(),
+                                               true,
+                                               boost::shared_ptr<ChasteCuboid<DIM> >(),
+                                               1.0,
+                                               solution);
 }
 }
-} // namespace ...
+} 
 
 #endif /*MOLECULARCONCENTRATIONSDOMAINPDEMODIFIER_HPP_*/
