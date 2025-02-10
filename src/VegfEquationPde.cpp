@@ -9,8 +9,8 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-VegfEquationPde<DIM>::VegfEquationPde(AbstractCellPopulation<DIM,DIM>& rCellPopulation, double duDtCoefficient, double diffusionCoefficient, double sourceCoefficient, double creationCoefficient, double consumptionCoefficient)
-    : AveragedSourceParabolicPde<DIM>(rCellPopulation, duDtCoefficient, diffusionCoefficient, sourceCoefficient), mrCellPopulation(rCellPopulation), mDuDtCoefficient(duDtCoefficient), mDiffusionCoefficient(diffusionCoefficient), mSourceCoefficient(sourceCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient)
+VegfEquationPde<DIM>::VegfEquationPde(AbstractCellPopulation<DIM,DIM>& rCellPopulation, double duDtCoefficient, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient)
+    : AveragedSourceParabolicPde<DIM>(rCellPopulation, duDtCoefficient, diffusionCoefficient, decayCoefficient), mrCellPopulation(rCellPopulation), mDuDtCoefficient(duDtCoefficient), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient)
 {
 }
 
@@ -77,7 +77,7 @@ template<unsigned DIM>
 double VegfEquationPde<DIM>::ComputeSourceTerm(const ChastePoint<DIM>& rX, double u, Element<DIM,DIM>* pElement)
 {
     assert(!mCellDensityOnCoarseElements.empty());
-    double coefficient = mCreationCoefficient - mConsumptionCoefficient * mCellDensityOnCoarseElements[pElement->GetIndex()];
+    double coefficient = mCreationCoefficient - mDecayCoefficient - mConsumptionCoefficient * mCellDensityOnCoarseElements[pElement->GetIndex()];
 
     // The source term is C*u
     return coefficient*u;

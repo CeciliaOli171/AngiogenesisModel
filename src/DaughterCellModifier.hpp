@@ -43,6 +43,8 @@ public:
     // calculates the neighbours in the anastomosis cut-off length that belong to a different branch
     std::set<unsigned> GetAnastomosisNeighbours(AbstractCellPopulation<DIM, DIM>& rCellPopulation,NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pParentCell);
 
+    bool IsBranchingCellNextToCell(AbstractCellPopulation<DIM, DIM>& rCellPopulation,NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pParentCell);
+
     // calculates the coordinates of the closest neighbour of a cell 
     std::pair<c_vector<double, DIM>, unsigned> ClosestNeighbour(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
 

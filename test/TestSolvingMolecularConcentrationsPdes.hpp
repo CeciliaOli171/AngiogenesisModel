@@ -94,13 +94,13 @@ class TestSolvingMolecularConcentrationsPdes : public AbstractCellBasedWithTimin
 {
 public:
 
-    void NoTestSolvingVgefConcentrationPdeIn2D()
+    void TestSolvingVgefConcentrationPdeIn2D()
     {
         // Parameters input 
         CommandLineArguments* command_line = CommandLineArguments::Instance();
         double input_val_dudtcoeff = command_line->GetDoubleCorrespondingToOption("-dudtcoeff"); //1.0
         double input_val_diffusioncoeff = command_line->GetDoubleCorrespondingToOption("-diffusioncoeff"); //0.2
-        double input_val_sourcecoeff = command_line->GetDoubleCorrespondingToOption("-sourcecoeff"); //1.0
+        double input_val_decaycoeff = command_line->GetDoubleCorrespondingToOption("-decaycoeff"); //1.0
         double input_val_creationcoeff = command_line->GetDoubleCorrespondingToOption("-creationcoeff"); //0.0
         double input_val_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-consumptioncoeff"); //0.0
         double input_val_initialvalue = command_line->GetDoubleCorrespondingToOption("-initialvalue"); //0.1
@@ -108,13 +108,13 @@ public:
         unsigned int input_val_endtime = command_line->GetDoubleCorrespondingToOption("-endtime"); 
 
         double boundary_cuboid_min = 0.0;
-        double boundary_cuboid_max = 50.0;
+        double boundary_cuboid_max = 100.0;
 
         // creation of the mesh
         std::vector<Node<2>*> nodes;
-        nodes.push_back(new Node<2>(0u, false, 27.0, 25.0));
-        nodes.push_back(new Node<2>(1u, false, 26.0, 25.0));
-        nodes.push_back(new Node<2>(2u, false, 25.0, 25.0));
+        nodes.push_back(new Node<2>(0u, false, 50.0, 25.0));
+        nodes.push_back(new Node<2>(1u, false, 49.0, 25.0));
+        nodes.push_back(new Node<2>(2u, false, 48.0, 25.0));
 
         NodesOnlyMesh<2> mesh;
         mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
@@ -155,7 +155,7 @@ public:
         // Create PDE and boundary condition objects
         typedef VegfEquationPde<2> VegfEquationPde; 
         typedef VegfBoundaryCondition<2> VegfBoundaryCondition;
-        MAKE_PTR_ARGS(VegfEquationPde, p_pde, (cell_population, input_val_dudtcoeff, input_val_diffusioncoeff, input_val_sourcecoeff, input_val_creationcoeff, input_val_consumptioncoeff));
+        MAKE_PTR_ARGS(VegfEquationPde, p_pde, (cell_population, input_val_dudtcoeff, input_val_diffusioncoeff, input_val_decaycoeff, input_val_creationcoeff, input_val_consumptioncoeff));
         MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_boundaryvalue, boundary_cuboid_min));
 
         // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
@@ -177,7 +177,7 @@ public:
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
 
-        p_pde_modifier->SetupSolve(cell_population,"TestVegfConcentrationPdeIn2D");
+        p_pde_modifier->SetupSolve(cell_population,"TestVegfConcentrationPdeIn2DNewPde");
 
         // Run for 10 timesteps
         for (unsigned i=0; i<input_val_endtime; i++)
@@ -191,13 +191,13 @@ public:
     }
 
 
-    void TestSolvingVgefConcentrationPdeIn3D()
+    void NoTestSolvingVgefConcentrationPdeIn3D()
     {
         // Parameters input 
         CommandLineArguments* command_line = CommandLineArguments::Instance();
         double input_val_dudtcoeff = command_line->GetDoubleCorrespondingToOption("-dudtcoeff"); //1.0
         double input_val_diffusioncoeff = command_line->GetDoubleCorrespondingToOption("-diffusioncoeff"); //0.2
-        double input_val_sourcecoeff = command_line->GetDoubleCorrespondingToOption("-sourcecoeff"); //1.0
+        double input_val_decaycoeff = command_line->GetDoubleCorrespondingToOption("-decaycoeff"); //1.0
         double input_val_creationcoeff = command_line->GetDoubleCorrespondingToOption("-creationcoeff"); //0.0
         double input_val_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-consumptioncoeff"); //0.0
         double input_val_initialvalue = command_line->GetDoubleCorrespondingToOption("-initialvalue"); //0.1
@@ -205,13 +205,13 @@ public:
         unsigned int input_val_endtime = command_line->GetDoubleCorrespondingToOption("-endtime"); 
 
         double boundary_cuboid_min = 0.0;
-        double boundary_cuboid_max = 50.0;
+        double boundary_cuboid_max = 100.0;
 
         // creation of the mesh
         std::vector<Node<3>*> nodes;
-        nodes.push_back(new Node<3>(0u, false, 27.0, 25.0, 25.0));
-        nodes.push_back(new Node<3>(1u, false, 26.0, 25.0, 25.0));
-        nodes.push_back(new Node<3>(2u, false, 25.0, 25.0, 25.0));
+        nodes.push_back(new Node<3>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(2u, false, boundary_cuboid_max*0.25-2, boundary_cuboid_max/2, boundary_cuboid_max/2));
 
         NodesOnlyMesh<3> mesh;
         mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
@@ -252,7 +252,7 @@ public:
         // Create PDE and boundary condition objects
         typedef VegfEquationPde<3> VegfEquationPde; 
         typedef VegfBoundaryCondition<3> VegfBoundaryCondition;
-        MAKE_PTR_ARGS(VegfEquationPde, p_pde, (cell_population, input_val_dudtcoeff, input_val_diffusioncoeff, input_val_sourcecoeff, input_val_creationcoeff, input_val_consumptioncoeff));
+        MAKE_PTR_ARGS(VegfEquationPde, p_pde, (cell_population, input_val_dudtcoeff, input_val_diffusioncoeff, input_val_decaycoeff, input_val_creationcoeff, input_val_consumptioncoeff));
         MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_boundaryvalue, boundary_cuboid_min));
 
         // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE

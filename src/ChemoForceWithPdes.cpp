@@ -10,7 +10,7 @@
 
 template<unsigned DIM>
 ChemoForceWithPdes<DIM>::ChemoForceWithPdes(double chi, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier)
-    : ChemoForce<DIM>(chi, 0.0), mpPdeModifier(pPdeModifier)
+    : ChemoForce<DIM>(chi, 0.0), mChiPde(chi),  mpPdeModifier(pPdeModifier)
 {
     assert(chi>0);
 }
@@ -24,6 +24,12 @@ template<unsigned DIM>
 c_vector<double, DIM>& ChemoForceWithPdes<DIM>::GetGradient(unsigned node_index)
 {
     return mGradientsWithVegf[node_index];
+}
+
+template<unsigned DIM>
+double ChemoForceWithPdes<DIM>::GetMagnitudeGradient(unsigned node_index)
+{
+    return norm_2(GetGradient(node_index))/mChiPde;
 }
 
 template<unsigned DIM>
@@ -78,7 +84,7 @@ void ChemoForceWithPdes<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>&
 
         unsigned elem_index = mpPdeModifier->GetFeMesh()->GetContainingElementIndex(rCellPopulation.GetLocationOfCellCentre(pCell));
 
-        mGradientsWithVegf[node_indice] += gradients_on_elements[elem_index];
+        mGradientsWithVegf[node_indice] += mChiPde*gradients_on_elements[elem_index];
     }
 }
 

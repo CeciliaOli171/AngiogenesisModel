@@ -17,8 +17,8 @@
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRate, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier)
-    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRate), mpPdeModifier(pPdeModifier)
+SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRateVegf, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier)
+    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateVegf), mMaxSproutingRateVegf(MaxSproutingRateVegf), mpPdeModifier(pPdeModifier)
 {
 }
 
@@ -39,7 +39,17 @@ double SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbability(Ab
     Element<SPACE_DIM,SPACE_DIM>* p_element = p_coarse_mesh->GetElement(elem_index);
     double vegf_concentration = previous_solution[p_element->GetNodeGlobalIndex(0)];
 
-    Psprout = mMaxSproutingRate*pow(vegf_concentration,1); // test since the concentration is between 0 and 1 
+    // Linear function
+    Psprout = mMaxSproutingRateVegf*vegf_concentration; // test since the concentration is between 0 and 1 
+
+    // Hill function (n=1) : Witzenbichler et al. 1998
+    //Psprout = mMaxSproutingRateVegf*pow(vegf_concentration, 1)/(pow(0.3, 1) + pow(vegf_concentration,1));
+
+    // Hill function (n=2) : Witzenbichler et al. 1998
+    //Psprout = mMaxSproutingRateVegf*pow(vegf_concentration, 2)/(pow(0.3, 2) + pow(vegf_concentration,2));
+
+    // Hill function (n=3) : Witzenbichler et al. 1998
+    //Psprout = mMaxSproutingRateVegf*pow(vegf_concentration, 3)/(pow(0.3, 3) + pow(vegf_concentration,3));
 
     return Psprout;
 }

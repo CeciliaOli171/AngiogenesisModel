@@ -41,6 +41,12 @@ c_vector<double, DIM>& ChemoForce<DIM>::GetGradient(unsigned node_index)
 }
 
 template<unsigned DIM>
+double ChemoForce<DIM>::GetMagnitudeGradient(unsigned node_index)
+{
+    return norm_2(GetGradient(node_index))/mChi;
+}
+
+template<unsigned DIM>
 void ChemoForce<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPopulation)
 {
     // Initialise gradients size
@@ -58,15 +64,17 @@ void ChemoForce<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPo
         if (pCell->GetMutationState()->IsType<TipCellMutationState>())
         {
             if(DIM == 3){
-                r_gradient_cell(0) = -mCX; 
+                r_gradient_cell(0) = -mChi*mCX; 
                 r_gradient_cell(1) = 0.0; 
                 r_gradient_cell(2) = 0.0; 
             } else if (DIM == 2){
-                r_gradient_cell(0) = -mCX; 
+                r_gradient_cell(0) = -mChi*mCX; 
                 r_gradient_cell(1) = 0.0; 
             } else {
-                r_gradient_cell(0) = -mCX; 
+                r_gradient_cell(0) = -mChi*mCX; 
             }
+
+            mGradients[node_index] += r_gradient_cell;
         }
     }
 }
@@ -95,15 +103,14 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
         {
             // we collect the gradient at the cell position 
             c_vector<double, DIM> r_gradient_cell = GetGradient(node_index);
-            double magnitude_gradient_cell = norm_2(r_gradient_cell);
+            double magnitude_gradient_cell = GetMagnitudeGradient(node_index);
 
             // force += chi * gradC
             if(magnitude_gradient_cell != 0.0){
-                chemoforce = mChi*r_gradient_cell/magnitude_gradient_cell;
+                chemoforce = r_gradient_cell/magnitude_gradient_cell;
             } else {
                 chemoforce = zero_vector<double>(DIM);
             }
-            
             rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(chemoforce);
         }
     }
@@ -115,7 +122,6 @@ template<unsigned DIM>
 void ChemoForce<DIM>::OutputForceParameters(out_stream& rParamsFile)
 {
     *rParamsFile << "\t\t\t<Chemotactic Sensitivity>" << mChi << "</Chi>\n";
-    *rParamsFile << "\t\t\t<Chemotactic Gradient Coefficient X Axis>" << mCX << "</CX>\n";
 
     // Call method on direct parent class
     AbstractForce<DIM>::OutputForceParameters(rParamsFile);

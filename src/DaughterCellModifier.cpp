@@ -48,6 +48,20 @@ std::set<unsigned> DaughterCellModifier<DIM>::GetAnastomosisNeighbours(AbstractC
     return neighbours_anastomosis_set;
 }
 
+template<unsigned DIM>
+bool DaughterCellModifier<DIM>::IsBranchingCellNextToCell(AbstractCellPopulation<DIM, DIM>& rCellPopulation,NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pParentCell){  
+    std::set<unsigned> neighbours_set = p_node_population->GetNodesWithinNeighbourhoodRadius(pParentCell->GetCellId(),1.5);
+
+    for(std::set<unsigned>::iterator k = neighbours_set.begin(); k != neighbours_set.end(); ++k){
+        // we collect the cell pointer 
+        CellPtr pNeighbourCell = rCellPopulation.GetCellUsingLocationIndex(*k);
+        if (pNeighbourCell->GetMutationState()->IsType<BranchingCellMutationState>()){
+            return true;// we add the cell to the new neighbour set 
+        } 
+    }
+    return false;
+}
+
 // function that returns the closest neighbour of the vessel element k
 template<unsigned DIM>
 std::pair<c_vector<double, DIM>, unsigned> DaughterCellModifier<DIM>::ClosestNeighbour(AbstractCellPopulation<DIM, DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices){
@@ -308,28 +322,23 @@ void DaughterCellModifier<DIM>::UpdateCellData(AbstractCellPopulation<DIM,DIM>& 
         
         if (pCell->GetMutationState()->IsType<TipCellMutationState>()){
             c_vector<double, DIM> cell_position = rCellPopulation.GetLocationOfCellCentre(pCell);
-            c_vector<double, DIM> cell_origin; // cell origin to modify, currently for the special case of x0 = (50, 25, 25)
-            if(DIM == 1){
-                cell_origin[0] = 50.0;
-            } else if (DIM == 2){
-                cell_origin[0] = 50.0;
-                cell_origin[1] = 25.0;
-            } else {
-                cell_origin[0] = 50.0;
-                cell_origin[1] = 25.0;
-                cell_origin[2] = 25.0;
-            }
+            // c_vector<double, DIM> cell_origin; // cell origin to modify, currently for the special case of x0 = (50, 25, 25)
+            // if(DIM == 1){
+            //     cell_origin[0] = 50.0;
+            // } else if (DIM == 2){
+            //     cell_origin[0] = 50.0;
+            //     cell_origin[1] = 25.0;
+            // } else {
+            //     cell_origin[0] = 50.0;
+            //     cell_origin[1] = 25.0;
+            //     cell_origin[2] = 25.0;
+            // }
             
-            double cell_distance = norm_2(cell_position-cell_origin);
-
-            unsigned branching_point_index = cell_iter->GetCellData()->GetItem("BranchingCell");
-            CellPtr pBranchingCell = rCellPopulation.GetCellUsingLocationIndex(branching_point_index);
-            c_vector<double, DIM> branching_point_position = rCellPopulation.GetLocationOfCellCentre(pBranchingCell);
-            double branching_cell_distance = norm_2(cell_position-branching_point_position);
+            // double cell_distance = norm_2(cell_position-cell_origin);
 
             // anastomosis only possible if cells far enough from the origin and from its branching cell 
             // anastomosis also only possible after a few time step in this position (enough stress applied to the cell)
-            if (cell_distance > 5.0 && branching_cell_distance > 2.0){ 
+            if (!(IsBranchingCellNextToCell(rCellPopulation, p_node_population, pCell))){ 
                 CalculateAnastomosisVector(rCellPopulation, p_node_population, pCell);
             }
         }

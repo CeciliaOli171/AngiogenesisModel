@@ -19,7 +19,7 @@ private:
     AbstractCellPopulation<DIM, DIM>& mrCellPopulation;
     double mDuDtCoefficient;
     double mDiffusionCoefficient;
-    double mSourceCoefficient;
+    double mDecayCoefficient;
     double mCreationCoefficient;
     double mConsumptionCoefficient;
     std::vector<double> mCellDensityOnCoarseElements;
@@ -30,13 +30,15 @@ private:
        archive & boost::serialization::base_object<AbstractLinearParabolicPde<DIM, DIM> >(*this);
        archive & mDuDtCoefficient;
        archive & mDiffusionCoefficient;
-       archive & mSourceCoefficient;
+       archive & mDecayCoefficient;
+       archive & mCreationCoefficient;
+       archive & mConsumptionCoefficient;
        archive & mCellDensityOnCoarseElements;
     }
 
 public:
 
-    VegfEquationPde(AbstractCellPopulation<DIM, DIM>& rCellPopulation, double duDtCoefficient=1.0, double diffusionCoefficient=1.0, double sourceCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01);
+    VegfEquationPde(AbstractCellPopulation<DIM, DIM>& rCellPopulation, double duDtCoefficient=1.0, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01);
 
     void SetupSourceTerms(TetrahedralMesh<DIM,DIM>& rCoarseMesh, std::map<CellPtr, unsigned>* pCellPdeElementMap=nullptr);
 

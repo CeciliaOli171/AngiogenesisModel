@@ -43,6 +43,9 @@ public:
     // display gradient at a node position 
     virtual c_vector<double, DIM>& GetGradient(unsigned node_index);
 
+    // display the magnitude of the gradient at a node position 
+    virtual double GetMagnitudeGradient(unsigned node_index);
+
     // calculate the gradient of the vegf concentration 
     virtual void CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPopulation);
 

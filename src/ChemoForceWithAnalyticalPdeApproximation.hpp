@@ -1,5 +1,5 @@
-#ifndef CHEMOFORCEWITHPDES_HPP_
-#define CHEMOFORCEWITHPDES_HPP_
+#ifndef CHEMOFORCEWITHANALYTICALPDEAPPROXIMATION_HPP_
+#define CHEMOFORCEWITHANALYTICALPDEAPPROXIMATION_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
@@ -14,16 +14,23 @@
 #include "ChemoForce.hpp"
 
 template<unsigned DIM>
-class ChemoForceWithPdes  : public ChemoForce<DIM>
+class ChemoForceWithAnalyticalPdeApproximation  : public ChemoForce<DIM>
 {
 friend class TestForces;
 
 private:
 
-    double mChiPde;
-    boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > mpPdeModifier;
+    double mChiVegf;
 
-    std::vector<c_vector<double, DIM> > mGradientsWithVegf;
+    double mDiffusionCoefficient;
+    double mDecayCoefficient;
+    double mCreationCoefficient;
+    double mConsumptionCoefficient;
+
+    double mBoundaryCuboidMax;
+    double mMaxValue;
+
+    std::vector<c_vector<double, DIM> > mGradientsWithVegfApproximation;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -35,10 +42,10 @@ private:
 public:
 
     // constructor
-    ChemoForceWithPdes(double chi = 0.1, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> >());
+    ChemoForceWithAnalyticalPdeApproximation(double chi = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double boundaryCuboidMax=20.0, double maxValue=0.1);
 
     // destructor
-    ~ChemoForceWithPdes();
+    ~ChemoForceWithAnalyticalPdeApproximation();
 
     // display gradient at a node position 
     c_vector<double, DIM>& GetGradient(unsigned node_index);
@@ -51,6 +58,6 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(ChemoForceWithPdes)
+EXPORT_TEMPLATE_CLASS_SAME_DIMS(ChemoForceWithAnalyticalPdeApproximation)
 
-#endif /*CHEMOFORCEWITHPDES_HPP_*/
+#endif /*CHEMOFORCEWITHANALYTICALPDEAPPROXIMATION_HPP_*/

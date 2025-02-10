@@ -87,7 +87,7 @@ public:
 
     // we test the different forces with the cell cycle and the new division rule 
     // we need to check for each cell if it is a tip cell or a vessel segment 
-    void NoTestAngiogenesisModelIn2D() 
+    void TestAngiogenesisModelIn2D() 
        {
             // to change the values of the test directly on the command line 
             CommandLineArguments* command_line = CommandLineArguments::Instance();
@@ -106,9 +106,9 @@ public:
 
             // creation of the mesh
             std::vector<Node<2>*> nodes;
-            nodes.push_back(new Node<2>(0u, false, 0.0, 0.0));
-            nodes.push_back(new Node<2>(1u, false, 1.0, 0.0));
-            nodes.push_back(new Node<2>(2u, false, 2.0, 0.0));
+            nodes.push_back(new Node<2>(0u, false, 25.0, 50.0));
+            nodes.push_back(new Node<2>(1u, false, 24.0, 50.0));
+            nodes.push_back(new Node<2>(2u, false, 23.0, 50.0));
 
             NodesOnlyMesh<2> mesh;
             mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal'sw model)
@@ -218,7 +218,7 @@ public:
            SimulationTime::Destroy();
        }
 
-       void TestAngiogenesisModelIn3D() 
+       void NoTestAngiogenesisModelIn3D() 
        {
             // to change the values of the test directly on the command line 
             CommandLineArguments* command_line = CommandLineArguments::Instance();

@@ -2,11 +2,11 @@
 
 ## Introduction 
 
-Our overall goal is to develop an agent-based model to describe endometriotic lesions’ mechanics. We start by establishing an angiogenesis model for endometriotic lesions. Angiogenesis is defined as the growth of new blood vessels from the existing vasculature. We choose the overlapping spheres method for our mathematical model. We use the open source simulation package Chaste [37] in C++ to perform simulations and the open source software Paraview [2] to view the results. 
+Our overall goal is to develop an agent-based model to describe endometriotic lesions' mechanics. We start by establishing an angiogenesis model for endometriotic lesions. Indeed, angiogenesis is one of the main phenomenon contributing to the implantation and proliferation of lesions. By establishing a vascular network, they have access to hormones and nutrients promoting their growth.	We choose the overlapping spheres method for our agent-based model. We describe the molecular concentrations around the lesion using reaction-diffusion PDEs. We use the open source simulation package Chaste [37] in C++ to perform simulations and the open source software Paraview [2] to view the results. 
 
 ## Methodology
 
-In our model, we do not consider individual cells but sections of the vessel; however, for purposes of notation, we refer to them as cells. We represent the system using an Overlapping Spheres (OS) model where each cell is a sphere characterised by its radius and the coordinates of its centre. We consider two types of cells, Tip Cells (TCs) and Stalk Cells (SCs). TCs start and end the vessel; they migrate in response to signals sent by the extra-cellular matrix and the chemical environment. SCs form the body of the vessel. Depending on the type of cells, different forces are applied. According to Newton’s second law and assuming negligible inertia, the motion of cells are described by the following ODE:
+In our model, we do not consider individual cells but sections of the vessel; however, for purposes of notation, we refer to them as cells. We represent the system using an Overlapping Spheres (OS) model where each cell is a sphere characterised by its radius and the coordinates of its centre. We consider two types of cells, Tip Cells (TCs) and Stalk Cells (SCs). TCs start and end the vessel; they migrate in response to signals sent by the extra-cellular matrix and the chemical environment. SCs form the body of the vessel. Depending on the type of cells, different forces are applied. According to Newton’s second law and assuming negligible inertia, the motion of cells are described by the following system:
 ```math
 \frac{dx}{dt} = \sum F_{ext}  
 		= F_{R, c} + F_{M, c} + F_{H, c} + F_{P, c} + F_{A, c}, \; c \in \mathcal{C} 
@@ -49,16 +49,38 @@ with $\lambda, \mu, \nu$ chosen randomly in the interval $\[-1, 1\]$.
    x_{daughter}^2 = x_{parent} + 0.5 x_{perpendicular} + 0.5 x_{branch}
    ```
 
-We set up the following division property: the leading cell of the branch divides. To decide if the resulting daughter cell discretises into a TC or a SC, we set a probability to sprout $=P_{sprout}$. This probability depends on the molecular concentration of VEGF as developped in the next section.
+We set up the following division property: the leading cell of the branch divides. To decide if the resulting daughter cell discretises into a TC or a SC, we set a probability to create a new sprout $=P_{sprout}$. The probability of sprouting depends on the VEGF concentration. The closer the tip cells get to the lesion, the more they will divide into new branches. For a position $\textbf{x}$ and a time $t$, we consider four different formulas:
+```math
+		P_{sprout}(\textbf{x}, t) &= \lambda c(\textbf{x}, t) \; \; \text{linear function}
+		P_{sprout}(\textbf{x}, t) &= \lambda \frac{c(\textbf{x}, t)}{c(\textbf{x}, t)+ K} \; \; \text{hill function ($n=1$)}
+		P_{sprout}(\textbf{x}, t) &= \lambda \frac{c(\textbf{x}, t)^2}{c(\textbf{x}, t)^2+ K^2} \; \; \text{hill function ($n=2$)}
+		P_{sprout}(\textbf{x}, t) &= \lambda \frac{c(\textbf{x}, t)^3}{c(\textbf{x}, t)^3+ K^3} \; \; \text{hill function ($n=3$)}
+```
+with $\lambda$ the maximum sprouting rate.
 
 We consider in our model the apoptosis event, necessary to implement the blood flow in our blood network. If the mature TC has a distance smaller than a cut-off length $l_{merge}$, then two scenarios can happen. If the neighbour cell is another TC, then the two branches merge and create a loop; the TCs become SCs. If the neighbour cell is a SC, then the cells connect; the TC becomes a SC and the neighbour cell becomes a branching cell (if it was not already the case).
 
 ### Molecular Concentrations 
 
+We write $n(\textbf{x},t)$ the density of TCs at position $\textbf{x}$ and time $t$.
+
 #### Vascular Endothelial Growth Factor (VEGF)
+VEGF is released by the lesion and activates the TCs so they migrate toward the lesion. We describe the VEGF concentration $c(\textbf{x},t)$ at position $\textbf{x}$ and time $t$ by the following PDE:
+```math
+  \frac{\partial c}{\partial t}(\textbf{x},t) &= D_c \Delta c(\textbf{x},t) - \epsilon_c n(\textbf{x},t) c(\textbf{x},t) + (A_c-M_c) c(\textbf{x},t) \\
+  c(\textbf{x} \in \Gamma, t) &= c_{max}, \; t>0 && \text{(BC)}  \\
+  c(\textbf{x}, 0) &= c_0(\x) && \text{(IC)} 
+```
+with $D_c$ corresponds to the diffusion coefficient, $A_c$ is the creation coefficient, $M_c$ is the decay coefficient and $\epsilon_c$ is the consumption by TCs coefficient. We consider that the VEGF concentration is equal to $c_0$ at the border $\Gamma$ of the endometriotic lesion and equal to $0$ in the other borders of the mesh.
+
+If we consider only the VEGF concentration and that the diffusion is the same in the whole y and z axis, then we can consider a steady state of the PDE in 1D and neglect the consumption term by the tip cells (which is low compared to the other term of the equation). We obtain a simple 1D ODE that can be solved analytically: 
+```math 
+c(x) = c_{max} \frac{1}{1 - e^{-2 \sqrt{\frac{M_c - A_c}{D_c}} l_{max}}} (e^{- \sqrt{\frac{M_c - A_c}{D_c}} x} - e^{\sqrt{\frac{M_c - A_c}{D_c}} (x-2 l_{max})})
+```
+
 
 #### Matrix-Metallo Proteinase (MMP)
-
+To be continued. 
 
 ### Forces 
 

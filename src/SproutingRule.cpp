@@ -165,6 +165,7 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     double mPerpendicularDirectionCoeff = rCellPopulation.GetMeinekeDivisionSeparation();
 
     // we generate a random number that will set the type of daughter cell 
+    //double random_proba = RandomNumberGenerator::Instance()->ranf();
     double random_proba = RandomNumberGenerator::Instance()->ranf();
 
     // consider a parent cell 
@@ -174,7 +175,7 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
 
     // calculate the Psprout corresponding 
     double Psprout = GetSproutingProbability(rCellPopulation, pParentCell);
-
+    
     // we select the neighbours of the cell that are just vessel segments
     std::set<unsigned> neighbours_set_without_tip = GetVesselSegmentNeighbours(rCellPopulation, p_node_population, pParentCell);
 
@@ -230,7 +231,6 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
         // PRINT_VECTOR(parent_position);
         // PRINT_VARIABLE(norm_2(daughter_position-closest_neighbour));
         // PRINT_VARIABLE(norm_2(parent_position-closest_neighbour));
-
     } else {
         // vessel segment : incorporation in the vessel 
         // addition of the daughter cell to the map

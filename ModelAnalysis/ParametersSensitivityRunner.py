@@ -37,7 +37,7 @@ class ParametersSensitivityRunner:
         return list_cellmutation
 
     # function reading the file 'results.viznodes' and returning an array containing the coordinates of all the nodes
-    def NodesCoordinates(file_nodescoordinates):
+    def NodesCoordinates(file_nodescoordinates, dim):
         # initialisation of the list
         list_nodescoordinates = []
 
@@ -50,8 +50,8 @@ class ParametersSensitivityRunner:
 
         list_nodescoordinates = [float(x) for x in last_line.split()[1:]]
 
-        NumberNodes = int((len(list_nodescoordinates))/3)
-        array_nodescoordinates = np.reshape(list_nodescoordinates, (NumberNodes,3))
+        NumberNodes = int((len(list_nodescoordinates))/dim)
+        array_nodescoordinates = np.reshape(list_nodescoordinates, (NumberNodes,dim))
 
         # we close the file 
         f.close()
@@ -115,7 +115,7 @@ class ParametersSensitivityRunner:
 
         return time_firstbranch
 
-    def LongestPath(file_tortuosity):
+    def LongestPath(file_tortuosity, dim):
         # initialisation of the values 
         arc = 0
         length = 0
@@ -145,7 +145,7 @@ class ParametersSensitivityRunner:
         NbTipCells = int(len(list_tipcellscoordinates)/3)
 
         # we re arrange the tip cells coordinates list into an array 
-        array_tipcellscoordinates = np.reshape(list_tipcellscoordinates, (NbTipCells,3))
+        array_tipcellscoordinates = np.reshape(list_tipcellscoordinates, (NbTipCells,dim))
 
         # we look for the longest arc 
         arc = list_arcs[0]
@@ -156,12 +156,24 @@ class ParametersSensitivityRunner:
                 LongestArcNb = k
 
         # we collect the coordinates of the tip cell associated to the longest arc 
-        TipCellLength_x = array_tipcellscoordinates[LongestArcNb][0]
-        TipCellLength_y = array_tipcellscoordinates[LongestArcNb][1]
-        TipCellLength_z = array_tipcellscoordinates[LongestArcNb][2]
+        if(dim==3):
+            TipCellLength_x = array_tipcellscoordinates[LongestArcNb][0]
+            TipCellLength_y = array_tipcellscoordinates[LongestArcNb][1]
+            TipCellLength_z = array_tipcellscoordinates[LongestArcNb][2]
 
-        # we calculate its norm 
-        length = np.sqrt(TipCellLength_x**2 + TipCellLength_y**2 + TipCellLength_z**2)
+            # we calculate its norm 
+            length = np.sqrt(TipCellLength_x**2 + TipCellLength_y**2 + TipCellLength_z**2)
+        elif(dim==2):
+            TipCellLength_x = array_tipcellscoordinates[LongestArcNb][0]
+            TipCellLength_y = array_tipcellscoordinates[LongestArcNb][1]
+
+            # we calculate its norm 
+            length = np.sqrt(TipCellLength_x**2 + TipCellLength_y**2)
+        elif(dim==1):
+            TipCellLength_x = array_tipcellscoordinates[LongestArcNb][0]
+
+            # we calculate its norm 
+            length = np.sqrt(TipCellLength_x**2)
 
         return arc, length 
 
@@ -228,7 +240,7 @@ class ParametersSensitivityRunner:
         return list_nbcellsateachtimestep
     
     # a function to obtain the number of cells at each time step t
-    def NbCellsInPlaneAtEachTimeStep(file_nodescoordinates,plane_normal_vector):
+    def NbCellsInPlaneAtEachTimeStep(file_nodescoordinates,plane_normal_vector, dim):
         # initialisation
         list_nbcellsinplaneateachtimestep = []
         eps = 0.5
@@ -239,8 +251,8 @@ class ParametersSensitivityRunner:
         for line in f:
             array_nbcellsinplaneattimestept = []
             list_nbcellsinplaneattimestept = [float(x) for x in line.split()[1:]]
-            NumberNodesTimeT = int((len(list_nbcellsinplaneattimestept))/3)
-            array_nodescoordinates = np.reshape(list_nbcellsinplaneattimestept, (NumberNodesTimeT,3))
+            NumberNodesTimeT = int((len(list_nbcellsinplaneattimestept))/dim)
+            array_nodescoordinates = np.reshape(list_nbcellsinplaneattimestept, (NumberNodesTimeT,dim))
 
             for k in range(NumberNodesTimeT):
                 if(array_nodescoordinates[k][0] > plane_normal_vector[0]-eps and array_nodescoordinates[k][0] < plane_normal_vector[0] + eps):
@@ -257,11 +269,11 @@ class ParametersSensitivityRunner:
         return list_nbcellsinplaneateachtimestep
     
     # a function to obtain all the nodes in a specific plane (take into account the radius of the cell i.e. introduce an epsilon)
-    def CellsInPlane(file_nodescoordinates, plane_normal_vector):
+    def CellsInPlane(file_nodescoordinates, plane_normal_vector, dim):
         # initialisation 
         array_nodesplanecoordinates = []
         eps = 0.5
-        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates)
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
         TotalNbCells = len(array_nodescoordinates)
 
         # Generalised method not working for now 
@@ -279,11 +291,25 @@ class ParametersSensitivityRunner:
 
         return array_nodesplanecoordinates
     
+    # a function to obtain the number of cells for x > x_ref (in 2D only for now!!!)
+    def NbCellsAfterPlane(file_nodescoordinates, ref_point, dim):
+        # Initialisation
+        NbCellsAfterPlane = 0
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
+        TotalNbCells = len(array_nodescoordinates)
+
+        # select nodes xith x coordinates inferior to ref_point
+        for k in range(TotalNbCells):
+            if(array_nodescoordinates[k][0] < ref_point):
+                NbCellsAfterPlane += 1
+
+        return NbCellsAfterPlane
+    
     # a function to obtain the number of cells in a specific plane 
-    def NbCellsPlane(file_nodescoordinates, plane_normal_vector):
+    def NbCellsPlane(file_nodescoordinates, plane_normal_vector, dim):
         # Initialisation
         NbCellsPlane = 0
-        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector)
+        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector, dim)
 
         NbCellsPlane = len(array_nodesplanecoordinates)
 
@@ -291,12 +317,39 @@ class ParametersSensitivityRunner:
 
         return NbCellsPlane
     
+    # a function to obtain the number of cells at each time step t
+    # ATTENTION: ONLY FOR 2D FOR THE MOMENT 
+    def TimeFirstReachingPlane(file_nodescoordinates, x_ref, dim):
+        # initialisation
+        TimeFirstReachingPlane = -1
+        eps = 0.5
+
+        # we open the file
+        f = open(file_nodescoordinates, 'r')
+
+        for line in f:
+            t = float(line.split()[0])
+            list_nbcellsinplaneattimestept = [float(x) for x in line.split()[1:]]
+            NumberNodesTimeT = int((len(list_nbcellsinplaneattimestept))/dim)
+            array_nodescoordinates = np.reshape(list_nbcellsinplaneattimestept, (NumberNodesTimeT,dim))
+
+            for k in range(NumberNodesTimeT):
+                if(array_nodescoordinates[k][0] < x_ref-eps):
+                    TimeFirstReachingPlane = t
+                    # we close the file 
+                    f.close()
+
+                    return TimeFirstReachingPlane
+                
+        f.close()
+        return TimeFirstReachingPlane
+    
     # a function to obtain the closest neighbouring distance between cells in a specific plane
-    def ClosestNeighbouringDistanceInPlane(file_nodescoordinates, plane_normal_vector):
+    def ClosestNeighbouringDistanceInPlane(file_nodescoordinates, plane_normal_vector, dim):
         # Initialisation 
         list_neighbouringdistanceinplane = []
         list_closestneighbouringdistanceinplane = []
-        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector)
+        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector, dim)
 
         for k in range(len(array_nodesplanecoordinates)):
             for j in range(len(array_nodesplanecoordinates)):
@@ -311,7 +364,7 @@ class ParametersSensitivityRunner:
         return AverageClosestNeighbouringDistanceInPlane
     
     # a function to obtain the closest neighbouring distance between cells in a specific plane at each time step
-    def ClosestNeighbouringDistanceInPlaneAtEachTimeStep(file_nodescoordinates, plane_normal_vector):
+    def ClosestNeighbouringDistanceInPlaneAtEachTimeStep(file_nodescoordinates, plane_normal_vector, dim):
         # Initialisation 
         list_averageclosestneighbouringdistanceinplane = []
         array_nodesplanecoordinatesateachtimestep = []
@@ -327,8 +380,8 @@ class ParametersSensitivityRunner:
             array_nbcellsinplaneattimestept = []
             list_neighbouringdistanceinplane = []
             list_nbcellsinplaneattimestept = [float(x) for x in line.split()[1:]]
-            NumberNodesTimeT = int((len(list_nbcellsinplaneattimestept))/3)
-            array_nodescoordinates = np.reshape(list_nbcellsinplaneattimestept, (NumberNodesTimeT,3))
+            NumberNodesTimeT = int((len(list_nbcellsinplaneattimestept))/dim)
+            array_nodescoordinates = np.reshape(list_nbcellsinplaneattimestept, (NumberNodesTimeT,dim))
 
             for k in range(NumberNodesTimeT):
                 if(abs(array_nodescoordinates[k][0]-eps) < plane_normal_vector[0]):
@@ -354,11 +407,11 @@ class ParametersSensitivityRunner:
     
         
     # a function to obtain the average neighbouring distance between cells in a specific plane
-    def AverageNeighbouringDistanceInPlane(file_nodescoordinates, plane_normal_vector):
+    def AverageNeighbouringDistanceInPlane(file_nodescoordinates, plane_normal_vector, dim):
         # Initialisation 
         AverageNeighbouringDistanceInPlane = 0
         list_neighbouringdistanceinplane = []
-        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector)
+        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector, dim)
 
         for k in range(len(array_nodesplanecoordinates)):
             for j in range(len(array_nodesplanecoordinates)):
@@ -370,7 +423,7 @@ class ParametersSensitivityRunner:
         return AverageNeighbouringDistanceInPlane
     
     # a function to obtain the average neighbouring distance between cells in a specific plane at each time step
-    def AverageNeighbouringDistanceInPlaneAtEachTimeStep(file_nodescoordinates, plane_normal_vector):
+    def AverageNeighbouringDistanceInPlaneAtEachTimeStep(file_nodescoordinates, plane_normal_vector, dim):
         # initialisation
         list_averageneighbouringdistanceinplaneateachtimestep = []
         eps = 0.5
@@ -382,8 +435,8 @@ class ParametersSensitivityRunner:
             array_nbcellsinplaneattimestept = []
             list_neighbouringdistanceinplane = []
             list_nbcellsinplaneattimestept = [float(x) for x in line.split()[1:]]
-            NumberNodesTimeT = int((len(list_nbcellsinplaneattimestept))/3)
-            array_nodescoordinates = np.reshape(list_nbcellsinplaneattimestept, (NumberNodesTimeT,3))
+            NumberNodesTimeT = int((len(list_nbcellsinplaneattimestept))/dim)
+            array_nodescoordinates = np.reshape(list_nbcellsinplaneattimestept, (NumberNodesTimeT,dim))
 
             for k in range(NumberNodesTimeT):
                 if(abs(array_nodescoordinates[k][0]-eps) < plane_normal_vector[0]):
@@ -404,11 +457,11 @@ class ParametersSensitivityRunner:
         return list_averageneighbouringdistanceinplaneateachtimestep
 
     # a function to obtain the max neighbouring distance between cells in a specific plane
-    def MaxNeighbouringDistanceInPlane(file_nodescoordinates, plane_normal_vector):
+    def MaxNeighbouringDistanceInPlane(file_nodescoordinates, plane_normal_vector, dim):
         # Initialisation 
         MaxNeighbouringDistanceInPlane = 0
         list_neighbouringdistanceinplane = []
-        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector)
+        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector, dim)
 
         for k in range(len(array_nodesplanecoordinates)):
             for j in range(len(array_nodesplanecoordinates)):
@@ -421,12 +474,12 @@ class ParametersSensitivityRunner:
     
     # a function to obtain the area occupied by the cells in a specific plane
     # use of convex hull
-    def AreaCellsPlane(file_nodescoordinates, plane_normal_vector):
+    def AreaCellsPlane(file_nodescoordinates, plane_normal_vector, dim):
         # Initialisation
         AreaCellsPlane = 0
         eps = 0.5
 
-        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector)
+        array_nodesplanecoordinates = ParametersSensitivityRunner.CellsInPlane(file_nodescoordinates, plane_normal_vector, dim)
 
         if (len(array_nodesplanecoordinates) == 1):
             AreaCellsPlane = 1
@@ -568,24 +621,42 @@ class ParametersSensitivityRunner:
         return NumberMaximumConsecutiveBranches, NumberExpectedConsecutiveBranches, NumberFormulaExpectedConsecutiveBranches
 
     # function returning the closest tip cell coordinates from the first fixed cell
-    def ClosestTipCell(file_nodescoordinates, file_cellmutation):
+    def ClosestTipCell(file_nodescoordinates, file_cellmutation, dim):
         list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
-        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates)
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
 
-        CoordinatesClosestTipCell = np.zeros((3,1))
-        CoordinatesClosestTipCell[0] = array_nodescoordinates[1][0]
-        CoordinatesClosestTipCell[1] = array_nodescoordinates[1][1]
-        CoordinatesClosestTipCell[2] = array_nodescoordinates[1][2]
-        NormClosestTipCell = np.sqrt(CoordinatesClosestTipCell[0]**2 + CoordinatesClosestTipCell[1]**2+ CoordinatesClosestTipCell[2]**2)
+        CoordinatesClosestTipCell = np.zeros((dim,1))
+        if (dim == 3):
+            CoordinatesClosestTipCell[0] = array_nodescoordinates[1][0]
+            CoordinatesClosestTipCell[1] = array_nodescoordinates[1][1]
+            CoordinatesClosestTipCell[2] = array_nodescoordinates[1][2]
+            NormClosestTipCell = np.sqrt(CoordinatesClosestTipCell[0]**2 + CoordinatesClosestTipCell[1]**2+ CoordinatesClosestTipCell[2]**2)
+        elif(dim == 2):
+            CoordinatesClosestTipCell[0] = array_nodescoordinates[1][0]
+            CoordinatesClosestTipCell[1] = array_nodescoordinates[1][1]
+            NormClosestTipCell = np.sqrt(CoordinatesClosestTipCell[0]**2 + CoordinatesClosestTipCell[1]**2)
+        elif(dim == 1):
+            CoordinatesClosestTipCell[0] = array_nodescoordinates[1][0]
+            NormClosestTipCell = np.sqrt(CoordinatesClosestTipCell[0]**2)
 
         NumberNodes = array_nodescoordinates.shape[0]
         for k in range(NumberNodes):
             if(list_cellmutation[k] == 0) :
-                CoordinatesNextTipCell = np.zeros((3,1))
-                CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]
-                CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]
-                CoordinatesNextTipCell[2] = array_nodescoordinates[k][2]
-                NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2+ CoordinatesNextTipCell[2]**2)
+                if(dim == 3):
+                    CoordinatesNextTipCell = np.zeros((dim,1))
+                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]
+                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]
+                    CoordinatesNextTipCell[2] = array_nodescoordinates[k][2]
+                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2+ CoordinatesNextTipCell[2]**2)
+                elif(dim == 2):
+                    CoordinatesNextTipCell = np.zeros((dim,1))
+                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]
+                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]
+                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2)
+                elif(dim == 1):
+                    CoordinatesNextTipCell = np.zeros((dim,1))
+                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]
+                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2)
 
                 if(NormNextTipCell < NormClosestTipCell):
                     NormClosestTipCell = NormNextTipCell
@@ -594,30 +665,105 @@ class ParametersSensitivityRunner:
         return CoordinatesClosestTipCell, NormClosestTipCell
 
     # function returning the furthest tip cell coordinates from the first fixed cell
-    def FurthestTipCell(file_nodescoordinates, file_cellmutation):
+    # ATTENTION FUNCTION FOR A FIXED FIRST CELL AT POSITION (25, 50, 50)
+    def FurthestTipCell(file_nodescoordinates, file_cellmutation, dim):
         list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
-        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates)
-
-        CoordinatesFurthestTipCell = np.zeros((3,1))
-        CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]
-        CoordinatesFurthestTipCell[1] = array_nodescoordinates[1][1]
-        CoordinatesFurthestTipCell[2] = array_nodescoordinates[1][2]
-        NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2 + CoordinatesFurthestTipCell[1]**2+ CoordinatesFurthestTipCell[2]**2)
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
 
         NumberNodes = array_nodescoordinates.shape[0]
+        counter = 0
+        while counter < NumberNodes:
+            if(list_cellmutation[counter] == 0):
+                if(dim==3):
+                    CoordinatesFurthestTipCell = np.zeros((dim,1))
+                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
+                    CoordinatesFurthestTipCell[1] = array_nodescoordinates[1][1]-50
+                    CoordinatesFurthestTipCell[2] = array_nodescoordinates[1][2]-50
+                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2 + CoordinatesFurthestTipCell[1]**2+ CoordinatesFurthestTipCell[2]**2)
+                elif(dim==2):
+                    CoordinatesFurthestTipCell = np.zeros((dim,1))
+                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
+                    CoordinatesFurthestTipCell[1] = array_nodescoordinates[1][1]-50
+                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2 + CoordinatesFurthestTipCell[1]**2)
+                elif(dim==1):
+                    CoordinatesFurthestTipCell = np.zeros((dim,1))
+                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
+                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2)
+            counter += 1
+
         for k in range(NumberNodes):
             if(list_cellmutation[k] == 0):
-                CoordinatesNextTipCell = np.zeros((3,1))
-                CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]
-                CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]
-                CoordinatesNextTipCell[2] = array_nodescoordinates[k][2]
-                NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2+ CoordinatesNextTipCell[2]**2)
+                if(dim==3):
+                    CoordinatesNextTipCell = np.zeros((dim,1))
+                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
+                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]-50
+                    CoordinatesNextTipCell[2] = array_nodescoordinates[k][2]-50
+                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2+ CoordinatesNextTipCell[2]**2)
+                elif(dim==2):
+                    CoordinatesNextTipCell = np.zeros((dim,1))
+                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
+                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]-50
+                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2)
+                elif(dim==1):
+                    CoordinatesNextTipCell = np.zeros((dim,1))
+                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
+                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2)
 
                 if(NormNextTipCell > NormFurthestTipCell):
                     NormFurthestTipCell = NormNextTipCell
                     CoordinatesFurthestTipCell = CoordinatesNextTipCell
 
         return CoordinatesFurthestTipCell, NormFurthestTipCell
+    
+    def NormFurthestTipCell(file_nodescoordinates, file_cellmutation, dim):
+        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
+
+        NumberNodes = array_nodescoordinates.shape[0]
+        counter = 0
+        NormFurthestTipCell = 0
+        while counter < NumberNodes:
+            if(list_cellmutation[counter] == 0):
+                if(dim==3):
+                    CoordinatesFurthestTipCell = np.zeros(dim)
+                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
+                    CoordinatesFurthestTipCell[1] = array_nodescoordinates[1][1]-50
+                    CoordinatesFurthestTipCell[2] = array_nodescoordinates[1][2]-50
+                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2 + CoordinatesFurthestTipCell[1]**2+ CoordinatesFurthestTipCell[2]**2)
+                elif(dim==2):
+                    CoordinatesFurthestTipCell = np.zeros(dim)
+                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
+                    CoordinatesFurthestTipCell[1] = array_nodescoordinates[1][1]-50
+                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2 + CoordinatesFurthestTipCell[1]**2)
+                elif(dim==1):
+                    CoordinatesFurthestTipCell = np.zeros(dim)
+                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
+                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2)
+            counter += 1
+
+        for k in range(NumberNodes):
+            if(list_cellmutation[k] == 0):
+                if(dim==3):
+                    CoordinatesNextTipCell = np.zeros(dim)
+                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
+                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]-50
+                    CoordinatesNextTipCell[2] = array_nodescoordinates[k][2]-50
+                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2+ CoordinatesNextTipCell[2]**2)
+                elif(dim==2):
+                    CoordinatesNextTipCell = np.zeros(dim)
+                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
+                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]-50
+                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2)
+                elif(dim==1):
+                    CoordinatesNextTipCell = np.zeros(dim)
+                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
+                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2)
+
+                if(NormNextTipCell > NormFurthestTipCell):
+                    NormFurthestTipCell = NormNextTipCell
+                    CoordinatesFurthestTipCell = CoordinatesNextTipCell
+
+        return NormFurthestTipCell
 
     # function returning the average area of the blood vessel tree 
     def AverageArea(file_nodescoordinates, file_cellmutation):
@@ -626,7 +772,7 @@ class ParametersSensitivityRunner:
         # area = 2*np.pi*radius**2 # area of half a sphere 
 
         # Method with the convex hull 
-        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates)
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
         hull = ConvexHull(array_nodescoordinates)
 
         area = hull.area
@@ -640,7 +786,7 @@ class ParametersSensitivityRunner:
         #volume = (2/3)*np.pi*radius**3 # volume of half a sphere 
 
         # Method with convex hull 
-        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates)
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
         hull = ConvexHull(array_nodescoordinates)
 
         volume = hull.volume
@@ -656,7 +802,7 @@ class ParametersSensitivityRunner:
         return list_average
 
     def Tortuosity(file_tortuosity):
-        arc, length = ParametersSensitivityRunner.LongestPath(file_tortuosity)
+        arc, length = ParametersSensitivityRunner.LongestPath(file_tortuosity, dim)
 
         tortuosity = arc/length
 

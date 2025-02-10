@@ -34,7 +34,17 @@ class SproutingRuleWithAnalyticalPdeApproximation  : public SproutingRule<ELEMEN
 
 private:
 
-    double mMaxSproutingRate;
+    double mMaxSproutingRateAnalyticalPde;
+
+    double mDiffusionCoefficient;
+    double mDecayCoefficient;
+    double mCreationCoefficient;
+    double mConsumptionCoefficient;
+
+    double mBoundaryCuboidMax;
+    double mSourceValue;
+
+    int mTestNb;
 
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
@@ -48,10 +58,13 @@ private:
 public:
 
     // constructor 
-    SproutingRuleWithAnalyticalPdeApproximation(double Psprout = 0.1);
+    SproutingRuleWithAnalyticalPdeApproximation(double maxSproutingRateAnalyticalPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double boundaryCuboidMax=20.0, double sourceValue=0.1, int testNb = 0);
 
     // destructor 
     ~SproutingRuleWithAnalyticalPdeApproximation();
+
+    // calculates the vegf concentration at a specified node 
+    double GetVegfConcentrationAtNode(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell);
 
     // calculates the sprouting probability depending on the vegf concentration around the tip cell 
     double GetSproutingProbability(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell);
