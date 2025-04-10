@@ -1,18 +1,10 @@
-# writing functions that will :
+# This is a class that analysis quantitatively the angiogenesis model
+# you can use this class to:
 # - read a file 
-# - extract the following information :
-#   • cell mutation state (results.vizcelltypes) -> number of each type of cells, number of branches 
-#   • center of cells ie nodes coordinates (results.viznodes) -> closest and furthest tip cell coordinates from the first fixed cell -> area and volume of the blood vessel network computed (area and volume of a half sphere calculated from the furthest tip cell coordinates which represent the radius)
-#   • consecutive branches (results.branchesnumber) -> maximum and minimum of consecutive branches -> comparison branches obtained and branches expected 
+# - extract the information 
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 import statistics as stats
-
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator 
-from matplotlib.colors import LinearSegmentedColormap
 
 from scipy.spatial import ConvexHull
 

@@ -1,5 +1,5 @@
-#ifndef CHEMOFORCEWITHANALYTICALPDEAPPROXIMATION_HPP_
-#define CHEMOFORCEWITHANALYTICALPDEAPPROXIMATION_HPP_
+#ifndef CHEMOFORCEWITHANALYTICALAPPROXIMATIONPDE_HPP_
+#define CHEMOFORCEWITHANALYTICALAPPROXIMATIONPDE_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
@@ -14,13 +14,13 @@
 #include "ChemoForce.hpp"
 
 template<unsigned DIM>
-class ChemoForceWithAnalyticalPdeApproximation  : public ChemoForce<DIM>
+class ChemoForceWithAnalyticalApproximationPde : public ChemoForce<DIM>
 {
 friend class TestForces;
 
 private:
 
-    double mChiVegf;
+    double mChiAnalyticalApproxPde;
 
     double mDiffusionCoefficient;
     double mDecayCoefficient;
@@ -30,7 +30,7 @@ private:
     double mBoundaryCuboidMax;
     double mMaxValue;
 
-    std::vector<c_vector<double, DIM> > mGradientsWithVegfApproximation;
+    std::vector<c_vector<double, DIM> > mGradientsVegfAnalyticalApproxPde;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -42,10 +42,10 @@ private:
 public:
 
     // constructor
-    ChemoForceWithAnalyticalPdeApproximation(double chi = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double boundaryCuboidMax=20.0, double maxValue=0.1);
+    ChemoForceWithAnalyticalApproximationPde(double chiAnalyticalApproxPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double boundaryCuboidMax=20.0, double maxValue=0.1);
 
     // destructor
-    ~ChemoForceWithAnalyticalPdeApproximation();
+    ~ChemoForceWithAnalyticalApproximationPde();
 
     // display gradient at a node position 
     c_vector<double, DIM>& GetGradient(unsigned node_index);
@@ -58,6 +58,6 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(ChemoForceWithAnalyticalPdeApproximation)
+EXPORT_TEMPLATE_CLASS_SAME_DIMS(ChemoForceWithAnalyticalApproximationPde)
 
-#endif /*CHEMOFORCEWITHANALYTICALPDEAPPROXIMATION_HPP_*/
+#endif /*CHEMOFORCEWITHANALYTICALAPPROXIMATIONPDE_HPP_*/

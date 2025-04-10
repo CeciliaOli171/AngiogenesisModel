@@ -14,6 +14,7 @@ class MolecularConcentrationsDomainPdeModifier : public AbstractBoxDomainPdeModi
 private:
     double mBoundaryCuboidMax;
     double mInitialValue;
+    double mConstantBackground;
 
     friend class boost::serialization::access;
 
@@ -33,7 +34,7 @@ public:
                                   double stepSize=1.0,
                                   Vec solution=nullptr, 
                                   double boundaryCuboidMax=20.0,
-                                  double initialValue=0.1);
+                                  double initialValue=0.1, double constantBackground=0.1);
 
     // destructor
     ~MolecularConcentrationsDomainPdeModifier();

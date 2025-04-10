@@ -1,5 +1,5 @@
-#ifndef TESTANGIOGENESISMODELWITHMOLECULARCONCENTRATIONSPDES_HPP_
-#define TESTANGIOGENESISMODELWITHMOLECULARCONCENTRATIONSPDES_HPP_
+#ifndef TESTANGIOGENESISMODELWITHVEGFCONCENTRATIONPDE_HPP_
+#define TESTANGIOGENESISMODELWITHVEGFCONCENTRATIONPDE_HPP_
 
 // headliners
 #include <cxxtest/TestSuite.h>
@@ -58,7 +58,7 @@
 #include "RandomDirectionCentreBasedDivisionRule.hpp"
 #include "SproutingRule.hpp"
 #include "SproutingRuleWithPdes.hpp"
-#include "SproutingRuleWithAnalyticalPdeApproximation.hpp"
+#include "SproutingRuleWithAnalyticalApproximationPde.hpp"
 #include "DaughterCellModifier.hpp"
 
 #include "PinnedCellsBoundaryCondition.hpp"
@@ -73,7 +73,7 @@
 #include "LinearMechanicalForceModified.hpp"
 #include "DirectionalPersistenceCellModifier.hpp"
 #include "ChemoForceWithPdes.hpp"
-#include "ChemoForceWithAnalyticalPdeApproximation.hpp"
+#include "ChemoForceWithAnalyticalApproximationPde.hpp"
 
 // Writers
 #include "CellMutationStatesCountWriter.hpp"
@@ -104,13 +104,17 @@
 
 
 
-class TestAngiogenesisModelWithMolecularConcentrationsPdes : public AbstractCellBasedTestSuite
+class TestAngiogenesisModelWithVegfConcentrationPdes : public AbstractCellBasedTestSuite
 {
 
 public:
 
-    void NoTestAngiogenesisModelWithMolecularConcentrationsPdesIn2D() 
+    void NoTestAngiogenesisModelWithVegfConcentrationPdeIn2D() 
     {
+        ///////////
+        // INPUT // 
+        ///////////
+
         // Parameters input 
         CommandLineArguments* command_line = CommandLineArguments::Instance();
 
@@ -122,10 +126,7 @@ public:
         double input_val_vegf_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfconsumptioncoeff"); //0.0
         double input_val_vegf_initialvalue = command_line->GetDoubleCorrespondingToOption("-vegfinitialvalue"); //0.1
         double input_val_vegf_boundaryvalue = command_line->GetDoubleCorrespondingToOption("-vegfboundaryvalue"); //0.1
-
-        // mesh for pdes 
-        double boundary_cuboid_min = 0.0;
-        double boundary_cuboid_max = 100.0;
+        double input_val_vegf_constantbackground = command_line->GetDoubleCorrespondingToOption("-vegfconstantbackground"); //0.1
 
         // parameters for forces 
         double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-4
@@ -135,17 +136,22 @@ public:
 
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
+        int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
 
-        // general parameters (time, random seed)
-        double input_val_time = 300; //command_line->GetDoubleCorrespondingToOption("-time"); 
-        double input_val_seed = 57; //command_line->GetIntCorrespondingToOption("-seed"); 
-
+        // general parameters (time, random seed, output directory)
+        double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
+        double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
         std::string output_directory = command_line->GetStringCorrespondingToOption("-output_directory");
 
-        // set seed 
-        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+        ////////////
+        // MESHES // 
+        ////////////
 
-        // creation of the mesh
+        // mesh for pdes 
+        double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 100.0;
+
+        // creation of the mesh for ABM
         std::vector<Node<2>*> nodes;
         nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2));
         nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2));
@@ -153,6 +159,10 @@ public:
 
         NodesOnlyMesh<2> mesh;
         mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        ///////////
+        // CELLS // 
+        ///////////
 
         // creation of the cells
         std::vector<CellPtr> cells;
@@ -164,8 +174,7 @@ public:
 
         // proliferative states
         MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
-        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
-        MAKE_PTR(TransitCellProliferativeType, p_transit_type); // vessel segment ? 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide, fully constrained 
 
         CellsGenerator<UniformCellCycleModel, 2> cells_generator;
         cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
@@ -195,6 +204,13 @@ public:
         pinned_node_indices.push_back(node_index_tip_cell);
         typedef PinnedCellsBoundaryCondition<2,2> PinnedCellsBoundaryCondition;
         MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
+
+        //////////////
+        // SETTINGS // 
+        //////////////
+
+        // set seed 
+        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
 
         // Set up simulation time for file output
         OffLatticeSimulation<2> simulator(cell_population);
@@ -212,7 +228,7 @@ public:
         // Create PDE and boundary condition objects
         typedef VegfEquationPde<2> VegfEquationPde; 
         typedef VegfBoundaryCondition<2> VegfBoundaryCondition;
-        MAKE_PTR_ARGS(VegfEquationPde, p_vegf_pde, (cell_population, input_val_vegf_dudtcoeff, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff));
+        MAKE_PTR_ARGS(VegfEquationPde, p_vegf_pde, (cell_population, input_val_vegf_dudtcoeff, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_constantbackground));
         MAKE_PTR_ARGS(VegfBoundaryCondition, p_vegf_bc, (input_val_vegf_boundaryvalue, boundary_cuboid_min));
 
         // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
@@ -225,14 +241,14 @@ public:
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
         typedef MolecularConcentrationsDomainPdeModifier<2> MolecularConcentrationsDomainPdeModifier;
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier, p_pde_modifier, (p_vegf_pde, p_vegf_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_vegf_initialvalue));
+        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier, p_pde_modifier, (p_vegf_pde, p_vegf_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_vegf_initialvalue, input_val_vegf_constantbackground));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
 
         simulator.AddSimulationModifier(p_pde_modifier);
 
 
-        // 2) UPDATING CELL POSITION : change the direction of the forces 
+        // 2) UPDATING CELL POSITION 
 
         // Random force (all cells)
         typedef RandomForce<2> RandomForce;
@@ -240,13 +256,8 @@ public:
         simulator.AddForce(p_random_force);
 
         // Chemotactic force (tip cells only) 
-        // typedef ChemoForce<2> ChemoForce;
-        // MAKE_PTR_ARGS(ChemoForce, p_chemo_force, (input_val_chi, 1E-2));
         typedef ChemoForceWithPdes<2> ChemoForceWithPdes;
         MAKE_PTR_ARGS(ChemoForceWithPdes, p_chemo_force, (input_val_chi, p_pde_modifier));
-        // typedef ChemoForceWithAnalyticalPdeApproximation<2> ChemoForceWithAnalyticalPdeApproximation;
-        // MAKE_PTR_ARGS(ChemoForceWithAnalyticalPdeApproximation, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
-
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
@@ -272,12 +283,188 @@ public:
         // 3) DIVISION OF CELLS 
 
         // Set the division rule for our population to be the random direction division rule
-        // typedef SproutingRule<2,2> SproutingRule;
-        // MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_maxsproutingrate));
         typedef SproutingRuleWithPdes<2,2> SproutingRuleWithPdes;
-        MAKE_PTR_ARGS(SproutingRuleWithPdes, p_division_rule_to_set, (input_val_maxsproutingrate, p_pde_modifier));
-        // typedef SproutingRuleWithAnalyticalPdeApproximation<2,2> SproutingRuleWithAnalyticalPdeApproximation;
-        // MAKE_PTR_ARGS(SproutingRuleWithAnalyticalPdeApproximation, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
+        MAKE_PTR_ARGS(SproutingRuleWithPdes, p_division_rule_to_set, (input_val_maxsproutingrate, p_pde_modifier, input_psproutfunctiontestnb));
+        
+        // Set the division rule for our population to be the new division rule implemented earlier 
+        cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
+
+        // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
+        typedef DaughterCellModifier<2> DaughterCellModifier;
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, ());
+        simulator.AddSimulationModifier(p_daughtercell_modifier);
+
+        typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
+        MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
+        simulator.AddSimulationModifier(p_persistenceforce_modifier);
+
+        cell_population.Update();
+
+        simulator.Solve();
+
+        // Output run time data
+        CellBasedEventHandler::Headings();
+        CellBasedEventHandler::Report();
+
+        SimulationTime::Destroy();
+    }
+
+    void TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn2D() 
+    {
+        ///////////
+        // INPUT // 
+        ///////////
+
+        // Parameters input 
+        CommandLineArguments* command_line = CommandLineArguments::Instance();
+
+        // parameters for vegf pde 
+        //double input_val_vegf_dudtcoeff = command_line->GetDoubleCorrespondingToOption("-vegfdudtcoeff"); //1.0 but not necessary in the case of analytical approximation 
+        double input_val_vegf_diffusioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfdiffusioncoeff"); //0.2
+        double input_val_vegf_decaycoeff = command_line->GetDoubleCorrespondingToOption("-vegfdecaycoeff"); //1.0
+        double input_val_vegf_creationcoeff = command_line->GetDoubleCorrespondingToOption("-vegfcreationcoeff"); //0.0
+        double input_val_vegf_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfconsumptioncoeff"); //0.0
+        //double input_val_vegf_initialvalue = command_line->GetDoubleCorrespondingToOption("-vegfinitialvalue"); //0.1 but not necessary in the case of analytical approximation
+        double input_val_vegf_boundaryvalue = command_line->GetDoubleCorrespondingToOption("-vegfboundaryvalue"); //0.1
+        double input_val_vegf_constantbackground = command_line->GetDoubleCorrespondingToOption("-vegfconstantbackground"); //0.1
+
+        // parameters for forces 
+        double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-4
+        double input_val_chi = command_line->GetDoubleCorrespondingToOption("-chi"); //1E-1
+        double input_val_omegap = command_line->GetDoubleCorrespondingToOption("-omegap"); //1E-4
+        double input_val_omegaa = command_line->GetDoubleCorrespondingToOption("-omegaa"); //1.0
+
+        // parameters for Psprout 
+        double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
+        int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb"); // 0 for linear function; 1 for hill function
+
+        // general parameters (time, random seed, output directory)
+        double input_val_time = 300; //command_line->GetDoubleCorrespondingToOption("-time"); 
+        double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
+        std::string output_directory_analyticalapproxvegf = command_line->GetStringCorrespondingToOption("-output_directory_analyticalapproxvegf");
+
+        ////////////
+        // MESHES // 
+        ////////////
+
+        // mesh for pdes 
+        //double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 100.0;
+
+        // creation of the mesh for ABM
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(2u, false, boundary_cuboid_max*0.25-2, boundary_cuboid_max/2));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        ///////////
+        // CELLS // 
+        ///////////
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        cell_population.Update(); // addition of this line compared to the sprouting test
+
+        // Writers 
+        cell_population.AddCellPopulationCountWriter<CellMutationStatesCountWriter>();
+        cell_population.AddCellWriter<CellMutationStatesWriter>();
+        cell_population.AddCellWriter<ConsecutiveBranchesWriter>();
+        cell_population.AddCellWriter<BranchesNumberWriter>();
+        cell_population.AddCellWriter<BirthTimeCellWriter>();
+        cell_population.AddCellWriter<TortuosityWriter>();
+
+        // fully constrain the first cell using the boundary condition 
+        unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
+        std::vector<unsigned> pinned_node_indices;
+        pinned_node_indices.push_back(node_index_tip_cell);
+        typedef PinnedCellsBoundaryCondition<2,2> PinnedCellsBoundaryCondition;
+        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
+
+        //////////////
+        // SETTINGS // 
+        //////////////
+
+        // set seed 
+        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+
+        // Set up simulation time for file output
+        OffLatticeSimulation<2> simulator(cell_population);
+        simulator.SetOutputDirectory(output_directory_analyticalapproxvegf);
+        simulator.SetSamplingTimestepMultiple(120);
+        simulator.SetEndTime(input_val_time);
+        simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
+
+        /////////////////
+        // SIMULATION // 
+        ////////////////
+
+        // 1) SOLVE PDE 
+
+        // We approximate the solution 
+
+
+        // 2) UPDATING CELL POSITION 
+
+        // Random force (all cells)
+        typedef RandomForce<2> RandomForce;
+        MAKE_PTR_ARGS(RandomForce, p_random_force, (input_val_sigma));
+        simulator.AddForce(p_random_force);
+
+        // Chemotactic force (tip cells only) 
+        typedef ChemoForceWithAnalyticalApproximationPde<2> ChemoForceWithAnalyticalApproximationPde;
+        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
+        simulator.AddForce(p_chemo_force);
+
+        //Persistence force (tip cells only)
+        typedef PersistenceForce<2> PersistenceForce;
+        MAKE_PTR_ARGS(PersistenceForce, p_persistence_force, (input_val_omegap));
+        simulator.AddForce(p_persistence_force);
+
+        // Mechanical force (all cells)
+        typedef LinearMechanicalForceModified<2> LinearMechanicalForceModified;
+        MAKE_PTR(LinearMechanicalForceModified, p_mechanical_force);
+        p_mechanical_force->SetMeinekeSpringStiffness(15.0);
+        cell_population.SetMeinekeDivisionSeparation(1.0);
+        p_mechanical_force->SetMeinekeDivisionRestingSpringLength(1.0);
+        p_mechanical_force->SetMeinekeSpringGrowthDuration(1.0);
+        p_mechanical_force->SetCutOffLength(1.5);
+        simulator.AddForce(p_mechanical_force);
+
+        // Angular force (vessel segment only)
+        typedef AngularForce<2> AngularForce;
+        MAKE_PTR_ARGS(AngularForce, p_angular_force, (-input_val_omegaa)); 
+        simulator.AddForce(p_angular_force);
+
+        // 3) DIVISION OF CELLS 
+
+        // Set the division rule for our population to be the random direction division rule
+        typedef SproutingRuleWithAnalyticalApproximationPde<2,2> SproutingRuleWithAnalyticalApproximationPde;
+        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_psproutfunctiontestnb));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
@@ -302,44 +489,41 @@ public:
         SimulationTime::Destroy();
     }
 
-    void TestAngiogenesisModelWithMolecularConcentrationsAnalyticalSolutionOfPdesIn2D() 
+    void NoTestAngiogenesisModelWithVegfConcentrationConstantIn2D() 
     {
+        ///////////
+        // INPUT // 
+        ///////////
+
         // Parameters input 
         CommandLineArguments* command_line = CommandLineArguments::Instance();
 
-        // parameters for vegf pde 
-        double input_val_vegf_dudtcoeff = command_line->GetDoubleCorrespondingToOption("-vegfdudtcoeff"); //1.0
-        double input_val_vegf_diffusioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfdiffusioncoeff"); //0.2
-        double input_val_vegf_decaycoeff = command_line->GetDoubleCorrespondingToOption("-vegfdecaycoeff"); //1.0
-        double input_val_vegf_creationcoeff = command_line->GetDoubleCorrespondingToOption("-vegfcreationcoeff"); //0.0
-        double input_val_vegf_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfconsumptioncoeff"); //0.0
-        double input_val_vegf_initialvalue = command_line->GetDoubleCorrespondingToOption("-vegfinitialvalue"); //0.1
-        double input_val_vegf_boundaryvalue = command_line->GetDoubleCorrespondingToOption("-vegfboundaryvalue"); //0.1
-        double input_test_nb = command_line->GetDoubleCorrespondingToOption("-testnb"); // choice of Psprout formula
-
-        // mesh for pdes 
-        double boundary_cuboid_min = 0.0;
-        double boundary_cuboid_max = 100.0;
+        // parameters for vegf concentration
+        double input_val_vegf_constantbackground = command_line->GetDoubleCorrespondingToOption("-vegfconstantbackground"); //0.1
 
         // parameters for forces 
-        double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-4
-        double input_val_chi = command_line->GetDoubleCorrespondingToOption("-chi"); //1E-1
-        double input_val_omegap = command_line->GetDoubleCorrespondingToOption("-omegap"); //1E-4
+        double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-5
+        double input_val_chi = command_line->GetDoubleCorrespondingToOption("-chi"); //1E-2
+        double input_val_omegap = command_line->GetDoubleCorrespondingToOption("-omegap"); //1E-3
         double input_val_omegaa = command_line->GetDoubleCorrespondingToOption("-omegaa"); //1.0
 
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
 
-        // general parameters (time, random seed)
-        double input_val_time = 300; //command_line->GetDoubleCorrespondingToOption("-time"); 
+        // general parameters (time, random seed, output directory)
+        double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
         double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
+        std::string output_directory_vegfconstant = command_line->GetStringCorrespondingToOption("-output_directory_vegfconstant");
 
-        std::string output_directory = command_line->GetStringCorrespondingToOption("-output_directory_analyticalvegf");
+        ////////////
+        // MESHES // 
+        ////////////
 
-        // set seed 
-        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+        // mesh for pdes 
+        //double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 100.0;
 
-        // creation of the mesh
+        // creation of the mesh for ABM
         std::vector<Node<2>*> nodes;
         nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2));
         nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2));
@@ -347,6 +531,10 @@ public:
 
         NodesOnlyMesh<2> mesh;
         mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        ///////////
+        // CELLS // 
+        ///////////
 
         // creation of the cells
         std::vector<CellPtr> cells;
@@ -358,7 +546,7 @@ public:
 
         // proliferative states
         MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
-        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide, fully constrained 
         MAKE_PTR(TransitCellProliferativeType, p_transit_type); // vessel segment ? 
 
         CellsGenerator<UniformCellCycleModel, 2> cells_generator;
@@ -390,9 +578,16 @@ public:
         typedef PinnedCellsBoundaryCondition<2,2> PinnedCellsBoundaryCondition;
         MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
 
+        //////////////
+        // SETTINGS // 
+        //////////////
+
+        // set seed 
+        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+
         // Set up simulation time for file output
         OffLatticeSimulation<2> simulator(cell_population);
-        simulator.SetOutputDirectory(output_directory);
+        simulator.SetOutputDirectory(output_directory_vegfconstant);
         simulator.SetSamplingTimestepMultiple(120);
         simulator.SetEndTime(input_val_time);
         simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
@@ -403,10 +598,9 @@ public:
 
         // 1) SOLVE PDE 
 
-        // We approximate the solution 
+        // No PDE in the case of constant VEGF in the ECM
 
-
-        // 2) UPDATING CELL POSITION : change the direction of the forces 
+        // 2) UPDATING CELL POSITION 
 
         // Random force (all cells)
         typedef RandomForce<2> RandomForce;
@@ -414,11 +608,8 @@ public:
         simulator.AddForce(p_random_force);
 
         // Chemotactic force (tip cells only) 
-        // typedef ChemoForce<2> ChemoForce;
-        // MAKE_PTR_ARGS(ChemoForce, p_chemo_force, (input_val_chi, 1E-2));
-        typedef ChemoForceWithAnalyticalPdeApproximation<2> ChemoForceWithAnalyticalPdeApproximation;
-        MAKE_PTR_ARGS(ChemoForceWithAnalyticalPdeApproximation, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
-
+        typedef ChemoForce<2> ChemoForce;
+        MAKE_PTR_ARGS(ChemoForce, p_chemo_force, (input_val_chi, input_val_vegf_constantbackground)); 
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
@@ -444,11 +635,9 @@ public:
         // 3) DIVISION OF CELLS 
 
         // Set the division rule for our population to be the random direction division rule
-        // typedef SproutingRule<2,2> SproutingRule;
-        // MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_maxsproutingrate));
-        typedef SproutingRuleWithAnalyticalPdeApproximation<2,2> SproutingRuleWithAnalyticalPdeApproximation;
-        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalPdeApproximation, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue, input_test_nb));
-
+        typedef SproutingRule<2,2> SproutingRule;
+        MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_maxsproutingrate*input_val_vegf_constantbackground));
+        
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
@@ -472,8 +661,12 @@ public:
         SimulationTime::Destroy();
     }
 
-    void NoTestAngiogenesisModelWithMolecularConcentrationsAnalyticalSolutionOfPdesIn3D() 
+    void NoTestAngiogenesisModelWithVegfConcentrationPdeIn3D() 
     {
+        ///////////
+        // INPUT // 
+        ///////////
+
         // Parameters input 
         CommandLineArguments* command_line = CommandLineArguments::Instance();
 
@@ -485,11 +678,7 @@ public:
         double input_val_vegf_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfconsumptioncoeff"); //0.0
         double input_val_vegf_initialvalue = command_line->GetDoubleCorrespondingToOption("-vegfinitialvalue"); //0.1
         double input_val_vegf_boundaryvalue = command_line->GetDoubleCorrespondingToOption("-vegfboundaryvalue"); //0.1
-        int input_test_nb = command_line->GetDoubleCorrespondingToOption("-testnb");
-
-        // mesh for pdes 
-        double boundary_cuboid_min = 0.0;
-        double boundary_cuboid_max = 100.0;
+        double input_val_vegf_constantbackground = command_line->GetDoubleCorrespondingToOption("-vegfconstantbackground"); //0.1
 
         // parameters for forces 
         double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-4
@@ -499,24 +688,33 @@ public:
 
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
+        int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
 
-        // general parameters (time, random seed)
-        double input_val_time = 300; //command_line->GetDoubleCorrespondingToOption("-time"); 
+        // general parameters (time, random seed, output directory)
+        double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
         double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
+        std::string output_directory = command_line->GetStringCorrespondingToOption("-output_directory");
 
-        std::string output_directory = command_line->GetStringCorrespondingToOption("-output_directory_analyticalvegf");
+        ////////////
+        // MESHES // 
+        ////////////
 
-        // set seed 
-        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+        // mesh for pdes 
+        double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 50.0;
 
         // creation of the mesh
         std::vector<Node<3>*> nodes;
-        nodes.push_back(new Node<3>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2, boundary_cuboid_max/2));
-        nodes.push_back(new Node<3>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2, boundary_cuboid_max/2));
-        nodes.push_back(new Node<3>(2u, false, boundary_cuboid_max*0.25-2, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(0u, false, boundary_cuboid_max/2, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(1u, false, boundary_cuboid_max/2-1, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(2u, false, boundary_cuboid_max/2-2, boundary_cuboid_max/2, boundary_cuboid_max/2));
 
         NodesOnlyMesh<3> mesh;
         mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        ///////////
+        // CELLS // 
+        ///////////
 
         // creation of the cells
         std::vector<CellPtr> cells;
@@ -529,7 +727,6 @@ public:
         // proliferative states
         MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
         MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
-        MAKE_PTR(TransitCellProliferativeType, p_transit_type); // vessel segment ? 
 
         CellsGenerator<UniformCellCycleModel, 3> cells_generator;
         cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
@@ -560,6 +757,13 @@ public:
         typedef PinnedCellsBoundaryCondition<3,3> PinnedCellsBoundaryCondition;
         MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
 
+        //////////////
+        // SETTINGS // 
+        //////////////
+
+        // set seed 
+        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+
         // Set up simulation time for file output
         OffLatticeSimulation<3> simulator(cell_population);
         simulator.SetOutputDirectory(output_directory);
@@ -567,16 +771,37 @@ public:
         simulator.SetEndTime(input_val_time);
         simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
 
+
         /////////////////
         // SIMULATION // 
         ////////////////
 
         // 1) SOLVE PDE 
 
-        // We approximate the solution 
+        // Create PDE and boundary condition objects
+        typedef VegfEquationPde<3> VegfEquationPde; 
+        typedef VegfBoundaryCondition<3> VegfBoundaryCondition;
+        MAKE_PTR_ARGS(VegfEquationPde, p_pde, (cell_population, input_val_vegf_dudtcoeff, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_constantbackground));
+        MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_vegf_boundaryvalue, boundary_cuboid_min));
+
+        // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
+        ChastePoint<3> lower(boundary_cuboid_min, boundary_cuboid_min, boundary_cuboid_min);
+        ChastePoint<3> upper(boundary_cuboid_max, boundary_cuboid_max, boundary_cuboid_max);
+        MAKE_PTR_ARGS(ChasteCuboid<3>, p_cuboid, (lower, upper));
+
+        // Initial conditions
+        Vec initial_condition = nullptr;
+
+        // Create a PDE modifier and set the name of the dependent variable in the PDE
+        typedef MolecularConcentrationsDomainPdeModifier<3> MolecularConcentrationsDomainPdeModifier;
+        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_vegf_initialvalue, input_val_vegf_constantbackground));
+        p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
+        p_pde_modifier->SetOutputGradient(true);
+
+        simulator.AddSimulationModifier(p_pde_modifier);
 
 
-        // 2) UPDATING CELL POSITION : change the direction of the forces 
+        // 2) UPDATING CELL POSITION 
 
         // Random force (all cells)
         typedef RandomForce<3> RandomForce;
@@ -584,11 +809,8 @@ public:
         simulator.AddForce(p_random_force);
 
         // Chemotactic force (tip cells only) 
-        // typedef ChemoForce<3> ChemoForce;
-        // MAKE_PTR_ARGS(ChemoForce, p_chemo_force, (input_val_chi, 1E-2));
-        typedef ChemoForceWithAnalyticalPdeApproximation<3> ChemoForceWithAnalyticalPdeApproximation;
-        MAKE_PTR_ARGS(ChemoForceWithAnalyticalPdeApproximation, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
-
+        typedef ChemoForceWithPdes<3> ChemoForceWithPdes;
+        MAKE_PTR_ARGS(ChemoForceWithPdes, p_chemo_force, (input_val_chi, p_pde_modifier));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
@@ -614,10 +836,8 @@ public:
         // 3) DIVISION OF CELLS 
 
         // Set the division rule for our population to be the random direction division rule
-        // typedef SproutingRule<3,3> SproutingRule;
-        // MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_maxsproutingrate));
-        typedef SproutingRuleWithAnalyticalPdeApproximation<3,3> SproutingRuleWithAnalyticalPdeApproximation;
-        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalPdeApproximation, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue, input_test_nb));
+        typedef SproutingRuleWithPdes<3,3> SproutingRuleWithPdes;
+        MAKE_PTR_ARGS(SproutingRuleWithPdes, p_division_rule_to_set, (input_val_maxsproutingrate, p_pde_modifier, input_psproutfunctiontestnb));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
@@ -642,23 +862,197 @@ public:
         SimulationTime::Destroy();
     }
 
-    void NoTestAngiogenesisModelWithMolecularConcentrationsPdesIn3D() 
+    void NoTestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn3D() 
     {
+        ///////////
+        // INPUT // 
+        ///////////
+
         // Parameters input 
         CommandLineArguments* command_line = CommandLineArguments::Instance();
 
         // parameters for vegf pde 
-        double input_val_vegf_dudtcoeff = command_line->GetDoubleCorrespondingToOption("-vegfdudtcoeff"); //1.0
+        //double input_val_vegf_dudtcoeff = command_line->GetDoubleCorrespondingToOption("-vegfdudtcoeff"); //1.0 but not necessary for analytical approximation case 
         double input_val_vegf_diffusioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfdiffusioncoeff"); //0.2
         double input_val_vegf_decaycoeff = command_line->GetDoubleCorrespondingToOption("-vegfdecaycoeff"); //1.0
         double input_val_vegf_creationcoeff = command_line->GetDoubleCorrespondingToOption("-vegfcreationcoeff"); //0.0
         double input_val_vegf_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfconsumptioncoeff"); //0.0
-        double input_val_vegf_initialvalue = command_line->GetDoubleCorrespondingToOption("-vegfinitialvalue"); //0.1
+        //double input_val_vegf_initialvalue = command_line->GetDoubleCorrespondingToOption("-vegfinitialvalue"); //0.1 but not necessary for anayltical approximation case 
         double input_val_vegf_boundaryvalue = command_line->GetDoubleCorrespondingToOption("-vegfboundaryvalue"); //0.1
+        double input_val_vegf_constantbackground = command_line->GetDoubleCorrespondingToOption("-vegfconstantbackground"); //0.1
+
+        // parameters for forces 
+        double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-4
+        double input_val_chi = command_line->GetDoubleCorrespondingToOption("-chi"); //1E-1
+        double input_val_omegap = command_line->GetDoubleCorrespondingToOption("-omegap"); //1E-4
+        double input_val_omegaa = command_line->GetDoubleCorrespondingToOption("-omegaa"); //1.0
+
+        // parameters for Psprout 
+        double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
+        int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
+
+        // general parameters (time, random seed, output directory)
+        double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
+        double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
+        std::string output_directory = command_line->GetStringCorrespondingToOption("-output_directory_analyticalvegf");
+
+        ////////////
+        // MESHES // 
+        ////////////
 
         // mesh for pdes 
-        double boundary_cuboid_min = 0.0;
-        double boundary_cuboid_max = 50.0;
+        //double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 100.0;
+
+        // creation of the mesh
+        std::vector<Node<3>*> nodes;
+        nodes.push_back(new Node<3>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(2u, false, boundary_cuboid_max*0.25-2, boundary_cuboid_max/2, boundary_cuboid_max/2));
+
+        NodesOnlyMesh<3> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        ///////////
+        // CELLS // 
+        ///////////
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 3> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<3> cell_population(mesh, cells);
+
+        cell_population.Update(); // addition of this line compared to the sprouting test
+
+        // Writers 
+        cell_population.AddCellPopulationCountWriter<CellMutationStatesCountWriter>();
+        cell_population.AddCellWriter<CellMutationStatesWriter>();
+        cell_population.AddCellWriter<ConsecutiveBranchesWriter>();
+        cell_population.AddCellWriter<BranchesNumberWriter>();
+        cell_population.AddCellWriter<BirthTimeCellWriter>();
+        cell_population.AddCellWriter<TortuosityWriter>();
+
+        // fully constrain the first cell using the boundary condition 
+        unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
+        std::vector<unsigned> pinned_node_indices;
+        pinned_node_indices.push_back(node_index_tip_cell);
+        typedef PinnedCellsBoundaryCondition<3,3> PinnedCellsBoundaryCondition;
+        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
+
+        //////////////
+        // SETTINGS // 
+        //////////////
+
+        // set seed 
+        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+
+        // Set up simulation time for file output
+        OffLatticeSimulation<3> simulator(cell_population);
+        simulator.SetOutputDirectory(output_directory);
+        simulator.SetSamplingTimestepMultiple(120);
+        simulator.SetEndTime(input_val_time);
+        simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
+
+        /////////////////
+        // SIMULATION // 
+        ////////////////
+
+        // 1) SOLVE PDE 
+
+        // We approximate the solution 
+
+
+        // 2) UPDATING CELL POSITION 
+
+        // Random force (all cells)
+        typedef RandomForce<3> RandomForce;
+        MAKE_PTR_ARGS(RandomForce, p_random_force, (input_val_sigma));
+        simulator.AddForce(p_random_force);
+
+        // Chemotactic force (tip cells only) 
+        typedef ChemoForceWithAnalyticalApproximationPde<3> ChemoForceWithAnalyticalApproximationPde;
+        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
+        simulator.AddForce(p_chemo_force);
+
+        //Persistence force (tip cells only)
+        typedef PersistenceForce<3> PersistenceForce;
+        MAKE_PTR_ARGS(PersistenceForce, p_persistence_force, (input_val_omegap));
+        simulator.AddForce(p_persistence_force);
+
+        // Mechanical force (all cells)
+        typedef LinearMechanicalForceModified<3> LinearMechanicalForceModified;
+        MAKE_PTR(LinearMechanicalForceModified, p_mechanical_force);
+        p_mechanical_force->SetMeinekeSpringStiffness(15.0);
+        cell_population.SetMeinekeDivisionSeparation(1.0);
+        p_mechanical_force->SetMeinekeDivisionRestingSpringLength(1.0);
+        p_mechanical_force->SetMeinekeSpringGrowthDuration(1.0);
+        p_mechanical_force->SetCutOffLength(1.5);
+        simulator.AddForce(p_mechanical_force);
+
+        // Angular force (vessel segment only)
+        typedef AngularForce<3> AngularForce;
+        MAKE_PTR_ARGS(AngularForce, p_angular_force, (-input_val_omegaa)); 
+        simulator.AddForce(p_angular_force);
+
+        // 3) DIVISION OF CELLS 
+
+        // Set the division rule for our population to be the random direction division rule
+        typedef SproutingRuleWithAnalyticalApproximationPde<3,3> SproutingRuleWithAnalyticalApproximationPde;
+        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_psproutfunctiontestnb));
+
+        // Set the division rule for our population to be the new division rule implemented earlier 
+        cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
+
+        // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
+        typedef DaughterCellModifier<3> DaughterCellModifier;
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, ());
+        simulator.AddSimulationModifier(p_daughtercell_modifier);
+
+        typedef DirectionalPersistenceCellModifier<3> DirectionalPersistenceCellModifier;
+        MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
+        simulator.AddSimulationModifier(p_persistenceforce_modifier);
+
+        cell_population.Update();
+
+        simulator.Solve();
+
+        // Output run time data
+        CellBasedEventHandler::Headings();
+        CellBasedEventHandler::Report();
+
+        SimulationTime::Destroy();
+    }
+
+    void NoTestAngiogenesisModelWithVegfConcentrationConstantIn3D() 
+    {
+        ///////////
+        // INPUT // 
+        ///////////
+
+        // Parameters input 
+        CommandLineArguments* command_line = CommandLineArguments::Instance();
+
+        // parameters for vegf concentration
+        double input_val_vegf_constantbackground = command_line->GetDoubleCorrespondingToOption("-vegfconstantbackground"); //0.1
 
         // parameters for forces 
         double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-4
@@ -669,23 +1063,31 @@ public:
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
 
-        // general parameters (time, random seed)
-        double input_val_time = 600; //command_line->GetDoubleCorrespondingToOption("-time"); 
-        double input_val_seed = 19; //command_line->GetIntCorrespondingToOption("-seed"); 
+        // general parameters (time, random seed, output directory)
+        double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
+        double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
+        std::string output_directory_constantvegf = command_line->GetStringCorrespondingToOption("-output_directory_constantvegf");
 
-        std::string output_directory = command_line->GetStringCorrespondingToOption("-output_directory");
+        ////////////
+        // MESHES // 
+        ////////////
 
-        // set seed 
-        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+        // mesh for pdes 
+        //double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 100.0;
 
-        // creation of the mesh
+        // creation of the mesh for ABM
         std::vector<Node<3>*> nodes;
-        nodes.push_back(new Node<3>(0u, false, boundary_cuboid_max/2, boundary_cuboid_max/2, boundary_cuboid_max/2));
-        nodes.push_back(new Node<3>(1u, false, boundary_cuboid_max/2-1, boundary_cuboid_max/2, boundary_cuboid_max/2));
-        nodes.push_back(new Node<3>(2u, false, boundary_cuboid_max/2-2, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(2u, false, boundary_cuboid_max*0.25-2, boundary_cuboid_max/2, boundary_cuboid_max/2));
 
         NodesOnlyMesh<3> mesh;
         mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        ///////////
+        // CELLS // 
+        ///////////
 
         // creation of the cells
         std::vector<CellPtr> cells;
@@ -729,13 +1131,19 @@ public:
         typedef PinnedCellsBoundaryCondition<3,3> PinnedCellsBoundaryCondition;
         MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
 
+        //////////////
+        // SETTINGS // 
+        //////////////
+
+        // set seed 
+        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+
         // Set up simulation time for file output
         OffLatticeSimulation<3> simulator(cell_population);
-        simulator.SetOutputDirectory(output_directory);
+        simulator.SetOutputDirectory(output_directory_constantvegf);
         simulator.SetSamplingTimestepMultiple(120);
         simulator.SetEndTime(input_val_time);
         simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
-
 
         /////////////////
         // SIMULATION // 
@@ -743,30 +1151,9 @@ public:
 
         // 1) SOLVE PDE 
 
-        // Create PDE and boundary condition objects
-        // typedef VegfEquationPde<3> VegfEquationPde; 
-        // typedef VegfBoundaryCondition<3> VegfBoundaryCondition;
-        // MAKE_PTR_ARGS(VegfEquationPde, p_pde, (cell_population, input_val_vegf_dudtcoeff, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff));
-        // MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_vegf_boundaryvalue, boundary_cuboid_min));
+        // No PDE in the case of constant VEGF in the ECM 
 
-        // // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
-        // ChastePoint<3> lower(boundary_cuboid_min, boundary_cuboid_min, boundary_cuboid_min);
-        // ChastePoint<3> upper(boundary_cuboid_max, boundary_cuboid_max, boundary_cuboid_max);
-        // MAKE_PTR_ARGS(ChasteCuboid<3>, p_cuboid, (lower, upper));
-
-        // // Initial conditions
-        // Vec initial_condition = nullptr;
-
-        // // Create a PDE modifier and set the name of the dependent variable in the PDE
-        // typedef MolecularConcentrationsDomainPdeModifier<3> MolecularConcentrationsDomainPdeModifier;
-        // MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_vegf_initialvalue));
-        // p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
-        // p_pde_modifier->SetOutputGradient(true);
-
-        // simulator.AddSimulationModifier(p_pde_modifier);
-
-
-        // 2) UPDATING CELL POSITION : change the direction of the forces 
+        // 2) UPDATING CELL POSITION 
 
         // Random force (all cells)
         typedef RandomForce<3> RandomForce;
@@ -774,14 +1161,8 @@ public:
         simulator.AddForce(p_random_force);
 
         // Chemotactic force (tip cells only) 
-        // typedef ChemoForce<3> ChemoForce;
-        // MAKE_PTR_ARGS(ChemoForce, p_chemo_force, (input_val_chi, 1E-2));
-        // simulator.AddForce(p_chemo_force);
-        // typedef ChemoForceWithPdes<3> ChemoForceWithPdes;
-        // MAKE_PTR_ARGS(ChemoForceWithPdes, p_chemo_force, (input_val_chi, p_pde_modifier));
-        // simulator.AddForce(p_chemo_force);
-        typedef ChemoForceWithAnalyticalPdeApproximation<3> ChemoForceWithAnalyticalPdeApproximation;
-        MAKE_PTR_ARGS(ChemoForceWithAnalyticalPdeApproximation, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
+        typedef ChemoForce<3> ChemoForce;
+        MAKE_PTR_ARGS(ChemoForce, p_chemo_force, (input_val_chi, input_val_vegf_constantbackground));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
@@ -807,12 +1188,8 @@ public:
         // 3) DIVISION OF CELLS 
 
         // Set the division rule for our population to be the random direction division rule
-        // typedef SproutingRule<3,3> SproutingRule;
-        // MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_maxsproutingrate));
-        // typedef SproutingRuleWithPdes<3,3> SproutingRuleWithPdes;
-        // MAKE_PTR_ARGS(SproutingRuleWithPdes, p_division_rule_to_set, (input_val_maxsproutingrate, p_pde_modifier));
-        typedef SproutingRuleWithAnalyticalPdeApproximation<3,3> SproutingRuleWithAnalyticalPdeApproximation;
-        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalPdeApproximation, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
+        typedef SproutingRule<3,3> SproutingRule;
+        MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, (input_val_maxsproutingrate*input_val_vegf_constantbackground));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
@@ -839,4 +1216,4 @@ public:
 
 };
 
-#endif /*TESTANGIOGENESISMODELWITHMOLECULARCONCENTRATIONSPDES_HPP_*/
+#endif /*TESTANGIOGENESISMODELWITHVEGFCONCENTRATIONPDE_HPP_*/

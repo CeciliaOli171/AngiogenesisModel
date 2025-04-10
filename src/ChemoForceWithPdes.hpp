@@ -20,10 +20,10 @@ friend class TestForces;
 
 private:
 
-    double mChiPde;
+    double mChiPdes;
     boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > mpPdeModifier;
 
-    std::vector<c_vector<double, DIM> > mGradientsWithVegf;
+    std::vector<c_vector<double, DIM> > mGradientsVegfPdes;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -35,7 +35,7 @@ private:
 public:
 
     // constructor
-    ChemoForceWithPdes(double chi = 0.1, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> >());
+    ChemoForceWithPdes(double chiPdes = 0.1, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> >());
 
     // destructor
     ~ChemoForceWithPdes();

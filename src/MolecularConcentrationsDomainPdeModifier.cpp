@@ -5,8 +5,8 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-MolecularConcentrationsDomainPdeModifier<DIM>::MolecularConcentrationsDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde, boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition, bool isNeumannBoundaryCondition, boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid, double stepSize, Vec solution, double boundaryCuboidMax, double initialValue)
-    : AbstractBoxDomainPdeModifier<DIM>(pPde, pBoundaryCondition, isNeumannBoundaryCondition, pMeshCuboid, stepSize, solution), mBoundaryCuboidMax(boundaryCuboidMax), mInitialValue(initialValue)
+MolecularConcentrationsDomainPdeModifier<DIM>::MolecularConcentrationsDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde, boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition, bool isNeumannBoundaryCondition, boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid, double stepSize, Vec solution, double boundaryCuboidMax, double initialValue, double constantBackground)
+    : AbstractBoxDomainPdeModifier<DIM>(pPde, pBoundaryCondition, isNeumannBoundaryCondition, pMeshCuboid, stepSize, solution), mBoundaryCuboidMax(boundaryCuboidMax), mInitialValue(initialValue), mConstantBackground(constantBackground)
 {
 }
 
@@ -102,42 +102,16 @@ template<unsigned DIM>
 void MolecularConcentrationsDomainPdeModifier<DIM>::SetupInitialSolutionVector(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
 {
     double init_cond_value = mInitialValue;
+    double constant_background = mConstantBackground;
     std::vector<double> init_cond(this->mpFeMesh->GetNumNodes());
-
-    // TIP CELL INITIAL CONDITION TO MODIFY 
-    // double TipCellXCoord = 2.0;
-    // double TipCellYCoord = 0.0;
-    // double TipCellZCoord = 0.0;
-
-    // // initial coordinates of the tip cell (we suppose that there is only one tip cell at t=0 for the moment)
-    // for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
-    // {
-    //     unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-    //     CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
-
-    //     if (pCell->GetCellProliferativeType()->IsType<TipCellMutationState>()){
-    //         TipCellXCoord = rCellPopulation.GetLocationOfCellCentre(pCell)[0];
-    //         TipCellYCoord = rCellPopulation.GetLocationOfCellCentre(pCell)[1];
-    //         TipCellZCoord = rCellPopulation.GetLocationOfCellCentre(pCell)[2];
-    //     }
-    // }
-
-    // PRINT_VARIABLE(TipCellXCoord)
-    // PRINT_VARIABLE(TipCellYCoord)
-    // PRINT_VARIABLE(TipCellZCoord)
 
     // initial coordinates of the endometriotic lesion 
     for(unsigned i=0; i<this->mpFeMesh->GetNumNodes(); i++){
         if(this->mpFeMesh->GetNode(i)->rGetLocation()[0] == mBoundaryCuboidMax){
             init_cond[i] = init_cond_value;
         } else {
-            init_cond[i] = 0.0;
+            init_cond[i] = constant_background;
         }
-
-        // TIP CELL INITIAL CONDITION TO MODIFY
-        // if(this->mpFeMesh->GetNode(i)->rGetLocation()[0] == TipCellXCoord && this->mpFeMesh->GetNode(i)->rGetLocation()[1] == TipCellYCoord && this->mpFeMesh->GetNode(i)->rGetLocation()[2] == TipCellZCoord){
-        //     init_cond[i] = 0.1*init_cond_value;
-        // }
     }
 
     // Initialise mSolution

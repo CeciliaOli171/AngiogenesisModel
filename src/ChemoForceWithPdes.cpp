@@ -9,10 +9,10 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-ChemoForceWithPdes<DIM>::ChemoForceWithPdes(double chi, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier)
-    : ChemoForce<DIM>(chi, 0.0), mChiPde(chi),  mpPdeModifier(pPdeModifier)
+ChemoForceWithPdes<DIM>::ChemoForceWithPdes(double chiPdes, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier)
+    : ChemoForce<DIM>(chiPdes, 0.0), mChiPdes(chiPdes),  mpPdeModifier(pPdeModifier)
 {
-    assert(chi>0);
+    assert(chiPdes>0);
 }
 
 template<unsigned DIM>
@@ -23,13 +23,13 @@ ChemoForceWithPdes<DIM>::~ChemoForceWithPdes()
 template<unsigned DIM>
 c_vector<double, DIM>& ChemoForceWithPdes<DIM>::GetGradient(unsigned node_index)
 {
-    return mGradientsWithVegf[node_index];
+    return mGradientsVegfPdes[node_index];
 }
 
 template<unsigned DIM>
 double ChemoForceWithPdes<DIM>::GetMagnitudeGradient(unsigned node_index)
 {
-    return norm_2(GetGradient(node_index))/mChiPde;
+    return norm_2(GetGradient(node_index))/mChiPdes;
 }
 
 template<unsigned DIM>
@@ -40,7 +40,7 @@ void ChemoForceWithPdes<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>&
  
     // Initialise gradients size
     unsigned num_nodes = rCellPopulation.GetNumNodes();
-    mGradientsWithVegf.resize(num_nodes, zero_vector<double>(DIM));
+    mGradientsVegfPdes.resize(num_nodes, zero_vector<double>(DIM));
 
     // The constant gradients at each element
     std::vector<c_vector<double, DIM> > gradients_on_elements;
@@ -84,7 +84,7 @@ void ChemoForceWithPdes<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>&
 
         unsigned elem_index = mpPdeModifier->GetFeMesh()->GetContainingElementIndex(rCellPopulation.GetLocationOfCellCentre(pCell));
 
-        mGradientsWithVegf[node_indice] += mChiPde*gradients_on_elements[elem_index];
+        mGradientsVegfPdes[node_indice] += mChiPdes*gradients_on_elements[elem_index];
     }
 }
 

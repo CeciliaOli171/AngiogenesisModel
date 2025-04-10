@@ -9,7 +9,7 @@ do
         for k in ${listomegap[@]}
         do
             echo $i $j $k
-            python3 /Users/coli171/Chaste/Source/projects/AngiogenesisModel/ModelAnalysis/ForcesCoeffTest.py -valuerandomseed $i -countersigma $j -counteromegap $k
+            python3 /Users/coli171/Chaste/Source/projects/AngiogenesisModel/ModelAnalysis/PYR/ForcesCoeffTest.py -valuerandomseed $i -countersigma $j -counteromegap $k
         done
     done
 done 

@@ -9,8 +9,8 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-VegfEquationPde<DIM>::VegfEquationPde(AbstractCellPopulation<DIM,DIM>& rCellPopulation, double duDtCoefficient, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient)
-    : AveragedSourceParabolicPde<DIM>(rCellPopulation, duDtCoefficient, diffusionCoefficient, decayCoefficient), mrCellPopulation(rCellPopulation), mDuDtCoefficient(duDtCoefficient), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient)
+VegfEquationPde<DIM>::VegfEquationPde(AbstractCellPopulation<DIM,DIM>& rCellPopulation, double duDtCoefficient, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double constantBackground)
+    : AveragedSourceParabolicPde<DIM>(rCellPopulation, duDtCoefficient, diffusionCoefficient, decayCoefficient), mrCellPopulation(rCellPopulation), mDuDtCoefficient(duDtCoefficient), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient), mConstantBackground(constantBackground)
 {
 }
 

@@ -6,6 +6,6 @@ do
     for j in ${listsourceterm[@]}
     do
         echo $i $j
-        python3 /Users/coli171/Chaste/Source/projects/AngiogenesisModel/ModelAnalysis/ANZIAMPresentationTest1.py -valuerandomseed $i -sourceterm $j 
+        python3 /Users/coli171/Chaste/Source/projects/AngiogenesisModel/ModelAnalysis/ANZIAM2025/ANZIAMPresentationTest2.py -valuerandomseed $i -sourceterm $j 
     done
 done 

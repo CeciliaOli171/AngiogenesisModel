@@ -1,5 +1,5 @@
-#ifndef SPROUTINGRULEWITHANALYTICALPDEAPPROXIMATION_HPP_
-#define SPROUTINGRULEWITHANALYTICALPDEAPPROXIMATION_HPP_
+#ifndef SPROUTINGRULEWITHANALYTICALAPPROXIMATIONPDE_HPP_
+#define SPROUTINGRULEWITHANALYTICALAPPROXIMATIONPDE_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
@@ -29,12 +29,12 @@ template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedCell
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedDivisionRule;
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-class SproutingRuleWithAnalyticalPdeApproximation  : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
+class SproutingRuleWithAnalyticalApproximationPde : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
 {
 
 private:
 
-    double mMaxSproutingRateAnalyticalPde;
+    double mMaxSproutingRateAnalyticalApproxPde;
 
     double mDiffusionCoefficient;
     double mDecayCoefficient;
@@ -43,8 +43,9 @@ private:
 
     double mBoundaryCuboidMax;
     double mSourceValue;
+    double mConstantBackground;
 
-    int mTestNb;
+    int mPsproutFunctionTestNb;
 
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
@@ -58,10 +59,10 @@ private:
 public:
 
     // constructor 
-    SproutingRuleWithAnalyticalPdeApproximation(double maxSproutingRateAnalyticalPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double boundaryCuboidMax=20.0, double sourceValue=0.1, int testNb = 0);
+    SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double boundaryCuboidMax=20.0, double sourceValue=0.1, double constantBackground=0.1, int PsproutFunctionTestNb = 0);
 
     // destructor 
-    ~SproutingRuleWithAnalyticalPdeApproximation();
+    ~SproutingRuleWithAnalyticalApproximationPde();
 
     // calculates the vegf concentration at a specified node 
     double GetVegfConcentrationAtNode(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell);
@@ -72,6 +73,6 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_ALL_DIMS(SproutingRuleWithAnalyticalPdeApproximation)
+EXPORT_TEMPLATE_CLASS_ALL_DIMS(SproutingRuleWithAnalyticalApproximationPde)
 
 #endif /*SPROUTINGRULEWITHANALYTICALPDEAPPROXIMATION_HPP_*/

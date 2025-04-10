@@ -58,5 +58,28 @@
         "algorithm": "cpp",
         "execution": "cpp",
         "iomanip": "cpp"
-    }
+    }, 
+
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label":"Build Chaste",
+            "type": "shell",
+            "command": "docker run --rm -v ~/Chaste/Source/:/home/chaste/src -v ~/Chaste/Build/:/home/chaste/build chaste/base make --no-print-directory -j4 -C build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Run Test",
+            "type": "shell",
+            "command": "docker run --rm -v ~/Chaste/Build/:/home/chaste/build -v ~/Chaste/Output/:/home/chaste/testoutput chaste/base build/projects/AngiogenesisModel/test/${fileBasenameNoExtension}",
+            "dependsOn": "Build Chaste",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        }
+    ]
 }

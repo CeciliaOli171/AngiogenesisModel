@@ -34,8 +34,10 @@ class SproutingRuleWithPdes  : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
 
 private:
 
-    double mMaxSproutingRateVegf;
+    double mMaxSproutingRatePdes;
     boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > mpPdeModifier; 
+
+    int mPsproutFunctionTestNb;
 
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
@@ -49,7 +51,7 @@ private:
 public:
 
     // constructor 
-    SproutingRuleWithPdes(double MaxSproutingRateVegf = 0.1, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> >());
+    SproutingRuleWithPdes(double MaxSproutingRatePdes = 0.1, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> >(), int PsproutFunctionTestNb = 0);
 
     // destructor 
     ~SproutingRuleWithPdes();

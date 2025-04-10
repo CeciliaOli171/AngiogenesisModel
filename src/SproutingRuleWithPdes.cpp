@@ -13,12 +13,13 @@
 #include <random>
 #include <cstdlib>
 #include <iterator>
+#include <cmath>
 #include "ReplicatableVector.hpp"
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRateVegf, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier)
-    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateVegf), mMaxSproutingRateVegf(MaxSproutingRateVegf), mpPdeModifier(pPdeModifier)
+SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRatePdes, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier, int PsproutFunctionTestNb)
+    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRatePdes), mMaxSproutingRatePdes(MaxSproutingRatePdes), mpPdeModifier(pPdeModifier), mPsproutFunctionTestNb(PsproutFunctionTestNb)
 {
 }
 
@@ -39,17 +40,19 @@ double SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbability(Ab
     Element<SPACE_DIM,SPACE_DIM>* p_element = p_coarse_mesh->GetElement(elem_index);
     double vegf_concentration = previous_solution[p_element->GetNodeGlobalIndex(0)];
 
-    // Linear function
-    Psprout = mMaxSproutingRateVegf*vegf_concentration; // test since the concentration is between 0 and 1 
-
-    // Hill function (n=1) : Witzenbichler et al. 1998
-    //Psprout = mMaxSproutingRateVegf*pow(vegf_concentration, 1)/(pow(0.3, 1) + pow(vegf_concentration,1));
-
-    // Hill function (n=2) : Witzenbichler et al. 1998
-    //Psprout = mMaxSproutingRateVegf*pow(vegf_concentration, 2)/(pow(0.3, 2) + pow(vegf_concentration,2));
-
-    // Hill function (n=3) : Witzenbichler et al. 1998
-    //Psprout = mMaxSproutingRateVegf*pow(vegf_concentration, 3)/(pow(0.3, 3) + pow(vegf_concentration,3));
+    if(mPsproutFunctionTestNb == 0){
+        // Linear function
+        Psprout = mMaxSproutingRatePdes*vegf_concentration; // test since the concentration is between 0 and 1
+    } else if(mPsproutFunctionTestNb == 1){
+        // Hill function 
+        double cmax = 1;
+        double cmin = 0.5;
+        double Pmax = 0.98;
+        double Pmin = 0.4;
+        double n = (1/log(cmax/cmin))*log((Pmax/Pmin)*(1-Pmin)/(1-Pmax));
+        double K = pow(cmax*((1-Pmax)/Pmax),(1/n));
+        Psprout = mMaxSproutingRatePdes*pow(vegf_concentration,n)/(pow(K, n) + pow(vegf_concentration,n));
+    }
 
     return Psprout;
 }
