@@ -18,7 +18,7 @@
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double boundaryCuboidMax, double sourceValue, double constantBackground, int PsproutFunctionTestNb)
+SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double sourceValue, double boundaryCuboidMax, double constantBackground, int PsproutFunctionTestNb)
     : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateAnalyticalApproxPde), mMaxSproutingRateAnalyticalApproxPde(MaxSproutingRateAnalyticalApproxPde), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient), mBoundaryCuboidMax(boundaryCuboidMax), mSourceValue(sourceValue), mConstantBackground(constantBackground), mPsproutFunctionTestNb(PsproutFunctionTestNb)
 {
 }
@@ -32,7 +32,10 @@ template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 double SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::GetVegfConcentrationAtNode(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell){
     c_vector<double, SPACE_DIM> x_parent = rCellPopulation.GetLocationOfCellCentre(pParentCell);
 
-    double vegf_concentration = mSourceValue*(exp(-sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*x_parent[0]) - exp(sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*(x_parent[0]-2*mBoundaryCuboidMax)))/(1-exp(-sqrt(2*(mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*mBoundaryCuboidMax))+mConstantBackground;
+    //double vegf_concentration = mSourceValue*(exp(-sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*x_parent[0]) - exp(sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*(x_parent[0]-2*mBoundaryCuboidMax)))/(1-exp(-sqrt(2*(mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*mBoundaryCuboidMax))+mConstantBackground; // old version 
+
+    double Kc = sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient);
+    double vegf_concentration = (mSourceValue-mConstantBackground)*exp(-Kc*x_parent[0]);
 
     return vegf_concentration;
 }

@@ -756,6 +756,52 @@ class ParametersSensitivityRunner:
                     CoordinatesFurthestTipCell = CoordinatesNextTipCell
 
         return NormFurthestTipCell
+    
+    def NormFurthestCell(file_nodescoordinates, file_cellmutation, dim):
+        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
+
+        NumberNodes = array_nodescoordinates.shape[0]
+        counter = 0
+        NormFurthestCell = 0
+        if(dim==3):
+            CoordinatesFurthestCell = np.zeros(dim)
+            CoordinatesFurthestCell[0] = array_nodescoordinates[1][0]-25
+            CoordinatesFurthestCell[1] = array_nodescoordinates[1][1]-50
+            CoordinatesFurthestCell[2] = array_nodescoordinates[1][2]-50
+            NormFurthestCell = np.sqrt(CoordinatesFurthestCell[0]**2 + CoordinatesFurthestCell[1]**2+ CoordinatesFurthestCell[2]**2)
+        elif(dim==2):
+            CoordinatesFurthestCell = np.zeros(dim)
+            CoordinatesFurthestCell[0] = array_nodescoordinates[1][0]-25
+            CoordinatesFurthestCell[1] = array_nodescoordinates[1][1]-50
+            NormFurthestCell = np.sqrt(CoordinatesFurthestCell[0]**2 + CoordinatesFurthestCell[1]**2)
+        elif(dim==1):
+            CoordinatesFurthestCell = np.zeros(dim)
+            CoordinatesFurthestCell[0] = array_nodescoordinates[1][0]-25
+            NormFurthestCell = np.sqrt(CoordinatesFurthestCell[0]**2)
+
+        for k in range(NumberNodes):
+            if(dim==3):
+                CoordinatesNextCell = np.zeros(dim)
+                CoordinatesNextCell[0] = array_nodescoordinates[k][0]-25
+                CoordinatesNextCell[1] = array_nodescoordinates[k][1]-50
+                CoordinatesNextCell[2] = array_nodescoordinates[k][2]-50
+                NormNextCell = np.sqrt(CoordinatesNextCell[0]**2 + CoordinatesNextCell[1]**2+ CoordinatesNextCell[2]**2)
+            elif(dim==2):
+                CoordinatesNextCell = np.zeros(dim)
+                CoordinatesNextCell[0] = array_nodescoordinates[k][0]-25
+                CoordinatesNextCell[1] = array_nodescoordinates[k][1]-50
+                NormNextCell = np.sqrt(CoordinatesNextCell[0]**2 + CoordinatesNextCell[1]**2)
+            elif(dim==1):
+                CoordinatesNextCell = np.zeros(dim)
+                CoordinatesNextCell[0] = array_nodescoordinates[k][0]-25
+                NormNextCell = np.sqrt(CoordinatesNextCell[0]**2)
+
+            if(NormNextCell > NormFurthestCell):
+                NormFurthestCell = NormNextCell
+                CoordinatesFurthestCell = CoordinatesNextCell
+
+        return NormFurthestCell
 
     # function returning the average area of the blood vessel tree 
     def AverageArea(file_nodescoordinates, file_cellmutation):

@@ -26,6 +26,8 @@ private:
     double mDecayCoefficient;
     double mCreationCoefficient;
     double mConsumptionCoefficient;
+    double mSourceValue;
+    double mConstantBackground;
 
     double mBoundaryCuboidMax;
     double mMaxValue;
@@ -42,7 +44,7 @@ private:
 public:
 
     // constructor
-    ChemoForceWithAnalyticalApproximationPde(double chiAnalyticalApproxPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double boundaryCuboidMax=20.0, double maxValue=0.1);
+    ChemoForceWithAnalyticalApproximationPde(double chiAnalyticalApproxPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double sourceValue=0.5, double constantBackground=0.1, double boundaryCuboidMax=20.0, double maxValue=0.1);
 
     // destructor
     ~ChemoForceWithAnalyticalApproximationPde();

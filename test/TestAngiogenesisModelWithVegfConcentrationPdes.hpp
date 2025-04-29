@@ -309,7 +309,7 @@ public:
         SimulationTime::Destroy();
     }
 
-    void TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn2D() 
+    void TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn2D() throw(Exception)
     {
         ///////////
         // INPUT // 
@@ -339,7 +339,7 @@ public:
         int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb"); // 0 for linear function; 1 for hill function
 
         // general parameters (time, random seed, output directory)
-        double input_val_time = 300; //command_line->GetDoubleCorrespondingToOption("-time"); 
+        double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
         double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
         std::string output_directory_analyticalapproxvegf = command_line->GetStringCorrespondingToOption("-output_directory_analyticalapproxvegf");
 
@@ -348,14 +348,14 @@ public:
         ////////////
 
         // mesh for pdes 
-        //double boundary_cuboid_min = 0.0;
-        double boundary_cuboid_max = 100.0;
+        double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 220.0;
 
         // creation of the mesh for ABM
         std::vector<Node<2>*> nodes;
-        nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2));
-        nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2));
-        nodes.push_back(new Node<2>(2u, false, boundary_cuboid_max*0.25-2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max-20, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max-21, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(2u, false, boundary_cuboid_max-22, boundary_cuboid_max/2));
 
         NodesOnlyMesh<2> mesh;
         mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
@@ -437,7 +437,8 @@ public:
 
         // Chemotactic force (tip cells only) 
         typedef ChemoForceWithAnalyticalApproximationPde<2> ChemoForceWithAnalyticalApproximationPde;
-        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
+        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, 
+        input_val_vegf_constantbackground, boundary_cuboid_max, input_val_vegf_boundaryvalue));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
@@ -521,13 +522,13 @@ public:
 
         // mesh for pdes 
         //double boundary_cuboid_min = 0.0;
-        double boundary_cuboid_max = 100.0;
+        double boundary_cuboid_max = 300.0;
 
         // creation of the mesh for ABM
         std::vector<Node<2>*> nodes;
-        nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2));
-        nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2));
-        nodes.push_back(new Node<2>(2u, false, boundary_cuboid_max*0.25-2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max-1, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(2u, false, boundary_cuboid_max-2, boundary_cuboid_max/2));
 
         NodesOnlyMesh<2> mesh;
         mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
@@ -990,7 +991,9 @@ public:
 
         // Chemotactic force (tip cells only) 
         typedef ChemoForceWithAnalyticalApproximationPde<3> ChemoForceWithAnalyticalApproximationPde;
-        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue));
+        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, 
+        input_val_vegf_boundaryvalue, 
+        input_val_vegf_constantbackground, boundary_cuboid_max, input_val_vegf_boundaryvalue));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
