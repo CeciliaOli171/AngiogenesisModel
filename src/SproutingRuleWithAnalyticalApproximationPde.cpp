@@ -35,7 +35,7 @@ double SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::GetV
     //double vegf_concentration = mSourceValue*(exp(-sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*x_parent[0]) - exp(sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*(x_parent[0]-2*mBoundaryCuboidMax)))/(1-exp(-sqrt(2*(mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*mBoundaryCuboidMax))+mConstantBackground; // old version 
 
     double Kc = sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient);
-    double vegf_concentration = (mSourceValue-mConstantBackground)*exp(-Kc*x_parent[0]);
+    double vegf_concentration = (mSourceValue-mConstantBackground)*exp(-Kc*abs(x_parent[0]));
 
     return vegf_concentration;
 }
@@ -53,7 +53,7 @@ double SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::GetS
     } else if(mPsproutFunctionTestNb == 1){
         // Hill function 
         double cmax = 1;
-        double cmin = 0.5;
+        double cmin = 0.3;
         double Pmax = 0.98;
         double Pmin = 0.4;
         double n = (1/log(cmax/cmin))*log((Pmax/Pmin)*(1-Pmin)/(1-Pmax));

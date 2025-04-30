@@ -45,12 +45,12 @@ main_file_path = "/Users/coli171/Chaste/Output/PaperAngiogenesisModel2025/PaperM
 
 ## Settings
 TestBaseline = False
-GraphVEGFConcentration = False
+GraphVEGFConcentration = True
 GraphVEGFGradient = False 
 GraphVEGFGradientXAxis = False
 GraphPsprout = False
 GraphPsproutSourceTerm = False
-GraphPsproutPosition = True
+GraphPsproutPosition = False
 GraphNbBranches = False
 GraphBarNbBranches = False
 GraphFurthestCell = False
@@ -63,11 +63,11 @@ GraphFirstTimeCellReachingLesion = False
 
 if GraphVEGFConcentration:
     fig = plt.subplots(figsize = (12,8), dpi = 300)
-    x = np.linspace(0,300,1000)
-    y1 = [(0.1 - c_0)*np.exp(-Kc*item)+c_0 for item in x]
-    y2 = [(0.2 - c_0)*np.exp(-Kc*item)+c_0 for item in x]
-    y5 = [(0.5 - c_0)*np.exp(-Kc*item)+c_0 for item in x]
-    y10 = [(1.0 - c_0)*np.exp(-Kc*item)+c_0 for item in x]
+    x = np.linspace(-200,200,1000)
+    y1 = [(0.1 - c_0)*np.exp(-Kc*np.abs(item))+c_0 for item in x]
+    y2 = [(0.2 - c_0)*np.exp(-Kc*np.abs(item))+c_0 for item in x]
+    y5 = [(0.5 - c_0)*np.exp(-Kc*np.abs(item))+c_0 for item in x]
+    y10 = [(1.0 - c_0)*np.exp(-Kc*np.abs(item))+c_0 for item in x]
     plt.plot(x, y1, label= r'$c_{max} = 0.1$', color = 'xkcd:pale blue')
     plt.plot(x, y2, label= r'$c_{max} = 0.2$', color = 'xkcd:lightblue')
     plt.plot(x, y5, label= r'$c_{max} = 0.5$', color = 'xkcd:blue')

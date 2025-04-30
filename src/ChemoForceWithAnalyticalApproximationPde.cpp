@@ -54,7 +54,7 @@ void ChemoForceWithAnalyticalApproximationPde<DIM>::CalculateVegfGradient(Abstra
             // double vegf_concentration_gradient = -sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*mMaxValue*(exp(-sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*x_parent[0]) + exp(sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*(x_parent[0]-2*mBoundaryCuboidMax)))/(1-exp(-sqrt(2*(mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*mBoundaryCuboidMax)); // old version
 
             double Kc = sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient);
-            double vegf_concentration_gradient = -Kc*(mSourceValue-mConstantBackground)*exp(-Kc*x_parent[0]);
+            double vegf_concentration_gradient = -Kc*(mSourceValue-mConstantBackground)*exp(-Kc*abs(x_parent[0]));
             
             if(DIM == 3){
                 r_gradient_cell(0) = mChiAnalyticalApproxPde*vegf_concentration_gradient; 
