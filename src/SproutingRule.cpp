@@ -169,7 +169,6 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
     double mPerpendicularDirectionCoeff = rCellPopulation.GetMeinekeDivisionSeparation();
 
     // we generate a random number that will set the type of daughter cell 
-    //double random_proba = RandomNumberGenerator::Instance()->ranf();
     double random_proba = RandomNumberGenerator::Instance()->ranf();
 
     // consider a parent cell 
@@ -212,7 +211,6 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
         // if the daughter cell is a tip cell, its position will be perpendicular to the vector between the parent cell and its closest neighbour 
         c_vector<double, SPACE_DIM> perpendicular_daughter_direction_notnormal = PerpendicularDaughterDirection(daughter_direction, parent_position);
         c_vector<double, SPACE_DIM> perpendicular_daughter_direction = perpendicular_daughter_direction_notnormal/norm_2(perpendicular_daughter_direction_notnormal);
-        PRINT_VECTOR(perpendicular_daughter_direction)
 
         // addition of the daughter cell to the map
         daughter_position = parent_position - 0.5*mPerpendicularDirectionCoeff*perpendicular_daughter_direction + 0.5*mDirectionCoeff*daughter_direction;
@@ -233,10 +231,10 @@ std::pair<c_vector<double, SPACE_DIM>, c_vector<double, SPACE_DIM> > SproutingRu
 
         TRACE("NEW SPROUT INCOMING");
 
-        PRINT_VECTOR(daughter_position);
-        PRINT_VECTOR(parent_position);
-        PRINT_VARIABLE(norm_2(daughter_position-closest_neighbour));
-        PRINT_VARIABLE(norm_2(parent_position-closest_neighbour));
+        // PRINT_VECTOR(daughter_position);
+        // PRINT_VECTOR(parent_position);
+        // PRINT_VARIABLE(norm_2(daughter_position-closest_neighbour));
+        // PRINT_VARIABLE(norm_2(parent_position-closest_neighbour));
     } else {
         // vessel segment : incorporation in the vessel 
         // addition of the daughter cell to the map

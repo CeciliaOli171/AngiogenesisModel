@@ -18,8 +18,8 @@
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double sourceValue, double boundaryCuboidMax, double constantBackground, int PsproutFunctionTestNb)
-    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateAnalyticalApproxPde), mMaxSproutingRateAnalyticalApproxPde(MaxSproutingRateAnalyticalApproxPde), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient), mBoundaryCuboidMax(boundaryCuboidMax), mSourceValue(sourceValue), mConstantBackground(constantBackground), mPsproutFunctionTestNb(PsproutFunctionTestNb)
+SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double sourceValue, double constantBackground, double cMax, double cMin, double pMax, double pMin, double boundaryCuboidMax, int PsproutFunctionTestNb)
+    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateAnalyticalApproxPde), mMaxSproutingRateAnalyticalApproxPde(MaxSproutingRateAnalyticalApproxPde), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient), mSourceValue(sourceValue), mConstantBackground(constantBackground), mCMax(cMax), mCMin(cMin), mPMax(pMax), mPMin(pMin), mBoundaryCuboidMax(boundaryCuboidMax), mPsproutFunctionTestNb(PsproutFunctionTestNb)
 {
 }
 
@@ -35,7 +35,7 @@ double SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::GetV
     //double vegf_concentration = mSourceValue*(exp(-sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*x_parent[0]) - exp(sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*(x_parent[0]-2*mBoundaryCuboidMax)))/(1-exp(-sqrt(2*(mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*mBoundaryCuboidMax))+mConstantBackground; // old version 
 
     double Kc = sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient);
-    double vegf_concentration = (mSourceValue-mConstantBackground)*exp(-Kc*abs(x_parent[0]));
+    double vegf_concentration = (mSourceValue-mConstantBackground)*exp(-Kc*abs(x_parent[0]))+mConstantBackground;
 
     return vegf_concentration;
 }
@@ -52,12 +52,8 @@ double SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::GetS
         Psprout = mMaxSproutingRateAnalyticalApproxPde*vegf_concentration; // test since the concentration is between 0 and 1
     } else if(mPsproutFunctionTestNb == 1){
         // Hill function 
-        double cmax = 1;
-        double cmin = 0.3;
-        double Pmax = 0.98;
-        double Pmin = 0.4;
-        double n = (1/log(cmax/cmin))*log((Pmax/Pmin)*(1-Pmin)/(1-Pmax));
-        double K = pow(cmax*((1-Pmax)/Pmax),(1/n));
+        double n = (1/log(mCMax/mCMin))*log((mPMax/mPMin)*(1-mPMin)/(1-mPMax));
+        double K = pow(mCMax*((1-mPMax)/mPMax),(1/n));
         Psprout = mMaxSproutingRateAnalyticalApproxPde*pow(vegf_concentration,n)/(pow(K, n) + pow(vegf_concentration,n));
     } 
      

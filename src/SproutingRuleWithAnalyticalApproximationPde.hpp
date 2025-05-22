@@ -41,6 +41,11 @@ private:
     double mCreationCoefficient;
     double mConsumptionCoefficient;
 
+    double mCMax;
+    double mCMin;
+    double mPMax;
+    double mPMin;
+
     double mBoundaryCuboidMax;
     double mSourceValue;
     double mConstantBackground;
@@ -59,7 +64,7 @@ private:
 public:
 
     // constructor 
-    SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double boundaryCuboidMax=20.0, double sourceValue=0.1, double constantBackground=0.1, int PsproutFunctionTestNb = 0);
+    SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double sourceValue=0.1,double constantBackground=0.1, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4, double boundaryCuboidMax=20.0, int PsproutFunctionTestNb = 0);
 
     // destructor 
     ~SproutingRuleWithAnalyticalApproximationPde();

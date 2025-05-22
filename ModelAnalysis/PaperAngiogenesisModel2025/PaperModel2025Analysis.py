@@ -18,8 +18,8 @@ runner = ParametersSensitivityRunner
 
 ## Parameters 
 Tcycle = 13.0
-time = 400
-Tend = 400
+time = 4000
+Tend = 4000
 TotalTestSourceNb = 10
 TotalTestNb = 17
 dim = 2
@@ -27,17 +27,17 @@ ref_point = 15
 
 # VEGF concentration parameters
 l_max = 220
-c_max = 1
 c_0 = 0.1
-Kc = 1e-2
+Kc = 2e-2
+lambdaSprout = 0.024
 
 # Psprout parameters 
 cmax = 0.8
-c0 = 0.5
+cmin = 0.3
 Pmax = 0.98
 Pmin = 0.5
 
-n = (1/np.log(cmax/c0))*np.log((Pmax/Pmin)*(1-Pmin)/(1-Pmax))
+n = (1/np.log(cmax/cmin))*np.log((Pmax/Pmin)*(1-Pmin)/(1-Pmax))
 K = cmax*((1-Pmax)/Pmax)**(1/n)
 
 main_file_path = "/Users/coli171/Chaste/Output/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" # 2D
@@ -45,13 +45,16 @@ main_file_path = "/Users/coli171/Chaste/Output/PaperAngiogenesisModel2025/PaperM
 
 ## Settings
 TestBaseline = False
-GraphVEGFConcentration = True
+GraphVEGFConcentration = False
+GraphVEGFConcentrationKc = False
 GraphVEGFGradient = False 
 GraphVEGFGradientXAxis = False
 GraphPsprout = False
 GraphPsproutSourceTerm = False
 GraphPsproutPosition = False
 GraphNbBranches = False
+GraphExpectedNbBranches = False
+GraphExpectedNbBranchesVEGF = True
 GraphBarNbBranches = False
 GraphFurthestCell = False
 GraphConvergenceTime = False
@@ -76,6 +79,29 @@ if GraphVEGFConcentration:
     plt.ylabel(r'$c(x)$', fontsize=18)
     plt.xticks(fontsize = 16)
     plt.yticks(fontsize = 16)
+    plt.legend(fontsize = 12)
+    plt.show()
+
+if GraphVEGFConcentrationKc:
+    fig = plt.subplots(figsize = (12,8), dpi = 300)
+    x = np.linspace(0,200,1000)
+    C = 1.0
+    Kc1 = 1e-2
+    Kc2 = 2e-2
+    Kc5 = 5e-2
+    Kc10 = 1e-1
+    y1 = [(C - c_0)*np.exp(-Kc1*item)+c_0 for item in x]
+    y2 = [(C - c_0)*np.exp(-Kc2*item)+c_0 for item in x]
+    y5 = [(C - c_0)*np.exp(-Kc5*item)+c_0 for item in x]
+    y10 = [(C - c_0)*np.exp(-Kc10*item)+c_0 for item in x]
+    plt.plot(x, y1, label= r'$K_c = 1e-2$', color = 'xkcd:pale blue')
+    plt.plot(x, y2, label= r'$K_c = 2e-2$', color = 'xkcd:lightblue')
+    plt.plot(x, y5, label= r'$K_c = 5e-2$', color = 'xkcd:blue')
+    plt.plot(x, y10, label= r'$K_c = 1e-1$', color = 'xkcd:royal blue')
+    plt.xlabel(r'$x$', fontsize=18) 
+    plt.ylabel(r'$c(x)$', fontsize=18)
+    plt.xticks(fontsize = 16)
+    plt.yticks([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], fontsize = 16)
     plt.legend(fontsize = 12)
     plt.show()
 
@@ -131,10 +157,8 @@ if GraphPsproutSourceTerm:
     fig = plt.subplots(figsize = (12,8), dpi = 300)
     sourceterm = np.linspace(0,1.0,100)
     sourcetermticks = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-    Psprout0 = [0.04*item for item in sourceterm] # linear function
-    Psprout = [0.04*(item)**n/(K**n + (item)**n) for item in sourceterm]
+    Psprout = [lambdaSprout*(item)**n/(K**n + (item)**n) for item in sourceterm]
     plt.plot(sourceterm, Psprout, label='hill function', color='xkcd:brown')
-    #plt.plot(sourceterm, Psprout0, label='linear function', color='xkcd:light brown')
     plt.xlabel(r'$c$', fontsize=18) 
     plt.ylabel(r'$P_{sprout}$', fontsize=18)
     plt.xticks(sourcetermticks, fontsize = 16)
@@ -145,10 +169,10 @@ if GraphPsproutSourceTerm:
 if GraphPsproutPosition:
     fig = plt.subplots(figsize = (12,8), dpi = 300)
     x = np.linspace(0, 300, 1000)
-    Psprout1 = [0.04*0.1**n/(K**n + 0.1**n) for item in x]
-    Psprout2 = [0.04*((0.2 - c_0)*np.exp(-Kc*item)+c_0)**n/(K**n + ((0.1 - c_0)*np.exp(-Kc*item)+c_0)**n) for item in x]
-    Psprout5 = [0.04*((0.5 - c_0)*np.exp(-Kc*item)+c_0)**n/(K**n + ((0.5 - c_0)*np.exp(-Kc*item)+c_0)**n) for item in x]
-    Psprout10 = [0.04*((1.0 - c_0)*np.exp(-Kc*item)+c_0)**n/(K**n + ((1.0 - c_0)*np.exp(-Kc*item)+c_0)**n) for item in x]
+    Psprout1 = [0.02*0.1**n/(K**n + 0.1**n) for item in x]
+    Psprout2 = [0.02*((0.2 - c_0)*np.exp(-Kc*item)+c_0)**n/(K**n + ((0.1 - c_0)*np.exp(-Kc*item)+c_0)**n) for item in x]
+    Psprout5 = [0.02*((0.5 - c_0)*np.exp(-Kc*item)+c_0)**n/(K**n + ((0.5 - c_0)*np.exp(-Kc*item)+c_0)**n) for item in x]
+    Psprout10 = [0.02*((1.0 - c_0)*np.exp(-Kc*item)+c_0)**n/(K**n + ((1.0 - c_0)*np.exp(-Kc*item)+c_0)**n) for item in x]
     #plt.plot(x, Psprout1, label=r'$c_{max} = 0.1$', color='xkcd:beige')
     plt.plot(x, Psprout2, label=r'$c_{max} = 0.2$', color='xkcd:tan')
     plt.plot(x, Psprout5, label=r'$c_{max} = 0.5$', color='xkcd:light brown')
@@ -235,6 +259,79 @@ if GraphNbBranches:
     ax.set_ylabel('Number of Branches', fontsize = 15)
     ax.set_xticks(sourceterm)
     ax.tick_params(axis = 'both', labelsize = 15)
+    plt.show()
+
+def ExpectationTC(t, c_max, Kc):
+    # case of Psprout depending on VEGF
+    # Sk = (1/(0.85*t))*(0.02*Tcycle/(t*Kc))*(np.log(K**n + ((c_max-c_0)*np.exp(-t*Kc*(220-t/Tcycle)/Tcycle))**n)-np.log(K**n + ((c_max-c_0)*np.exp(-t*Kc*(220-0.15*t/Tcycle)/Tcycle))**n)) # case of integral: NOT WORKING
+    Sk = lambdaSprout*((c_max - c_0)*np.exp(-Kc*(l_max-t/Tcycle))+c_0)**n/(K**n + ((c_max - c_0)*np.exp(-Kc*(l_max-t/Tcycle))+c_0)**n) # Hill function
+
+    # constant case of Psprout = 0.02
+    #Sk = 0.02
+    return Sk 
+
+def ExpectationBranches(t, c_max):
+    Bn = 2*(1+ExpectationTC(t, c_max))**n - 1
+    return Bn
+
+if GraphExpectedNbBranches:
+    fig = plt.subplots(figsize = (12,8), dpi = 300)
+
+    x = np.linspace(0, l_max, 1000)
+    t = np.linspace(0, 3000, 50)
+    sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
+    y = [2*(1+0.02)**(item/Tcycle)-1 for item in t]
+    y2 = [2*(1+ExpectationTC(item, 0.2))**(item/Tcycle)-1 for item in t]
+    y5 = [2*(1+ExpectationTC(item, 0.5))**(item/Tcycle)-1 for item in t]
+    y10 = [2*(1+ExpectationTC(item, 1.0))**(item/Tcycle)-1 for item in t]
+
+    # plot just Sk
+    # y = [0.02 for item in t]
+    # y2 = [ExpectationTC(item, 0.2) for item in t]
+    # y5 = [ExpectationTC(item, 0.5) for item in t]
+    # y10 = [ExpectationTC(item, 1.0) for item in t]
+
+    plt.plot(t, y, label = 'constant background', color = 'xkcd:black')
+    plt.plot(t, y2, label = 'cmax = 0.2', color = 'xkcd:yellow', marker = 'x')
+    plt.plot(t, y5, label = 'cmax = 0.5', color = 'xkcd:orange', marker = 'x')
+    plt.plot(t, y10, label = 'cmax = 1.0', color = 'xkcd:red', marker = 'x')
+    plt.xlabel(r'$t$', fontsize=18) 
+    plt.ylabel('Expected Number of Branches', fontsize=18)
+    plt.xticks(fontsize = 16)
+    plt.yticks(fontsize = 16)
+    plt.legend(fontsize = 12)
+    plt.show()
+
+if GraphExpectedNbBranchesVEGF:
+    fig = plt.subplots(figsize = (12,8), dpi = 300)
+
+    x = np.linspace(0, l_max, 1000)
+    t = np.linspace(0, 3000, 50)
+    sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
+    # data from Zhang et al. for comparaison 
+    datapoints = [[0.7, 107], [1.77, 105], [2.05, 90], [1.3, 92], [2.25, 52], [1.8, 70], [1.13, 15], [2.3, 75], [2.25, 67], [1.95, 47], [1.7, 68], [1.25, 45], [1.3, 42], [0.48, 48], [0.25, 52], [0.49, 20], [0.4, 29], [1.0, 23], [1.1, 28], [0.9, 10], [0.6, 12], [0.85, 98], [0.7, 83], [0.8, 82], [0.68, 21], [0.27, 28], [0.98, 28], [0.47, 6], [0.4, 14], [0.32, 16], [0.9, 78], [0.8, 72], [0.92, 68], [0.77, 61], [0.94, 57], [0.7, 42], [0.58, 42], [0.57, 41]]
+    microvesseldensity = [datapoints[k][0]/2.5 for k in range(len(datapoints))]
+    VEGFgeneexpressionlinearregression = [20.34*4*item*2.5+30.90*4 for item in microvesseldensity]
+    VEGFgeneexpression = [datapoints[k][1]*4 for k in range(len(datapoints))]
+
+    nbbranches12 = [2*(1+ExpectationTC(3000, v, 1e-2))**(3000/Tcycle)-1 for v in sourceterm]
+    nbbranches22 = [2*(1+ExpectationTC(3000, v, 2e-2))**(3000/Tcycle)-1 for v in sourceterm]
+    nbbranches42 = [2*(1+ExpectationTC(3000, v, 4e-2))**(3000/Tcycle)-1 for v in sourceterm]
+    nbbranches11 = [2*(1+ExpectationTC(3000, v, 1e-1))**(3000/Tcycle)-1 for v in sourceterm]
+
+    plt.plot(sourceterm, nbbranches12, color='xkcd:pale blue', label = 'Kc = 1e-2')
+    plt.plot(sourceterm, nbbranches22, color='xkcd:lightblue', label = 'Kc = 2e-2')
+    plt.plot(sourceterm, nbbranches42, color='xkcd:blue', label = 'Kc = 4e-2')
+    plt.plot(sourceterm, nbbranches11, color='xkcd:royal blue', label = 'Kc = 1e-1')
+    plt.scatter(microvesseldensity, VEGFgeneexpression, color = 'g')
+    plt.plot(microvesseldensity, VEGFgeneexpressionlinearregression, color = 'g')
+    plt.xlabel(r'$t$', fontsize=18) 
+    #plt.ylabel('Expected Number of Branches', fontsize=18)
+    plt.xticks(fontsize = 16)
+    plt.yticks(fontsize = 16)
+    plt.legend(fontsize = 12)
     plt.show()
 
 # Number of cells after a certain plane depending on source term for different Psprout 

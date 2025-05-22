@@ -138,6 +138,9 @@ public:
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
         int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
 
+        // parameters for anastomosis 
+        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
+
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
         double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
@@ -291,7 +294,7 @@ public:
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<2> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, ());
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
         typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
@@ -337,6 +340,13 @@ public:
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
         int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb"); // 0 for linear function; 1 for hill function
+        double input_val_cmax = commandline->GetDoubleCorrespondingToOption("-cmax");
+        double input_val_cmin = commandline->GetDoubleCorrespondingToOption("-cmin");
+        double input_val_pmax = commandline->GetDoubleCorrespondingToOption("-pmax");
+        double input_val_pmin = commandline->GetDoubleCorrespondingToOption("-pmin");
+
+        // parameters for anastomosis 
+        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -465,14 +475,14 @@ public:
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithAnalyticalApproximationPde<2,2> SproutingRuleWithAnalyticalApproximationPde;
-        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_psproutfunctiontestnb));
+        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin, input_psproutfunctiontestnb));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<2> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, ());
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
         typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
@@ -510,6 +520,9 @@ public:
 
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
+
+        // parameters for anastomosis 
+        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -644,7 +657,7 @@ public:
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<2> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, ());
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
         typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
@@ -690,6 +703,9 @@ public:
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
         int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
+
+        // parameters for anastomosis 
+        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -845,7 +861,7 @@ public:
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<3> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, ());
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
         typedef DirectionalPersistenceCellModifier<3> DirectionalPersistenceCellModifier;
@@ -891,6 +907,13 @@ public:
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
         int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
+        double input_val_cmax = commandline->GetDoubleCorrespondingToOption("-cmax");
+        double input_val_cmin = commandline->GetDoubleCorrespondingToOption("-cmin");
+        double input_val_pmax = commandline->GetDoubleCorrespondingToOption("-pmax");
+        double input_val_pmin = commandline->GetDoubleCorrespondingToOption("-pmin");
+
+        // parameters for anastomosis 
+        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -1020,14 +1043,14 @@ public:
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithAnalyticalApproximationPde<3,3> SproutingRuleWithAnalyticalApproximationPde;
-        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, boundary_cuboid_max, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_psproutfunctiontestnb));
+        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin, input_psproutfunctiontestnb));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<3> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, ());
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
         typedef DirectionalPersistenceCellModifier<3> DirectionalPersistenceCellModifier;
@@ -1065,6 +1088,9 @@ public:
 
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
+
+        // parameters for anastomosis 
+        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -1199,7 +1225,7 @@ public:
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<3> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, ());
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
         typedef DirectionalPersistenceCellModifier<3> DirectionalPersistenceCellModifier;

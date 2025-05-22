@@ -16,8 +16,8 @@
 #include "SimulationTime.hpp"
 
 template<unsigned DIM>
-DaughterCellModifier<DIM>::DaughterCellModifier()
-    : AbstractCellBasedSimulationModifier<DIM>(), mHighestBranch(0), mHighestLoop(0)
+DaughterCellModifier<DIM>::DaughterCellModifier(double anastomosisLength)
+    : AbstractCellBasedSimulationModifier<DIM>(), mHighestBranch(0), mHighestLoop(0), mAnastomosisLength(anastomosisLength)
 {
 }
 
@@ -34,7 +34,7 @@ void DaughterCellModifier<DIM>::UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM
 
 template<unsigned DIM>
 std::set<unsigned> DaughterCellModifier<DIM>::GetAnastomosisNeighbours(AbstractCellPopulation<DIM, DIM>& rCellPopulation,NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pParentCell){  
-    std::set<unsigned> neighbours_set = p_node_population->GetNodesWithinNeighbourhoodRadius(pParentCell->GetCellId(),0.75);
+    std::set<unsigned> neighbours_set = p_node_population->GetNodesWithinNeighbourhoodRadius(pParentCell->GetCellId(),mAnastomosisLength);
     std::set<unsigned> neighbours_anastomosis_set;
 
     for(std::set<unsigned>::iterator k = neighbours_set.begin(); k != neighbours_set.end(); ++k){
