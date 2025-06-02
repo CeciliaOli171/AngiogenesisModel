@@ -60,6 +60,10 @@ with $\lambda$ the maximum sprouting rate.
 
 We consider in our model the apoptosis event, necessary to implement the blood flow in our blood network. If the mature TC has a distance smaller than a cut-off length $l_{merge}$, then two scenarios can happen. If the neighbour cell is another TC, then the two branches merge and create a loop; the TCs become SCs. If the neighbour cell is a SC, then the cells connect; the TC becomes a SC and the neighbour cell becomes a branching cell (if it was not already the case).
 
+
+We consider in our model the anastomosis event, necessary to implement the blood flow in our blood network. If the mature TC has a distance smaller than a cut-off length $l_{merge}$, then two scenarios can hapen. If the neighbour cell is another TC, then the two branches merge and create a loop; the TCs become SCs. If the neighbour cell is a SC, then the cells connect; the TC becomes a SC and the neighbour cell becomes a branching cell if it was not already the case. 
+
+
 ### Molecular Concentrations 
 
 We write $n(\textbf{x},t)$ the density of TCs at position $\textbf{x}$ and time $t$.
@@ -81,6 +85,7 @@ c(x) = c_{max} \frac{1}{1 - e^{-2 \sqrt{\frac{M_c - A_c}{D_c}} l_{max}}} (e^{- \
 
 #### Matrix-Metallo Proteinase (MMP)
 To be continued. 
+
 
 ### Forces 
 
