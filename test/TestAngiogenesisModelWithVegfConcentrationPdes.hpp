@@ -139,7 +139,7 @@ public:
         int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
 
         // parameters for anastomosis 
-        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
+        double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -340,13 +340,13 @@ public:
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
         int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb"); // 0 for linear function; 1 for hill function
-        double input_val_cmax = commandline->GetDoubleCorrespondingToOption("-cmax");
-        double input_val_cmin = commandline->GetDoubleCorrespondingToOption("-cmin");
-        double input_val_pmax = commandline->GetDoubleCorrespondingToOption("-pmax");
-        double input_val_pmin = commandline->GetDoubleCorrespondingToOption("-pmin");
+        double input_val_cmax = command_line->GetDoubleCorrespondingToOption("-cmax");
+        double input_val_cmin = command_line->GetDoubleCorrespondingToOption("-cmin");
+        double input_val_pmax = command_line->GetDoubleCorrespondingToOption("-pmax");
+        double input_val_pmin = command_line->GetDoubleCorrespondingToOption("-pmin");
 
         // parameters for anastomosis 
-        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
+        double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -522,7 +522,7 @@ public:
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
 
         // parameters for anastomosis 
-        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
+        double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -705,7 +705,7 @@ public:
         int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
 
         // parameters for anastomosis 
-        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
+        double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -907,13 +907,13 @@ public:
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
         int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
-        double input_val_cmax = commandline->GetDoubleCorrespondingToOption("-cmax");
-        double input_val_cmin = commandline->GetDoubleCorrespondingToOption("-cmin");
-        double input_val_pmax = commandline->GetDoubleCorrespondingToOption("-pmax");
-        double input_val_pmin = commandline->GetDoubleCorrespondingToOption("-pmin");
+        double input_val_cmax = command_line->GetDoubleCorrespondingToOption("-cmax");
+        double input_val_cmin = command_line->GetDoubleCorrespondingToOption("-cmin");
+        double input_val_pmax = command_line->GetDoubleCorrespondingToOption("-pmax");
+        double input_val_pmin = command_line->GetDoubleCorrespondingToOption("-pmin");
 
         // parameters for anastomosis 
-        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
+        double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -1090,7 +1090,7 @@ public:
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
 
         // parameters for anastomosis 
-        double input_val_anastomosislength = commandline->GetDoubleCorrespondingToOption("-anastomosislength");
+        double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
