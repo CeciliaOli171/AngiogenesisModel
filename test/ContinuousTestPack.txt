@@ -1,3 +1,6 @@
 TestHello_AngiogenesisModel.hpp
 TestAngiogenesisModel.hpp
 TestForcesModel.hpp
+TestSolvingMolecularConcentrationsPdes.hpp
+TestSpheroidExperimentsMirams09Paper.hpp
+TestAngiogenesisModelWithVegfConcentrationPdes.hpp

@@ -274,9 +274,6 @@ public:
            NodeBasedCellPopulation<2> cell_population(mesh, cells);
            cell_population.Update(); // addition of this line compared to the sprouting test
 
-           // we copy this cell population to obtain all the previous location index from the cell population before the division 
-           unsigned old_number_nodes = cell_population.GetNumNodes();
-
            // Set the division rule for our population to be the random direction division rule
            typedef SproutingRule<2,2> SproutingRule;
            MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, ());
@@ -298,7 +295,7 @@ public:
            //SproutingRule<2,2>* p_sprouting_division_rule; // do not function 
 
             // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (old_number_nodes));
+            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, ());
             simulator.AddSimulationModifier(p_modifier);
 
            // run simulation 
@@ -330,9 +327,6 @@ public:
            NodeBasedCellPopulation<2> cell_population(mesh, cells);
            cell_population.Update(); // addition of this line compared to the sprouting test
 
-           // we copy this cell population to obtain all the previous location index from the cell population before the division 
-           unsigned old_number_nodes = cell_population.GetNumNodes();
-
            // Set the division rule for our population to be the random direction division rule
            typedef SproutingRule<2,2> SproutingRule;
            MAKE_PTR_ARGS(SproutingRule, p_division_rule_to_set, ());
@@ -354,7 +348,7 @@ public:
            //SproutingRule<2,2>* p_sprouting_division_rule; // do not function 
 
            // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (old_number_nodes));
+            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, ());
             simulator.AddSimulationModifier(p_modifier);
 
            // run simulation 
@@ -391,9 +385,6 @@ public:
            // creation of a population of cells 
            NodeBasedCellPopulation<2> cell_population(mesh, cells);
            cell_population.Update(); // addition of this line compared to the sprouting test
-
-           // we copy this cell population to obtain all the previous location index from the cell population before the division 
-           unsigned OldNumNodes = cell_population.GetNumNodes();
 
            // Set up cell data on the cell population : initialisation for the division 
             for (typename AbstractCellPopulation<2>::Iterator cell_iter = cell_population.Begin();
@@ -442,7 +433,7 @@ public:
            cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
             // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, (OldNumNodes));
+            MAKE_PTR_ARGS(DaughterCellModifier<2>, p_modifier, ());
             simulator.AddSimulationModifier(p_modifier);
 
             cell_population.Update();

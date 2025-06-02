@@ -20,14 +20,10 @@ private:
 
 public:
 
-    /**
-     * Constructor.
-     */
+    // constructor
     LinearMechanicalForceModified();
 
-    /**
-     * Destructor.
-     */
+    // destructor
     ~LinearMechanicalForceModified();
 
     /**
