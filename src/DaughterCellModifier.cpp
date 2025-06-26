@@ -338,10 +338,10 @@ void DaughterCellModifier<DIM>::UpdateCellData(AbstractCellPopulation<DIM,DIM>& 
         unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
         CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
         
-        if (pCell->GetMutationState()->IsType<TipCellMutationState>()){
-            c_vector<double, DIM> cell_position = rCellPopulation.GetLocationOfCellCentre(pCell);
+        if (pCell->GetMutationState()->IsType<TipCellMutationState>() && !(IsBranchingCellNextToCell(rCellPopulation, p_node_population, pCell))){
             // anastomosis only possible if cells far enough from the origin and from its branching cell 
             // anastomosis also only possible after a few time step in this position (enough stress applied to the cell)
+            c_vector<double, DIM> cell_position = rCellPopulation.GetLocationOfCellCentre(pCell);
             CalculateAnastomosisVector(rCellPopulation, p_node_population, pCell);
         }
     }

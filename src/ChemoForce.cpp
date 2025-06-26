@@ -64,14 +64,14 @@ void ChemoForce<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPo
         if (pCell->GetMutationState()->IsType<TipCellMutationState>())
         {
             if(DIM == 3){
-                r_gradient_cell(0) = -mChi*mCX; 
+                r_gradient_cell(0) = -*mCX; 
                 r_gradient_cell(1) = 0.0; 
                 r_gradient_cell(2) = 0.0; 
             } else if (DIM == 2){
-                r_gradient_cell(0) = -mChi*mCX; 
+                r_gradient_cell(0) = -*mCX; 
                 r_gradient_cell(1) = 0.0; 
             } else {
-                r_gradient_cell(0) = -mChi*mCX; 
+                r_gradient_cell(0) = -*mCX; 
             }
 
             mGradients[node_index] += r_gradient_cell;
@@ -107,7 +107,8 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
 
             // force += chi * gradC
             if(magnitude_gradient_cell != 0.0){
-                chemoforce = r_gradient_cell/magnitude_gradient_cell;
+                // chemoforce = r_gradient_cell/magnitude_gradient_cell;
+                chemoforce = mChi*r_gradient_cell;
             } else {
                 chemoforce = zero_vector<double>(DIM);
             }

@@ -1,0 +1,27 @@
+{
+
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation obout the tasks.json format 
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label":"Build Chaste",
+            "type": "shell",
+            "command": "singularity exec ~/Containers/base_latest.sif make --no-print-directory -j8 -C ~/Chaste/Build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Run Test",
+            "type": "shell",
+            "command": "singularity exec --bind /hpc/coli171/Results:/home/chaste/testoutput /people/coli171/Containers/base_latest.sif /people/coli171/Chaste/Build/projects/ProjectChaste/test/${fileBasenameNoExtension}",
+            "dependsOn": "Build Chaste",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        }
+    ]
+}

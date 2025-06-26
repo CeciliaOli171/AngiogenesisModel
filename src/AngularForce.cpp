@@ -198,7 +198,15 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
         u = rCellPopulation.rGetMesh().GetVectorFromAtoB(xi, xj);
         v = rCellPopulation.rGetMesh().GetVectorFromAtoB(xk, xj);
 
+        // alphangularmin needs to be in between 0 and pi 
         double alphangularmin = GetAngleFromVectors(u, v);
+        alphangularmin = fmod(alphangularmin, 2*M_PI);
+        if(alphangularmin < 0){
+            alphangularmin += 2*M_PI;
+        }
+        if(alphangularmin > M_PI){
+            alphangularmin = 2*M_PI - alphangularmin;
+        }
 
         if(neighbouring_node_indices.size() > 2){
             double alpha;
@@ -220,9 +228,17 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
                         c_vector<double, DIM> xij = rCellPopulation.rGetMesh().GetVectorFromAtoB(xi, xj);
                         c_vector<double, DIM> xkj = rCellPopulation.rGetMesh().GetVectorFromAtoB(xk, xj);
                         
+                        // alpha needs to be between 0 and pi
                         alpha = GetAngleFromVectors(u, v);
+                        alpha = fmod(alpha, 2*M_PI);
+                        if(alpha < 0){
+                            alpha += 2*M_PI;
+                        }
+                        if(alpha > M_PI){
+                            alpha = 2*M_PI - alpha;
+                        }
 
-                        if(std::abs(alpha) < std::abs(alphangularmin)){
+                        if(alpha < alphangularmin){
                             alphangularmin = alpha;
                             ximin = xi;
                             xkmin = xk;
@@ -278,14 +294,11 @@ void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellP
             double alphangular;
             c_vector<double, DIM> u;
             c_vector<double, DIM> v;
-            std::tie(alphangular, u, v) = ClosestAngleVesselSegment(rCellPopulation, pCell, neighbouring_node_indices);
+            //std::tie(alphangular, u, v) = ClosestAngleVesselSegment(rCellPopulation, pCell, neighbouring_node_indices);
+            std::tie(alphangular, u, v) = OptimalAngleVesselElement(rCellPopulation, pCell, neighbouring_node_indices);
 
             c_vector<double, DIM> r_angularneighbours = u + v;
             double magnitude_of_angularneighbours = norm_2(r_angularneighbours);
-
-            //PRINT_VARIABLE(alphangular);
-            //PRINT_VARIABLE(magnitude_of_angularneighbours);
-            //PRINT_VECTOR(r_angularneighbours);
 
             if(magnitude_of_angularneighbours != 0){
                 angularforce = mOmegaa*(M_PI-alphangular)/magnitude_of_angularneighbours*r_angularneighbours;

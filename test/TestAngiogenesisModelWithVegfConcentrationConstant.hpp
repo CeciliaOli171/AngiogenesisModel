@@ -1,0 +1,466 @@
+#ifndef TESTANGIOGENESISMODELWITHVEGFCONCENTRATIONCONSTANT_HPP_
+#define TESTANGIOGENESISMODELWITHVEGFCONCENTRATIONCONSTANT_HPP_
+
+// headliners
+#include <cxxtest/TestSuite.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include "UblasIncludes.hpp"
+#include "OutputFileHandler.hpp"
+#include "CheckpointArchiveTypes.hpp"
+#include "PetscSetupAndFinalize.hpp"
+#include "Debug.hpp"
+#include "CommandLineArguments.hpp"
+
+// Geometry
+#include "TetrahedralMesh.hpp"
+#include "AbstractTetrahedralMesh.hpp"
+#include "CellsGenerator.hpp"
+#include "MeshBasedCellPopulationWithGhostNodes.hpp"
+#include "NodeBasedCellPopulation.hpp"
+#include "HoneycombMeshGenerator.hpp"
+#include "HoneycombVertexMeshGenerator.hpp"
+#include "AbstractCellBasedTestSuite.hpp"
+#include "SmartPointers.hpp"
+#include "FileComparison.hpp"
+#include "SimpleTargetAreaModifier.hpp"
+#include "OffLatticeSimulation.hpp"
+#include "AbstractCellPopulationBoundaryCondition.hpp"
+#include "ChasteCuboid.hpp"
+
+#include "PottsMesh.hpp"
+#include "PottsMeshGenerator.hpp"
+#include "PottsElement.hpp"
+#include "PottsMeshReader.hpp"
+#include "TrianglesMeshReader.hpp"
+
+// Cell properties
+#include "CellPropertyRegistry.hpp"
+#include "CellLabel.hpp"
+#include "CellData.hpp"
+#include "CellId.hpp"
+#include "Cell.hpp"
+#include "CellBasedEventHandler.hpp"
+#include "ApoptoticCellProperty.hpp"
+
+#include "DifferentiatedCellProliferativeType.hpp"
+#include "TransitCellProliferativeType.hpp"
+#include "BranchingCellMutationState.hpp"
+#include "TipCellMutationState.hpp"
+#include "VesselCellMutationState.hpp"
+#include "ApcOneHitCellMutationState.hpp"
+#include "ApcTwoHitCellMutationState.hpp"
+#include "BetaCateninOneHitCellMutationState.hpp"
+#include "AbstractCellMutationState.hpp"
+
+#include "FixedG1GenerationalCellCycleModel.hpp"
+#include "UniformCellCycleModel.hpp"
+#include "RandomDirectionCentreBasedDivisionRule.hpp"
+#include "SproutingRule.hpp"
+#include "SproutingRuleWithConstantVegf.hpp"
+#include "SproutingRuleWithPdes.hpp"
+#include "SproutingRuleWithAnalyticalApproximationPde.hpp"
+#include "DaughterCellModifier.hpp"
+
+#include "PinnedCellsBoundaryCondition.hpp"
+
+// Forces 
+#include "GeneralisedLinearSpringForce.hpp"
+#include "DifferentialAdhesionGeneralisedLinearSpringForce.hpp"
+#include "ChemoForce.hpp"
+#include "RandomForce.hpp"
+#include "PersistenceForce.hpp"
+#include "AngularForce.hpp"
+#include "LinearMechanicalForceModified.hpp"
+#include "DirectionalPersistenceCellModifier.hpp"
+#include "ChemoForceWithPdes.hpp"
+#include "ChemoForceWithAnalyticalApproximationPde.hpp"
+
+// Writers
+#include "CellMutationStatesCountWriter.hpp"
+#include "ConsecutiveBranchesWriter.hpp"
+#include "BranchesNumberWriter.hpp"
+#include "CellMutationStatesWriter.hpp"
+#include "BirthTimeCellWriter.hpp"
+#include "TortuosityWriter.hpp"
+#include "PottsMeshWriter.hpp"
+#include "VtkMeshWriter.hpp"
+
+// PDE solvers
+#include "BoundaryConditionsContainer.hpp"
+#include "ConstBoundaryCondition.hpp"
+#include "SimpleNonlinearEllipticSolver.hpp"
+#include "FunctionalBoundaryCondition.hpp"
+#include "SimpleNewtonNonlinearSolver.hpp"
+#include "VegfEquationPde.hpp"
+#include "EllipticBoxDomainPdeModifier.hpp"
+#include "ParabolicBoxDomainPdeModifier.hpp"
+#include "AveragedSourceEllipticPde.hpp"
+#include "AveragedSourceParabolicPde.hpp"
+#include "UniformSourceParabolicPde.hpp"
+#include "AbstractCellBasedWithTimingsTestSuite.hpp"
+#include "MolecularConcentrationsDomainPdeModifier.hpp"
+#include "CellwiseSourceParabolicPde.hpp"
+#include "VegfBoundaryCondition.hpp"
+
+
+
+class TestAngiogenesisModelWithVegfConcentrationConstant : public AbstractCellBasedTestSuite
+{
+
+public:
+
+    void TestAngiogenesisModelWithVegfConcentrationConstantIn2D() 
+    {
+        ///////////
+        // INPUT // 
+        ///////////
+
+        // Parameters input 
+        CommandLineArguments* command_line = CommandLineArguments::Instance();
+
+        // parameters for vegf concentration
+        double input_val_vegf_constantbackground = command_line->GetDoubleCorrespondingToOption("-vegfconstantbackground"); //0.1
+
+        // parameters for forces 
+        double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-5
+        double input_val_chi = command_line->GetDoubleCorrespondingToOption("-chi"); //1E-2
+        double input_val_omegap = command_line->GetDoubleCorrespondingToOption("-omegap"); //1E-3
+        double input_val_omegaa = command_line->GetDoubleCorrespondingToOption("-omegaa"); //1.0
+
+        // parameters for Psprout 
+        double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
+
+        // parameters for anastomosis 
+        double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
+
+        // general parameters (time, random seed, output directory)
+        double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
+        double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
+        std::string output_directory_vegfconstant = command_line->GetStringCorrespondingToOption("-output_directory_vegfconstant");
+
+        ////////////
+        // MESHES // 
+        ////////////
+
+        // mesh for pdes 
+        //double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 220.0;
+
+        // creation of the mesh for ABM
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max-20, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max-21, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(2u, false, boundary_cuboid_max-22, boundary_cuboid_max/2));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        ///////////
+        // CELLS // 
+        ///////////
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide, fully constrained 
+        MAKE_PTR(TransitCellProliferativeType, p_transit_type); // vessel segment ? 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        cell_population.Update(); // addition of this line compared to the sprouting test
+
+        // Writers 
+        cell_population.AddCellPopulationCountWriter<CellMutationStatesCountWriter>();
+        cell_population.AddCellWriter<CellMutationStatesWriter>();
+        cell_population.AddCellWriter<ConsecutiveBranchesWriter>();
+        cell_population.AddCellWriter<BranchesNumberWriter>();
+        cell_population.AddCellWriter<BirthTimeCellWriter>();
+        cell_population.AddCellWriter<TortuosityWriter>();
+
+        // fully constrain the first cell using the boundary condition 
+        unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
+        std::vector<unsigned> pinned_node_indices;
+        pinned_node_indices.push_back(node_index_tip_cell);
+        typedef PinnedCellsBoundaryCondition<2,2> PinnedCellsBoundaryCondition;
+        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
+
+        //////////////
+        // SETTINGS // 
+        //////////////
+
+        // set seed 
+        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+
+        // Set up simulation time for file output
+        OffLatticeSimulation<2> simulator(cell_population);
+        simulator.SetOutputDirectory(output_directory_vegfconstant);
+        simulator.SetSamplingTimestepMultiple(120);
+        simulator.SetEndTime(input_val_time);
+        simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
+
+        /////////////////
+        // SIMULATION // 
+        ////////////////
+
+        // 1) SOLVE PDE 
+
+        // No PDE in the case of constant VEGF in the ECM
+
+        // 2) UPDATING CELL POSITION 
+
+        // Random force (all cells)
+        typedef RandomForce<2> RandomForce;
+        MAKE_PTR_ARGS(RandomForce, p_random_force, (input_val_sigma));
+        simulator.AddForce(p_random_force);
+
+        // Chemotactic force (tip cells only) 
+        typedef ChemoForce<2> ChemoForce;
+        MAKE_PTR_ARGS(ChemoForce, p_chemo_force, (input_val_chi, input_val_vegf_constantbackground)); 
+        simulator.AddForce(p_chemo_force);
+
+        //Persistence force (tip cells only)
+        typedef PersistenceForce<2> PersistenceForce;
+        MAKE_PTR_ARGS(PersistenceForce, p_persistence_force, (input_val_omegap));
+        simulator.AddForce(p_persistence_force);
+
+        // Mechanical force (all cells)
+        typedef LinearMechanicalForceModified<2> LinearMechanicalForceModified;
+        MAKE_PTR(LinearMechanicalForceModified, p_mechanical_force);
+        p_mechanical_force->SetMeinekeSpringStiffness(15.0);
+        cell_population.SetMeinekeDivisionSeparation(1.0);
+        p_mechanical_force->SetMeinekeDivisionRestingSpringLength(1.0);
+        p_mechanical_force->SetMeinekeSpringGrowthDuration(1.0);
+        p_mechanical_force->SetCutOffLength(1.5);
+        simulator.AddForce(p_mechanical_force);
+
+        // Angular force (vessel segment only)
+        typedef AngularForce<2> AngularForce;
+        MAKE_PTR_ARGS(AngularForce, p_angular_force, (-input_val_omegaa)); 
+        simulator.AddForce(p_angular_force);
+
+        // 3) DIVISION OF CELLS 
+
+        // Set the division rule for our population to be the random direction division rule
+        typedef SproutingRuleWithConstantVegf<2,2> SproutingRuleWithConstantVegf;
+        MAKE_PTR_ARGS(SproutingRuleWithConstantVegf, p_division_rule_to_set, (input_val_maxsproutingrate,input_val_vegf_constantbackground));
+        
+        // Set the division rule for our population to be the new division rule implemented earlier 
+        cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
+
+        // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
+        typedef DaughterCellModifier<2> DaughterCellModifier;
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
+        simulator.AddSimulationModifier(p_daughtercell_modifier);
+
+        typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
+        MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
+        simulator.AddSimulationModifier(p_persistenceforce_modifier);
+
+        cell_population.Update();
+
+        simulator.Solve();
+
+        // Output run time data
+        CellBasedEventHandler::Headings();
+        CellBasedEventHandler::Report();
+
+        SimulationTime::Destroy();
+    }
+
+
+    void NoTestAngiogenesisModelWithVegfConcentrationConstantIn3D() 
+    {
+        ///////////
+        // INPUT // 
+        ///////////
+
+        // Parameters input 
+        CommandLineArguments* command_line = CommandLineArguments::Instance();
+
+        // parameters for vegf concentration
+        double input_val_vegf_constantbackground = command_line->GetDoubleCorrespondingToOption("-vegfconstantbackground"); //0.1
+
+        // parameters for forces 
+        double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-4
+        double input_val_chi = command_line->GetDoubleCorrespondingToOption("-chi"); //1E-1
+        double input_val_omegap = command_line->GetDoubleCorrespondingToOption("-omegap"); //1E-4
+        double input_val_omegaa = command_line->GetDoubleCorrespondingToOption("-omegaa"); //1.0
+
+        // parameters for Psprout 
+        double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
+
+        // parameters for anastomosis 
+        double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
+
+        // general parameters (time, random seed, output directory)
+        double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
+        double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
+        std::string output_directory_constantvegf = command_line->GetStringCorrespondingToOption("-output_directory_constantvegf");
+
+        ////////////
+        // MESHES // 
+        ////////////
+
+        // mesh for pdes 
+        //double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 100.0;
+
+        // creation of the mesh for ABM
+        std::vector<Node<3>*> nodes;
+        nodes.push_back(new Node<3>(0u, false, boundary_cuboid_max*0.25, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(1u, false, boundary_cuboid_max*0.25-1, boundary_cuboid_max/2, boundary_cuboid_max/2));
+        nodes.push_back(new Node<3>(2u, false, boundary_cuboid_max*0.25-2, boundary_cuboid_max/2, boundary_cuboid_max/2));
+
+        NodesOnlyMesh<3> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        ///////////
+        // CELLS // 
+        ///////////
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+        MAKE_PTR(TransitCellProliferativeType, p_transit_type); // vessel segment ? 
+
+        CellsGenerator<UniformCellCycleModel, 3> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<3> cell_population(mesh, cells);
+
+        cell_population.Update(); // addition of this line compared to the sprouting test
+
+        // Writers 
+        cell_population.AddCellPopulationCountWriter<CellMutationStatesCountWriter>();
+        cell_population.AddCellWriter<CellMutationStatesWriter>();
+        cell_population.AddCellWriter<ConsecutiveBranchesWriter>();
+        cell_population.AddCellWriter<BranchesNumberWriter>();
+        cell_population.AddCellWriter<BirthTimeCellWriter>();
+        cell_population.AddCellWriter<TortuosityWriter>();
+
+        // fully constrain the first cell using the boundary condition 
+        unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
+        std::vector<unsigned> pinned_node_indices;
+        pinned_node_indices.push_back(node_index_tip_cell);
+        typedef PinnedCellsBoundaryCondition<3,3> PinnedCellsBoundaryCondition;
+        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
+
+        //////////////
+        // SETTINGS // 
+        //////////////
+
+        // set seed 
+        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+
+        // Set up simulation time for file output
+        OffLatticeSimulation<3> simulator(cell_population);
+        simulator.SetOutputDirectory(output_directory_constantvegf);
+        simulator.SetSamplingTimestepMultiple(120);
+        simulator.SetEndTime(input_val_time);
+        simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
+
+        /////////////////
+        // SIMULATION // 
+        ////////////////
+
+        // 1) SOLVE PDE 
+
+        // No PDE in the case of constant VEGF in the ECM 
+
+        // 2) UPDATING CELL POSITION 
+
+        // Random force (all cells)
+        typedef RandomForce<3> RandomForce;
+        MAKE_PTR_ARGS(RandomForce, p_random_force, (input_val_sigma));
+        simulator.AddForce(p_random_force);
+
+        // Chemotactic force (tip cells only) 
+        typedef ChemoForce<3> ChemoForce;
+        MAKE_PTR_ARGS(ChemoForce, p_chemo_force, (input_val_chi, input_val_vegf_constantbackground));
+        simulator.AddForce(p_chemo_force);
+
+        //Persistence force (tip cells only)
+        typedef PersistenceForce<3> PersistenceForce;
+        MAKE_PTR_ARGS(PersistenceForce, p_persistence_force, (input_val_omegap));
+        simulator.AddForce(p_persistence_force);
+
+        // Mechanical force (all cells)
+        typedef LinearMechanicalForceModified<3> LinearMechanicalForceModified;
+        MAKE_PTR(LinearMechanicalForceModified, p_mechanical_force);
+        p_mechanical_force->SetMeinekeSpringStiffness(15.0);
+        cell_population.SetMeinekeDivisionSeparation(1.0);
+        p_mechanical_force->SetMeinekeDivisionRestingSpringLength(1.0);
+        p_mechanical_force->SetMeinekeSpringGrowthDuration(1.0);
+        p_mechanical_force->SetCutOffLength(1.5);
+        simulator.AddForce(p_mechanical_force);
+
+        // Angular force (vessel segment only)
+        typedef AngularForce<3> AngularForce;
+        MAKE_PTR_ARGS(AngularForce, p_angular_force, (-input_val_omegaa)); 
+        simulator.AddForce(p_angular_force);
+
+        // 3) DIVISION OF CELLS 
+
+        // Set the division rule for our population to be the random direction division rule
+        typedef SproutingRuleWithConstantVegf<3,3> SproutingRuleWithConstantVegf;
+        MAKE_PTR_ARGS(SproutingRuleWithConstantVegf, p_division_rule_to_set, (input_val_maxsproutingrate,input_val_vegf_constantbackground));
+
+        // Set the division rule for our population to be the new division rule implemented earlier 
+        cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
+
+        // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
+        typedef DaughterCellModifier<3> DaughterCellModifier;
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
+        simulator.AddSimulationModifier(p_daughtercell_modifier);
+
+        typedef DirectionalPersistenceCellModifier<3> DirectionalPersistenceCellModifier;
+        MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
+        simulator.AddSimulationModifier(p_persistenceforce_modifier);
+
+        cell_population.Update();
+
+        simulator.Solve();
+
+        // Output run time data
+        CellBasedEventHandler::Headings();
+        CellBasedEventHandler::Report();
+
+        SimulationTime::Destroy();
+    }
+
+};
+
+#endif /*TESTANGIOGENESISMODELWITHVEGFCONCENTRATIONCONSTANT_HPP_*/

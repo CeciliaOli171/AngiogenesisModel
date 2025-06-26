@@ -59,7 +59,7 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
 
         double norm_rand_vector = norm_2(rand_vector);        
         if(norm_rand_vector != 0){
-            randomforce = dt*(mSigma/norm_rand_vector)*rand_vector; // calculation of the force
+            randomforce = (mSigma/norm_rand_vector)*rand_vector; // calculation of the force, add dt?
         } else {
             randomforce = zero_vector<double>(DIM);
         }
