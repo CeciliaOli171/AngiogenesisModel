@@ -14,14 +14,19 @@
 template<unsigned DIM>
 class ChemoForce  : public AbstractForce<DIM>
 {
-friend class TestForces;
+friend class TestForcesModel;
 
 private:
 
     double mChi;
     double mCX;
+    double mCY;
+    double mCZ;
+
     double GetChemotacticSensitivity();
     double GetChemotacticGradientCoefficientXAxis();
+    double GetChemotacticGradientCoefficientYAxis();
+    double GetChemotacticGradientCoefficientZAxis();
 
     std::vector<c_vector<double, DIM> > mGradients;
 
@@ -35,7 +40,7 @@ private:
 public:
 
     // constructor
-    ChemoForce(double chi = 0.1, double cx = 5.56E-4);
+    ChemoForce(double chi = 5.56E-4, double cx = 0.1, double cy = 0.0, double cz = 0.0);
 
     // destructor
     ~ChemoForce();

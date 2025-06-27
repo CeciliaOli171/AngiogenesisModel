@@ -9,8 +9,8 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-ChemoForceWithAnalyticalApproximationPde<DIM>::ChemoForceWithAnalyticalApproximationPde(double chiAnalyticalApproxPde, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double sourceValue, double constantBackground, double boundaryCuboidMax, double maxValue)
-    : ChemoForce<DIM>(chiAnalyticalApproxPde, 0.0), mChiAnalyticalApproxPde(chiAnalyticalApproxPde), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient), mSourceValue(sourceValue), mConstantBackground(constantBackground), mBoundaryCuboidMax(boundaryCuboidMax), mMaxValue(maxValue)
+ChemoForceWithAnalyticalApproximationPde<DIM>::ChemoForceWithAnalyticalApproximationPde(double chiAnalyticalApproxPde, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double sourceValue, double constantBackground)
+    : ChemoForce<DIM>(chiAnalyticalApproxPde, 0.0, 0.0, 0.0), mChiAnalyticalApproxPde(chiAnalyticalApproxPde), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient), mSourceValue(sourceValue), mConstantBackground(constantBackground)
 {
     assert(chiAnalyticalApproxPde>0);
 }
@@ -51,8 +51,6 @@ void ChemoForceWithAnalyticalApproximationPde<DIM>::CalculateVegfGradient(Abstra
 
         if (pCell->GetMutationState()->IsType<TipCellMutationState>())
         {
-            // double vegf_concentration_gradient = -sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*mMaxValue*(exp(-sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*x_parent[0]) + exp(sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*(x_parent[0]-2*mBoundaryCuboidMax)))/(1-exp(-sqrt(2*(mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient)*mBoundaryCuboidMax)); // old version
-
             double Kc = sqrt((mDecayCoefficient-mCreationCoefficient)/mDiffusionCoefficient);
             double vegf_concentration_gradient = -Kc*(mSourceValue-mConstantBackground)*exp(-Kc*abs(x_parent[0]));
             

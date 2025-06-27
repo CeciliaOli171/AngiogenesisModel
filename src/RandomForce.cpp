@@ -38,8 +38,6 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
     c_vector<double, DIM> randomforce; 
     c_vector<double, DIM> rand_vector; 
 
-    double dt = SimulationTime::Instance()->GetTime(); 
-
     // we applied the force to the cell population corresponding 
     // here, the random force is applied to every cell 
     for (typename AbstractMesh<DIM, DIM>::NodeIterator node_iter = rCellPopulation.rGetMesh().GetNodeIteratorBegin();
@@ -91,4 +89,4 @@ template class RandomForce<3>;
 
 // Serialization for Boost >= 1.36
 #include "SerializationExportWrapperForCpp.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(RandomForce)
+EXPORT_TEMPLATE_CLASS_SAME_DIMS(RandomForce);

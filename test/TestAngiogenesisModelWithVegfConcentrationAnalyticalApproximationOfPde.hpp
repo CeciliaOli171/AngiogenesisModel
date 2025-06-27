@@ -247,7 +247,7 @@ public:
         // Chemotactic force (tip cells only) 
         typedef ChemoForceWithAnalyticalApproximationPde<2> ChemoForceWithAnalyticalApproximationPde;
         MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, 
-        input_val_vegf_constantbackground, boundary_cuboid_max, input_val_vegf_boundaryvalue));
+        input_val_vegf_constantbackground, boundary_cuboid_max));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
@@ -274,7 +274,7 @@ public:
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithAnalyticalApproximationPde<2,2> SproutingRuleWithAnalyticalApproximationPde;
-        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin, input_psproutfunctiontestnb));
+        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin, boundary_cuboid_max, input_psproutfunctiontestnb));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
@@ -436,7 +436,7 @@ public:
         typedef ChemoForceWithAnalyticalApproximationPde<3> ChemoForceWithAnalyticalApproximationPde;
         MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, 
         input_val_vegf_boundaryvalue, 
-        input_val_vegf_constantbackground, boundary_cuboid_max, input_val_vegf_boundaryvalue));
+        input_val_vegf_constantbackground, boundary_cuboid_max));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)

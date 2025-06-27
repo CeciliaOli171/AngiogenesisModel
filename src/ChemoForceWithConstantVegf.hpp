@@ -1,5 +1,5 @@
-#ifndef CHEMOFORCEWITHANALYTICALAPPROXIMATIONPDE_HPP_
-#define CHEMOFORCEWITHANALYTICALAPPROXIMATIONPDE_HPP_
+#ifndef CHEMOFORCEWITHCONSTANTVEGF_HPP_
+#define CHEMOFORCEWITHCONSTANTVEGF_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
@@ -14,20 +14,14 @@
 #include "ChemoForce.hpp"
 
 template<unsigned DIM>
-class ChemoForceWithAnalyticalApproximationPde : public ChemoForce<DIM>
+class ChemoForceWithConstantVegf : public ChemoForce<DIM>
 {
 friend class TestForcesModel;
 
 private:
 
-    double mChiAnalyticalApproxPde;
-
-    double mDiffusionCoefficient;
-    double mDecayCoefficient;
-    double mCreationCoefficient;
-    double mConsumptionCoefficient;
-    double mSourceValue;
-    double mConstantBackground;
+    double mChiConstantVegf;
+    double mCX;
 
     std::vector<c_vector<double, DIM> > mGradientsVegfAnalyticalApproxPde;
 
@@ -41,10 +35,10 @@ private:
 public:
 
     // constructor
-    ChemoForceWithAnalyticalApproximationPde(double chiAnalyticalApproxPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double sourceValue=0.5, double constantBackground=0.1);
+    ChemoForceWithConstantVegf(double chiAnalyticalApproxPde = 1e-4, double cx);
 
     // destructor
-    ~ChemoForceWithAnalyticalApproximationPde();
+    ~ChemoForceWithConstantVegf();
 
     // display gradient at a node position 
     c_vector<double, DIM>& GetGradient(unsigned node_index);
@@ -57,6 +51,6 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(ChemoForceWithAnalyticalApproximationPde)
+EXPORT_TEMPLATE_CLASS_SAME_DIMS(ChemoForceWithConstantVegf)
 
-#endif /*CHEMOFORCEWITHANALYTICALAPPROXIMATIONPDE_HPP_*/
+#endif /*CHEMOFORCEWITHCONSTANTVEGF_HPP_*/

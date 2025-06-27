@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-valuerandomseed")
 parser.add_argument("-sourceterm")
 args = parser.parse_args()
-path_executable = "build/projects/AngiogenesisModel/test/TestAngiogenesisModelWithVegfConcentrationPdes"
+path_executable = "build/projects/AngiogenesisModel/test/TestAngiogenesisModelWithVegfConcentrationPde"
 
 input_list = []
 value_sourceterm = args.sourceterm

@@ -260,7 +260,7 @@ public:
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithConstantVegf<2,2> SproutingRuleWithConstantVegf;
-        MAKE_PTR_ARGS(SproutingRuleWithConstantVegf, p_division_rule_to_set, (input_val_maxsproutingrate,input_val_vegf_constantbackground));
+        MAKE_PTR_ARGS(SproutingRuleWithConstantVegf, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin, input_psproutfunctiontestnb));
         
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);

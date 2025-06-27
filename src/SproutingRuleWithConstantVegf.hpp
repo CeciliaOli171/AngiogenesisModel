@@ -37,6 +37,13 @@ private:
     double mMaxSproutingRateConstantVegf;
     double mConstantBackground;
 
+    double mCMax;
+    double mCMin;
+    double mPMax;
+    double mPMin;
+
+    int mPsproutFunctionTestNb;
+
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
     template<class Archive>
@@ -49,7 +56,7 @@ private:
 public:
 
     // constructor 
-    SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf = 0.08, double constantBackground=0.1);
+    SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf = 0.08,double constantBackground=0.1, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4, int PsproutFunctionTestNb = 0);
 
     // destructor 
     ~SproutingRuleWithConstantVegf();

@@ -9,12 +9,17 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-ChemoForce<DIM>::ChemoForce(double chi, double cx)
+ChemoForce<DIM>::ChemoForce(double chi, double cx, double cy, double cz)
     : AbstractForce<DIM>(), mChi(chi)
 {
     assert(chi>0);
+
     assert(cx>0);
+    assert(cy>0);
+    assert(cz>0);
     mCX = cx;
+    mCY = cy;
+    mCZ = cz;
 }
 
 template<unsigned DIM>
@@ -32,6 +37,18 @@ template<unsigned DIM>
 double ChemoForce<DIM>::GetChemotacticGradientCoefficientXAxis()
 {
     return mCX;
+}
+
+template<unsigned DIM>
+double ChemoForce<DIM>::GetChemotacticGradientCoefficientYAxis()
+{
+    return mCY;
+}
+
+template<unsigned DIM>
+double ChemoForce<DIM>::GetChemotacticGradientCoefficientZAxis()
+{
+    return mCZ;
 }
 
 template<unsigned DIM>
@@ -64,14 +81,14 @@ void ChemoForce<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPo
         if (pCell->GetMutationState()->IsType<TipCellMutationState>())
         {
             if(DIM == 3){
-                r_gradient_cell(0) = -*mCX; 
-                r_gradient_cell(1) = 0.0; 
-                r_gradient_cell(2) = 0.0; 
+                r_gradient_cell(0) = -mCX; 
+                r_gradient_cell(1) = -mCY; 
+                r_gradient_cell(2) = -mCZ; 
             } else if (DIM == 2){
-                r_gradient_cell(0) = -*mCX; 
-                r_gradient_cell(1) = 0.0; 
+                r_gradient_cell(0) = -mCX; 
+                r_gradient_cell(1) = -mCY; 
             } else {
-                r_gradient_cell(0) = -*mCX; 
+                r_gradient_cell(0) = -mCX; 
             }
 
             mGradients[node_index] += r_gradient_cell;

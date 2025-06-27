@@ -15,7 +15,7 @@
 template<unsigned DIM>
 class AngularForce  : public AbstractForce<DIM>
 {
-friend class TestForces;
+friend class TestForcesModel;
 
 private:
 

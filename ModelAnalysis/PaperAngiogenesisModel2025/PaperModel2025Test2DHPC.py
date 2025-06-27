@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-valuerandomseed")
 parser.add_argument("-sourceterm")
 args = parser.parse_args()
-path_executable = "Chaste/Build/projects/AngiogenesisModel/test/TestAngiogenesisModelWithVegfConcentrationPdes"
+path_executable = "Chaste/Build/projects/AngiogenesisModel/test/TestAngiogenesisModelWithVegfConcentrationPde"
 
 input_list = []
 list_random_seed = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
@@ -47,4 +47,4 @@ except Exception as e:
 
 
 # if only one simulation (to obtain the output) 
-# singularity exec --bind /hpc/coli171/Results:/home/chaste/testoutput /people/coli171/Containers/base_latest.sif /people/coli171/Chaste/Build/projects/AngiogenesisModel/test/TestAngiogenesisModelWithVegfConcentrationPdes -vegfdudtcoeff 0.1 -vegfdiffusioncoeff 1e4 -vegfdecaycoeff 1.0 -vegfcreationcoeff 0.0 -vegfconsumptioncoeff 1.0 -vegfinitialvalue 0.1 -vegfboundaryvalue 0.5 -vegfconstantbackground 0.1 -S 1e-5 -sigma 1e-1 -chi 1e-4 -omegap 1e-1 -omegaa 1e-5 -maxsproutingrate 0.08 -psproutfunctiontestnb 1 -cmax 0.8 -cmin 0.3 -pmax 0.98 -pmin 0.5 -anastomosislength 0.75 -time 3000 -seed 10 -output_directory PaperAngiogenesisModel2025/PaperModel2025Analysis2D/CoupledModel2DPde/Test4/CoupledModel2DPdeSeed10Source5 -output_directory_analyticalapproxvegf PaperAngiogenesisModel2025/PaperModel2025Analysis2D/CoupledModel2DAnalyticalApproxPde/TestForces/CoupledModel2DAnalyticalApproxPdeSeed10Source5Test9 -output_directory_vegfconstant PaperAngiogenesisModel2025/PaperModel2025Analysis2D/CoupledModel2DConstant/Test4/CoupledModel2DConstantSeed10Source5
+# singularity exec --bind /hpc/coli171/Results:/home/chaste/testoutput /people/coli171/Containers/base_latest.sif /people/coli171/Chaste/Build/projects/AngiogenesisModel/test/TestAngiogenesisModelWithVegfConcentrationPde -vegfdudtcoeff 0.1 -vegfdiffusioncoeff 1e4 -vegfdecaycoeff 1.0 -vegfcreationcoeff 0.0 -vegfconsumptioncoeff 1.0 -vegfinitialvalue 0.1 -vegfboundaryvalue 0.5 -vegfconstantbackground 0.1 -S 1e-5 -sigma 1e-1 -chi 1e-4 -omegap 1e-1 -omegaa 1e-5 -maxsproutingrate 0.08 -psproutfunctiontestnb 1 -cmax 0.8 -cmin 0.3 -pmax 0.98 -pmin 0.5 -anastomosislength 0.75 -time 3000 -seed 10 -output_directory PaperAngiogenesisModel2025/PaperModel2025Analysis2D/CoupledModel2DPde/Test4/CoupledModel2DPdeSeed10Source5 -output_directory_analyticalapproxvegf PaperAngiogenesisModel2025/PaperModel2025Analysis2D/CoupledModel2DAnalyticalApproxPde/TestForces/CoupledModel2DAnalyticalApproxPdeSeed10Source5Test9 -output_directory_vegfconstant PaperAngiogenesisModel2025/PaperModel2025Analysis2D/CoupledModel2DConstant/Test4/CoupledModel2DConstantSeed10Source5

@@ -12,7 +12,7 @@
 template<unsigned DIM>
 class RandomForce  : public AbstractForce<DIM>
 {
-friend class TestForces;
+friend class TestForcesModel;
 
 private:
 
@@ -44,7 +44,7 @@ public:
 
 };
 
-#include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(RandomForce) 
+// #include "SerializationExportWrapper.hpp"
+// EXPORT_TEMPLATE_CLASS_SAME_DIMS(RandomForce)
 
 #endif /*RANDOMFORCE_HPP_*/

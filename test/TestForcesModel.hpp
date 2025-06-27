@@ -46,6 +46,9 @@
 #include "Debug.hpp"
 
 #include "ChemoForce.hpp"
+#include "ChemoForceWithConstantVegf.hpp"
+#include "ChemoForceWithAnalyticalApproximationPde.hpp"
+#include "ChemoForceWithPdes.hpp"
 #include "RandomForce.hpp"
 #include "PersistenceForce.hpp"
 #include "AngularForce.hpp"
@@ -53,6 +56,9 @@
 #include "DirectionalPersistenceCellModifier.hpp"
 
 #include "SproutingRule.hpp"
+#include "SproutingRuleWithConstantVegf.hpp"
+#include "SproutingRuleWithAnalyticalApproximationPde.hpp"
+#include "SproutingRuleWithPdes.hpp"
 #include "DaughterCellModifier.hpp"
 #include "PinnedCellsBoundaryCondition.hpp"
 
@@ -71,9 +77,9 @@ public:
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
-        nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max-20, boundary_cuboid_max/2));
-        nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max-21, boundary_cuboid_max/2));
-        nodes.push_back(new Node<2>(2u, false, boundary_cuboid_max-22, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(0u, false, 10, 5));
+        nodes.push_back(new Node<2>(1u, false, 9, 5));
+        nodes.push_back(new Node<2>(2u, false, 8, 5));
 
         NodesOnlyMesh<2> mesh;
         mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
@@ -116,155 +122,661 @@ public:
         // test object 
         for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
         {
-            TS_ASSERT_DELTA(cell_population.GetNode(node_index)->rGetAppliedForce()[0], 0.1, 1e-4); // x axis
-            TS_ASSERT_DELTA(cell_population.GetNode(node_index)->rGetAppliedForce()[1], 0.1, 1e-4); // y axis 
+            TS_ASSERT_DELTA(cell_population.GetNode(node_index)->rGetAppliedForce()[0], 0.1, 1e-2);
+            TS_ASSERT_DELTA(cell_population.GetNode(node_index)->rGetAppliedForce()[1], 0.1, 1e-2);
+            TS_ASSERT_EQUALS(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 0.1); // random norm
         }
-    }
 
-    void NoTestChemotacticForce()
-    {
-        EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
-
-        // creation of the mesh
-        HoneycombMeshGenerator generator(3,1);
-        MutableMesh<2,2>* p_generating_mesh = generator.GetMesh();
-        NodesOnlyMesh<2> mesh;
-        mesh.ConstructNodesWithoutMesh(*p_generating_mesh, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal'sw model)
-
-        // creation of the cells 
-        std::vector<CellPtr> cells;
-        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
-        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
-        cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
-
-        // creation of a population of cells 
-        NodeBasedCellPopulation<2> cell_population(mesh, cells);
-
-        // creation of the simulation 
-        SimulationTime::Instance() -> SetStartTime(0.0);
-        OffLatticeSimulation<2> simulator(cell_population);
-        simulator.SetOutputDirectory("TestChemoForce");
-        simulator.SetSamplingTimestepMultiple(12);
-        simulator.SetEndTime(5.0);
-
-        // we apply the random force law 
-        MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (0.1, 5.56));
-        simulator.AddForce(p_chemo_force);
-
-        // run simulation 
-        simulator.Solve();
-
-        SimulationTime::Destroy();
-    }
-
-    void NoTestPersistenceForce()
-    {
-        EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
-
-        // creation of the mesh
-        HoneycombMeshGenerator generator(3,1);
-        MutableMesh<2,2>* p_generating_mesh = generator.GetMesh();
-        NodesOnlyMesh<2> mesh;
-        mesh.ConstructNodesWithoutMesh(*p_generating_mesh, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal'sw model)
-
-        // creation of the cells 
-        std::vector<CellPtr> cells;
-        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
-        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
-        cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
-
-        // creation of a population of cells 
-        NodeBasedCellPopulation<2> cell_population(mesh, cells);
-        cell_population.Update();
-
-        // creation of the simulation 
-        SimulationTime::Instance() -> SetStartTime(0.0);
-        OffLatticeSimulation<2> simulator(cell_population);
-        simulator.SetOutputDirectory("TestPersistenceForce");
-        simulator.SetSamplingTimestepMultiple(12);
-        simulator.SetEndTime(5.0);
-
-        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        // test archiving class 
+        OutputFileHandler handler("archive", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "random_force.arch";
         {
-            cell_population.GetNode(i)->ClearAppliedForce();
+            AbstractForce<2>* const p_force = new RandomForce<2>(0.1);
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+
+            output_arch << p_force;
+            delete p_force;
         }
-
-        // MAKE_PTR_ARGS(GeneralisedLinearSpringForce<2>, p_linear_force, ());
-        // simulator.AddForce(p_linear_force);
-        MAKE_PTR_ARGS(ChemoForce<2>, p_chemo_force, (0.1, 5.56));
-        simulator.AddForce(p_chemo_force);
-
-        unsigned node_index = 0;
-        // Set up cell data on the cell population
-        for (typename AbstractCellPopulation<2>::Iterator cell_iter = cell_population.Begin();
-        cell_iter != cell_population.End();
-        ++cell_iter) 
         {
-            CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
-            c_vector<double, 2> new_r_cellmovement = cell_population.GetLocationOfCellCentre(p_cell);
-            cell_iter->GetCellData()-> SetItem("old_x_coordinate", new_r_cellmovement(0));
-            cell_iter->GetCellData()-> SetItem("old_y_coordinate", new_r_cellmovement(1));
-            ++node_index;
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+
+            AbstractForce<2>* p_force;
+            input_arch >> p_force;
+
+            TS_ASSERT_EQUALS(dynamic_cast<RandomForce<2>*>(p_force)->GetRandomSensitivity(), 0.1);
+
+            delete p_force;
         }
-
-        // we apply the persistence force law 
-        MAKE_PTR_ARGS(PersistenceForce<2>, p_persistence_force, (0.4));
-        simulator.AddForce(p_persistence_force);
-
-        // run simulation 
-        simulator.Solve();
-
-        SimulationTime::Destroy();
     }
 
-    void NoTestAngularForce() throw(Exception)
+    void TestMechanicalForce()
     {
-        EXIT_IF_PARALLEL; // Honeycomb mesh not made to be run in parallel
-
         // creation of the mesh
         std::vector<Node<2>*> nodes;
-        nodes.push_back(new Node<2>(0u, false, 1.0, 0.0));
-        nodes.push_back(new Node<2>(1u, false, 1.0, 1.5));
-        nodes.push_back(new Node<2>(2u, false, 1.5, 0.6));
-        nodes.push_back(new Node<2>(3u, false, 0.6, 1.0));
+        nodes.push_back(new Node<2>(0u, false, 10, 5));
+        nodes.push_back(new Node<2>(1u, false, 9, 5));
+        nodes.push_back(new Node<2>(2u, false, 8, 5));
 
         NodesOnlyMesh<2> mesh;
-        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal'sw model)
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
 
-        // creation of the cells 
+        // creation of the cells
         std::vector<CellPtr> cells;
-        MAKE_PTR(StemCellProliferativeType, p_stem_type);
-        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
-        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
-        cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
-        cells[2]->SetCellProliferativeType(p_stem_type);
-        cells[3]->SetCellProliferativeType(p_stem_type);
 
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
         // creation of a population of cells 
         NodeBasedCellPopulation<2> cell_population(mesh, cells);
-        cell_population.Update();
 
-        // initialisation of the forces 
-        for(unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
         {
-            cell_population.GetNode(i)->ClearAppliedForce();
+             cell_population.GetNode(i)->ClearAppliedForce();
         }
 
-        // creation of the simulation 
-        SimulationTime::Instance() -> SetStartTime(0.0);
-        OffLatticeSimulation<2> simulator(cell_population);
-        simulator.SetOutputDirectory("TestAngularForce");
-        simulator.SetSamplingTimestepMultiple(12);
-        simulator.SetEndTime(5.0);
+        // we create the random force object 
+        LinearMechanicalForceModified<2> mechanical_force;
 
-        // we apply the angular force law 
-        MAKE_PTR_ARGS(AngularForce<2>, p_angular_force, (5.56));
-        simulator.AddForce(p_angular_force);
+        mechanical_force.AddForceContribution(cell_population);
 
-        // run simulation 
-        simulator.Solve();
+        // test object 
+        for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
+        {
+            TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-1, 1e-1); // random norm
+        }
 
-        SimulationTime::Destroy();
+        // test archiving class 
+        OutputFileHandler handler("archive", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "random_force.arch";
+        {
+            AbstractForce<2>* const p_force = new LinearMechanicalForceModified<2>();
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+
+            output_arch << p_force;
+            delete p_force;
+        }
+        {
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+
+            AbstractForce<2>* p_force;
+            input_arch >> p_force;
+
+            delete p_force;
+        }
+    }
+
+    void TestChemotacticForce()
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 5));
+        nodes.push_back(new Node<2>(1u, false, 9, 5));
+        nodes.push_back(new Node<2>(2u, false, 8, 5));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // we create the random force object 
+        ChemoForce<2> chemo_force(1e-4, 0.1, -0.1, 0.0);
+
+        chemo_force.AddForceContribution(cell_population);
+
+        // test object 
+        for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
+        {
+            TS_ASSERT_EQUALS(cell_population.GetNode(node_index)->rGetAppliedForce()[0], -1e-5);
+            TS_ASSERT_EQUALS(cell_population.GetNode(node_index)->rGetAppliedForce()[1], 1e-5);
+            TS_ASSERT_EQUALS(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-5); // random norm
+        }
+
+        // test archiving class 
+        OutputFileHandler handler("archive", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force.arch";
+        {
+            AbstractForce<2>* const p_force = new ChemoForce<2>(1e-4);
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+
+            output_arch << p_force;
+            delete p_force;
+        }
+        {
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+
+            AbstractForce<2>* p_force;
+            input_arch >> p_force;
+
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForce<2>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
+
+            delete p_force;
+        }
+    }
+
+    void TestChemotacticForceWithConstantVegf()
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 5));
+        nodes.push_back(new Node<2>(1u, false, 9, 5));
+        nodes.push_back(new Node<2>(2u, false, 8, 5));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // we create the random force object 
+        ChemoForceWithConstantVegf<2> chemo_force_withconstantvegf(1e-4, 0.1);
+
+        chemo_force_withconstantvegf.AddForceContribution(cell_population);
+
+        // test object 
+        for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
+        {
+            TS_ASSERT_EQUALS(cell_population.GetNode(node_index)->rGetAppliedForce()[0], -1e-5);
+            TS_ASSERT_EQUALS(cell_population.GetNode(node_index)->rGetAppliedForce()[1], 0.0);
+            TS_ASSERT_EQUALS(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-5); // random norm
+        }
+
+        // test archiving class 
+        OutputFileHandler handler("archive", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withconstantvegf.arch";
+        {
+            AbstractForce<2>* const p_force = new ChemoForceWithConstantVegf<2>(1e-4);
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+
+            output_arch << p_force;
+            delete p_force;
+        }
+        {
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+
+            AbstractForce<2>* p_force;
+            input_arch >> p_force;
+
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithConstantVegf<2>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
+
+            delete p_force;
+        }
+    }
+
+    void NoTestChemotacticForceWithPde() // to complete when study of PDE
+    {
+    }
+
+    void TestChemotacticForceWithApproximationOfPde()
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 5));
+        nodes.push_back(new Node<2>(1u, false, 9, 5));
+        nodes.push_back(new Node<2>(2u, false, 8, 5));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // we create the random force object 
+        ChemoForceWithAnalyticalApproximationPde<2> chemo_force_withanalyticalapproximationpde(1e-4, 1e4, 1.0, 0.0, 0.0, 0.5, 0.1);
+
+        chemo_force_withanalyticalapproximationpde.AddForceContribution(cell_population);
+
+        // test object 
+        for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
+        {
+            // choose one point and calculate the value at this point for the chemotactic force 
+            TS_ASSERT_DELTA(cell_population.GetNode(node_index)->rGetAppliedForce()[0], -3.7e-3, 1e-4); // -3.7e-3
+            TS_ASSERT_EQUALS(cell_population.GetNode(node_index)->rGetAppliedForce()[1], 0.0);
+            TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-5, 1e-6); 
+        }
+
+        // test archiving class 
+        OutputFileHandler handler("archive", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withanalyticalapproximationpde.arch";
+        {
+            AbstractForce<2>* const p_force = new ChemoForceWithAnalyticalApproximationPde<2>(1e-4);
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+
+            output_arch << p_force;
+            delete p_force;
+        }
+        {
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+
+            AbstractForce<2>* p_force;
+            input_arch >> p_force;
+
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithAnalyticalApproximationPde<2>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
+
+            delete p_force;
+        }
+    }
+
+    void TestPersistenceForce()
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 5));
+        nodes.push_back(new Node<2>(1u, false, 9, 5));
+        nodes.push_back(new Node<2>(2u, false, 8, 5));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // we create the random force object 
+        PersistenceForce<2> persistence_force(0.1);
+
+        persistence_force.AddForceContribution(cell_population);
+
+        // test object 
+        for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
+        {
+            TS_ASSERT_DELTA(cell_population.GetNode(node_index)->rGetAppliedForce()[0], 0.1, 1e-2);
+            TS_ASSERT_DELTA(cell_population.GetNode(node_index)->rGetAppliedForce()[1], 0.1, 1e-2);
+            TS_ASSERT_EQUALS(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 0.1); // random norm
+        }
+
+        // test archiving class 
+        OutputFileHandler handler("archive", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "persistence_force.arch";
+        {
+            AbstractForce<2>* const p_force = new PersistenceForce<2>(0.1);
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+
+            output_arch << p_force;
+            delete p_force;
+        }
+        {
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+
+            AbstractForce<2>* p_force;
+            input_arch >> p_force;
+
+            TS_ASSERT_EQUALS(dynamic_cast<PersistenceForce<2>*>(p_force)->GetPersistenceCoefficient(), 0.1);
+
+            delete p_force;
+        }
+    }
+
+    void TestAngularForce()
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 5));
+        nodes.push_back(new Node<2>(1u, false, 9, 5));
+        nodes.push_back(new Node<2>(2u, false, 8, 5));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // we create the random force object 
+        AngularForce<2> angular_force(1e-5);
+
+        angular_force.AddForceContribution(cell_population);
+
+        // test object 
+        for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
+        {
+            TS_ASSERT_EQUALS(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-5); // random norm
+        }
+
+        // test archiving class 
+        OutputFileHandler handler("archive", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "angular_force.arch";
+        {
+            AbstractForce<2>* const p_force = new AngularForce<2>(1e-5);
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+
+            output_arch << p_force;
+            delete p_force;
+        }
+        {
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+
+            AbstractForce<2>* p_force;
+            input_arch >> p_force;
+
+            TS_ASSERT_EQUALS(dynamic_cast<AngularForce<2>*>(p_force)->GetAngularPersistence(), 1e-5);
+
+            delete p_force;
+        }
+    }
+
+    void TestCellMutationStates()
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 5)); // pinned cell 
+        nodes.push_back(new Node<2>(1u, false, 9, 5)); // stalk cell 
+        nodes.push_back(new Node<2>(2u, false, 8, 5)); // branching cell 
+        nodes.push_back(new Node<2>(3u, false, 7, 5.5)); // tip cell 1
+        nodes.push_back(new Node<2>(4u, false, 7, 4.5)); // tip cell 2
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+
+        // test the pointers: colours and type 
+        TS_ASSERT_EQUALS(p_branching_state->GetColour(), 2u);
+        TS_ASSERT_EQUALS(p_branching_state->IsType<TipCellMutationState>(), false);
+        TS_ASSERT_EQUALS(p_branching_state->IsType<VesselCellMutationState>(), false);
+        TS_ASSERT_EQUALS(p_branching_state->IsType<BranchingCellMutationState>(), true);
+
+        TS_ASSERT_EQUALS(p_vessel_state->GetColour(), 1u);
+        TS_ASSERT_EQUALS(p_vessel_state->IsType<TipCellMutationState>(), false);
+        TS_ASSERT_EQUALS(p_vessel_state->IsType<VesselCellMutationState>(), true);
+        TS_ASSERT_EQUALS(p_vessel_state->IsType<BranchingCellMutationState>(), false);
+
+        TS_ASSERT_EQUALS(p_tip_state->GetColour(), 0u);
+        TS_ASSERT_EQUALS(p_tip_state->IsType<TipCellMutationState>(), true);
+        TS_ASSERT_EQUALS(p_tip_state->IsType<VesselCellMutationState>(), false);
+        TS_ASSERT_EQUALS(p_tip_state->IsType<BranchingCellMutationState>(), false);
+
+        // test the number of cells and attribution of mutation state 
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_branching_state);
+        cells[3]->SetMutationState(p_tip_state);
+        cells[4]->SetMutationState(p_tip_state);
+
+        TS_ASSERT_EQUALS(p_branching_state->GetCellCount(), 1u);
+        TS_ASSERT_EQUALS(p_vessel_state->GetCellCount(), 2u);
+        TS_ASSERT_EQUALS(p_tip_state->GetCellCount(), 2u);
+
+        // archiving test 
+        OutputFileHandler handler("archive", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "cell_mutation.arch";
+        {
+            AbstractCellProperty* const p_branching_state = new BranchingCellMutationState();
+            p_branching_state->IncrementCellCount();
+            AbstractCellProperty* const p_branching_state = new VesselCellMutationState();
+            p_vessel_state->IncrementCellCount();
+            AbstractCellProperty* const p_branching_state = new TipCellMutationState();
+            p_tip_state->IncrementCellCount();
+
+            TS_ASSERT_EQUALS(p_branching_state->GetCellCount(), 1u);
+            TS_ASSERT_EQUALS(p_vessel_state->GetCellCount(), 1u);
+            TS_ASSERT_EQUALS(p_tip_state->GetCellCount(), 1u);
+
+            TS_ASSERT_EQUALS(dynamic_cast<AbstractCellMutationState*>(p_branching_state)->GetColour(), 2u);
+            TS_ASSERT_EQUALS(dynamic_cast<AbstractCellMutationState*>(p_vessel_state)->GetColour(), 1u);
+            TS_ASSERT_EQUALS(dynamic_cast<AbstractCellMutationState*>(p_tip_state)->GetColour(), 0u);
+
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+
+            output_arch << p_branching_state;
+            output_arch << p_vessel_state;
+            output_arch << p_tip_state;
+
+            delete p_branching_state;
+            delete p_vessel_state;
+            delete p_tip_state;
+        }
+        {
+            AbstractCellProperty* p_arch_branching_state;
+            AbstractCellProperty* p_arch_vessel_state;
+            AbstractCellProperty* p_arch_tip_state;
+
+            std::ifstream ifs(archive_filename.c_str());
+            boost::archive::text_iarchive input_arch(ifs);
+
+            input_arch >> p_arch_branching_state;
+            input_arch >> p_arch_vessel_state;
+            input_arch >> p_arch_tip_state;
+
+            TS_ASSERT_EQUALS(p_arch_branching_state->GetCellCount(), 1u);
+            TS_ASSERT_EQUALS(p_arch_vessel_state->GetCellCount(), 1u);
+            TS_ASSERT_EQUALS(p_arch_tip_state->GetCellCount(), 1u);
+
+            BranchingCellMutationState* p_real_branching_state = dynamic_cast<BranchingCellMutationState*>(p_arch_branching_state);
+            TS_ASSERT(p_real_branching_state != NULL);
+            TS_ASSERT_EQUALS(p_real_branching_state->GetColour(), 2u);
+            VesselCellMutationState* p_real_vessel_state = dynamic_cast<VesselCellMutationState*>(p_arch_vessel_state);
+            TS_ASSERT(p_real_vessel_state != NULL);
+            TS_ASSERT_EQUALS(p_real_vessel_state->GetColour(), 1u);
+            TipCellMutationState* p_real_tip_state = dynamic_cast<TipCellMutationState*>(p_arch_tip_state);
+            TS_ASSERT(p_real_tip_state != NULL);
+            TS_ASSERT_EQUALS(p_real_tip_state->GetColour(), 0u);
+
+            delete p_arch_branching_state;
+            delete p_arch_vessel_state;
+            delete p_arch_tip_state;
+        }
+    }
+
+    void TestPinnedCellBoundaryCondition()
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 5));
+        nodes.push_back(new Node<2>(1u, false, 9, 5));
+        nodes.push_back(new Node<2>(2u, false, 8, 5));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
+        MAKE_PTR(TipCellMutationState, p_tip_state);
+        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // fully constrain the first cell using the boundary condition 
+        unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
+        std::vector<unsigned> pinned_node_indices;
+        pinned_node_indices.push_back(node_index_tip_cell);
+        typedef PinnedCellsBoundaryCondition<2,2> PinnedCellsBoundaryCondition;
+        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
+
+        // we check that the 
     }
 
     void NoTestSproutingRule() 

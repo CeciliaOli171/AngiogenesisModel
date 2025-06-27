@@ -16,7 +16,7 @@
 template<unsigned DIM>
 class PersistenceForce  : public AbstractForce<DIM>
 {
-friend class TestForces;
+friend class TestForcesModel;
 
 private:
 
