@@ -21,7 +21,7 @@ friend class TestForcesModel;
 private:
 
     double mChiConstantVegf;
-    double mCX;
+    double mConstantBackground;
 
     std::vector<c_vector<double, DIM> > mGradientsVegfAnalyticalApproxPde;
 
@@ -35,7 +35,7 @@ private:
 public:
 
     // constructor
-    ChemoForceWithConstantVegf(double chiAnalyticalApproxPde = 1e-4, double cx);
+    ChemoForceWithConstantVegf(double chiAnalyticalApproxPde = 1e-4, double hx=1e-4, double constantBackground = 0.1);
 
     // destructor
     ~ChemoForceWithConstantVegf();

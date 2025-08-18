@@ -22,11 +22,17 @@ private:
     double mCX;
     double mCY;
     double mCZ;
+    double mHX;
+    double mHY;
+    double mHZ;
 
     double GetChemotacticSensitivity();
     double GetChemotacticGradientCoefficientXAxis();
     double GetChemotacticGradientCoefficientYAxis();
     double GetChemotacticGradientCoefficientZAxis();
+    double GetChemoattractantGradientFactorXAxis();
+    double GetChemoattractantGradientFactorYAxis();
+    double GetChemoattractantGradientFactorZAxis();
 
     std::vector<c_vector<double, DIM> > mGradients;
 
@@ -40,7 +46,7 @@ private:
 public:
 
     // constructor
-    ChemoForce(double chi = 5.56E-4, double cx = 0.1, double cy = 0.0, double cz = 0.0);
+    ChemoForce(double chi = 1E-4, double hx = 1E-4, double hy = 0.0, double hz = 0.0, double cx = 0.1, double cy = 0.0, double cz = 0.0);
 
     // destructor
     ~ChemoForce();

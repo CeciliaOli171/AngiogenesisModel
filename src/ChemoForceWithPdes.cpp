@@ -9,8 +9,8 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-ChemoForceWithPdes<DIM>::ChemoForceWithPdes(double chiPdes, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier)
-    : ChemoForce<DIM>(chiPdes, 0.0), mChiPdes(chiPdes),  mpPdeModifier(pPdeModifier)
+ChemoForceWithPdes<DIM>::ChemoForceWithPdes(double chiPdes, double hx, double hy, double hz, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier)
+    : ChemoForce<DIM>(chiPdes, hx, hy, hz, 0.0, 0.0, 0.0), mChiPdes(chiPdes),  mpPdeModifier(pPdeModifier)
 {
     assert(chiPdes>0);
 }
@@ -80,9 +80,8 @@ void ChemoForceWithPdes<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>&
          ++cell_iter)
     {
         unsigned node_indice = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-        CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_indice);
 
-        unsigned elem_index = mpPdeModifier->GetFeMesh()->GetContainingElementIndex(rCellPopulation.GetLocationOfCellCentre(pCell));
+        unsigned elem_index = mpPdeModifier->GetFeMesh()->GetContainingElementIndex(rCellPopulation.GetLocationOfCellCentre((*cell_iter)));
 
         mGradientsVegfPdes[node_indice] += mChiPdes*gradients_on_elements[elem_index];
     }

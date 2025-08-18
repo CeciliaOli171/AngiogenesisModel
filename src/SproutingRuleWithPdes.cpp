@@ -18,8 +18,8 @@
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRatePdes, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier, int PsproutFunctionTestNb)
-    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRatePdes), mMaxSproutingRatePdes(MaxSproutingRatePdes), mpPdeModifier(pPdeModifier), mPsproutFunctionTestNb(PsproutFunctionTestNb)
+SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRatePdes, double thresholdLength, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier, int PsproutFunctionTestNb)
+    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRatePdes, thresholdLength), mMaxSproutingRatePdes(MaxSproutingRatePdes), mpPdeModifier(pPdeModifier), mPsproutFunctionTestNb(PsproutFunctionTestNb)
 {
 }
 

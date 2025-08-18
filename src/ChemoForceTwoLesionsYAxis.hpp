@@ -1,5 +1,5 @@
-#ifndef CHEMOFORCEWITHPDES_HPP_
-#define CHEMOFORCEWITHPDES_HPP_
+#ifndef CHEMOFORCETWOLESIONSYAXIS_HPP_
+#define CHEMOFORCETWOLESIONSYAXIS_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
@@ -14,16 +14,26 @@
 #include "ChemoForce.hpp"
 
 template<unsigned DIM>
-class ChemoForceWithPdes  : public ChemoForce<DIM>
+class ChemoForceTwoLesionsYAxis : public ChemoForce<DIM>
 {
-friend class TestForces;
+friend class TestForcesModel;
 
 private:
 
-    double mChiPdes;
-    boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > mpPdeModifier;
+    double mChiTwoLesionsYAxis;
 
-    std::vector<c_vector<double, DIM> > mGradientsVegfPdes;
+    double mDiffusionCoefficient;
+    double mDecayCoefficient;
+    double mCreationCoefficient;
+    double mConsumptionCoefficient;
+    double mSourceValue1;
+    double mSourceValue2;
+    double mConstantBackground;
+
+    double mLocationLesion1;
+    double mLocationLesion2;
+
+    std::vector<c_vector<double, DIM> > mGradientsVegfTwoLesionsYAxis;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -35,10 +45,10 @@ private:
 public:
 
     // constructor
-    ChemoForceWithPdes(double chiPdes = 0.1, double hx=1e-4, double hy=1e-4, double hz=1e-4, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> >());
+    ChemoForceTwoLesionsYAxis(double chiTwoLesionsYAxis = 1e-4, double hy = 1e-4, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double sourceValue1=0.5, double sourceValue2 = 0.5, double constantBackground=0.1, double locationLesion1=0.0, double locationLesion2=220.0);
 
     // destructor
-    ~ChemoForceWithPdes();
+    ~ChemoForceTwoLesionsYAxis();
 
     // display gradient at a node position 
     c_vector<double, DIM>& GetGradient(unsigned node_index);
@@ -51,6 +61,6 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(ChemoForceWithPdes)
+EXPORT_TEMPLATE_CLASS_SAME_DIMS(ChemoForceTwoLesionsYAxis)
 
-#endif /*CHEMOFORCEWITHPDES_HPP_*/
+#endif /*CHEMOFORCETWOLESIONSYAXIS_HPP_*/

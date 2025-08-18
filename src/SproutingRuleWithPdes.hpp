@@ -35,6 +35,7 @@ class SproutingRuleWithPdes  : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
 private:
 
     double mMaxSproutingRatePdes;
+
     boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > mpPdeModifier; 
 
     int mPsproutFunctionTestNb;
@@ -51,7 +52,7 @@ private:
 public:
 
     // constructor 
-    SproutingRuleWithPdes(double MaxSproutingRatePdes = 0.1, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> >(), int PsproutFunctionTestNb = 0);
+    SproutingRuleWithPdes(double MaxSproutingRatePdes = 0.1, double thresholdLength=2.0, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> >(), int PsproutFunctionTestNb = 0);
 
     // destructor 
     ~SproutingRuleWithPdes();

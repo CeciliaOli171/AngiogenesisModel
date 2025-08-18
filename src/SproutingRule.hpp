@@ -28,10 +28,14 @@ template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedDivi
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 class SproutingRule  : public AbstractCentreBasedDivisionRule<ELEMENT_DIM, SPACE_DIM>
 {
+friend class TestForcesModel;
 
 private:
 
     double mMaxSproutingRate;
+    double GetMaxSproutingRate();
+
+    double mThresholdLength;
 
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
@@ -45,7 +49,7 @@ private:
 public:
 
     // constructor 
-    SproutingRule(double maxSproutingRate = 0.1);
+    SproutingRule(double maxSproutingRate = 0.08, double thresholdLength=2.0);
 
     // destructor 
     ~SproutingRule();
@@ -61,6 +65,8 @@ public:
     
     // calculates the coordinates of the closest neighbour of a cell 
     std::pair<c_vector<double, SPACE_DIM>, unsigned> ClosestNeighbour(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
+
+    bool IsBranchingCellNextToCell(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation,NodeBasedCellPopulation<SPACE_DIM>* p_node_population, CellPtr pParentCell);
 
     // calculates the coordinates of the perpendicular vector to the daughter position 
     c_vector<double, SPACE_DIM> PerpendicularDaughterDirection(c_vector<double, SPACE_DIM> daughter_direction, c_vector<double, SPACE_DIM> closest_neighbour);

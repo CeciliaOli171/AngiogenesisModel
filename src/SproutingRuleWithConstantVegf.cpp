@@ -18,8 +18,8 @@
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf, double constantBackground, double cMax, double cMin, double pMax, double pMin, int PsproutFunctionTestNb)
-    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateConstantVegf), mMaxSproutingRateConstantVegf(MaxSproutingRateConstantVegf), mConstantBackground(constantBackground), mCMax(cMax), mCMin(cMin), mPMax(pMax), mPMin(pMin), mPsproutFunctionTestNb(PsproutFunctionTestNb)
+SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf, double thresholdLength, double constantBackground, double cMax, double cMin, double pMax, double pMin, int PsproutFunctionTestNb)
+    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateConstantVegf, thresholdLength), mMaxSproutingRateConstantVegf(MaxSproutingRateConstantVegf), mConstantBackground(constantBackground), mCMax(cMax), mCMin(cMin), mPMax(pMax), mPMin(pMin), mPsproutFunctionTestNb(PsproutFunctionTestNb)
 {
 }
 
@@ -29,16 +29,10 @@ SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::~SproutingRuleWithConstan
 }
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetVegfConcentrationAtNode(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell){
-    return mConstantBackground;
-}
-
-template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbability(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell){
+double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbabilityWithConstantVegf(){
     // initialisation 
     double Psprout;
-
-    double vegf_concentration = GetVegfConcentrationAtNode(rCellPopulation, pParentCell);
+    double vegf_concentration = mConstantBackground;
 
     if(mPsproutFunctionTestNb == 0){
         // Linear function
@@ -50,9 +44,20 @@ double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbab
         Psprout = mMaxSproutingRateConstantVegf*pow(vegf_concentration,n)/(pow(K, n) + pow(vegf_concentration,n));
     } 
 
-    mMaxSproutingRateConstantVegf = Psprout;
-     
-    return mMaxSproutingRateConstantVegf;
+    mSproutingProbabilityWithConstantVegf = Psprout;
+
+    return mSproutingProbabilityWithConstantVegf;
+}
+
+template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
+double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetVegfConcentrationAtNode(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell){
+    return mConstantBackground;
+}
+
+template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
+double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbability(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell)
+{
+    return GetSproutingProbabilityWithConstantVegf();
 }
 
 // Explicit instantiation

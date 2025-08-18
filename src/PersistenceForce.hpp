@@ -35,7 +35,7 @@ private:
 public:
 
     // constructor 
-    PersistenceForce(double omegap = 0.4);
+    PersistenceForce(double omegap = 0.1);
 
     // destructor 
     ~PersistenceForce();

@@ -31,33 +31,29 @@ template<unsigned DIM>
 void PersistenceForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
     //TRACE("Begin Persistence Force");
-
-    // initialisation 
-    c_vector<double, DIM> persistenceforce; 
-
-    int dt = SimulationTime::Instance()->GetTime();
-    //PRINT_VARIABLE(dt);
     
     for(typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin();
          cell_iter != rCellPopulation.End();
          ++cell_iter) 
-    {
-        // we collect the cell data (node index and cell pointer)
-        unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-        CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
-
-        if (pCell->GetMutationState()->IsType<TipCellMutationState>()) // && dt % 180 == 0 
+    {        
+        if (cell_iter->GetMutationState()->template IsType<TipCellMutationState>()) // && dt % 180 == 0 
         {
+            c_vector<double, DIM> persistenceforce = zero_vector<double>(DIM); 
+
+            unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
+
             std::vector<std::string> mDataLabels = std::vector<std::string>{ "fx", "fy", "fz" };
             for(unsigned i = 0; i < DIM; ++i){
-                double f = pCell->GetCellData()->GetItem(mDataLabels[i]);
+                double f = (*cell_iter)->GetCellData()->GetItem(mDataLabels[i]);
                 //PRINT_VARIABLE(f)
                 persistenceforce(i) = mOmegap*f;
             
             }
             
             rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(persistenceforce);
-            //PRINT_VECTOR(persistenceforce);
+
+            // test time force 
+            //for(int i = 0; i < 100; ++i){rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(persistenceforce);}
         }
 
     }

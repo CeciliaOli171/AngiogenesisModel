@@ -41,7 +41,7 @@ private:
 public:
 
     // constructor
-    ChemoForceWithAnalyticalApproximationPde(double chiAnalyticalApproxPde = 0.1, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double sourceValue=0.5, double constantBackground=0.1);
+    ChemoForceWithAnalyticalApproximationPde(double chiAnalyticalApproxPde = 1e-4, double hx=1e-4, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double sourceValue=0.5, double constantBackground=0.1);
 
     // destructor
     ~ChemoForceWithAnalyticalApproximationPde();

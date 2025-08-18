@@ -44,7 +44,7 @@ public:
 
 };
 
-// #include "SerializationExportWrapper.hpp"
-// EXPORT_TEMPLATE_CLASS_SAME_DIMS(RandomForce)
+#include "SerializationExportWrapper.hpp"
+EXPORT_TEMPLATE_CLASS_SAME_DIMS(RandomForce)
 
 #endif /*RANDOMFORCE_HPP_*/

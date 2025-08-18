@@ -34,19 +34,17 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
 {
     // TRACE("Begin Random Force");
 
-    // initialisation 
-    c_vector<double, DIM> randomforce; 
-    c_vector<double, DIM> rand_vector; 
-
     // we applied the force to the cell population corresponding 
     // here, the random force is applied to every cell 
-    for (typename AbstractMesh<DIM, DIM>::NodeIterator node_iter = rCellPopulation.rGetMesh().GetNodeIteratorBegin();
-         node_iter != rCellPopulation.rGetMesh().GetNodeIteratorEnd();
-         ++node_iter)
+    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin();
+         cell_iter != rCellPopulation.End();
+         ++cell_iter)
     {
-        // we collect the node data (index)
-        unsigned node_index = (node_iter)->GetIndex();
-        CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
+        // initialisation 
+        c_vector<double, DIM> randomforce = zero_vector<double>(DIM); 
+        c_vector<double, DIM> rand_vector; 
+
+        unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
 
         // Initialise a force vector
         for (unsigned i=0; i<DIM; i++)
@@ -57,17 +55,13 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
 
         double norm_rand_vector = norm_2(rand_vector);        
         if(norm_rand_vector != 0){
-            randomforce = (mSigma/norm_rand_vector)*rand_vector; // calculation of the force, add dt?
-        } else {
-            randomforce = zero_vector<double>(DIM);
+            randomforce = (mSigma/norm_rand_vector)*rand_vector; // calculation of the force
         }
 
-        if(pCell->GetMutationState()->IsType<BranchingCellMutationState>() && pCell->GetCellData()->GetItem("LoopNumber") != 0.0){
-            randomforce = zero_vector<double>(DIM);
-        }
-
-        node_iter->AddAppliedForceContribution(randomforce);
-        //PRINT_VECTOR(randomforce);
+        rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(randomforce);
+        
+        // test time force 
+        //for(int i = 0; i < 100; ++i){rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(randomforce);}
     }
 
     //TRACE("End Random Force");

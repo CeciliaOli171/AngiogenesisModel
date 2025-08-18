@@ -24,6 +24,7 @@ private:
     unsigned mHighestBranch;
     unsigned mHighestLoop;
     double mAnastomosisLength;
+    double mThresholdLength;
 
     friend class boost::serialization::access;
 
@@ -35,7 +36,7 @@ private:
 
 public:
 
-    DaughterCellModifier(double anastomosisLength=0.75);
+    DaughterCellModifier(double anastomosisLength=1.5, double thresholdLength=2.0);
 
     ~DaughterCellModifier();
 

@@ -15,6 +15,8 @@
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM=ELEMENT_DIM>
 class PinnedCellsBoundaryCondition : public AbstractCellPopulationBoundaryCondition<ELEMENT_DIM,SPACE_DIM>
 {
+friend class TestForcesModel;
+
 private:
 
     /**

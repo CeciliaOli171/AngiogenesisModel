@@ -31,10 +31,14 @@ template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedDivi
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 class SproutingRuleWithConstantVegf : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
 {
+friend class TestForcesModel;
 
 private:
+    double mSproutingProbabilityWithConstantVegf;
+    double GetSproutingProbabilityWithConstantVegf();
 
     double mMaxSproutingRateConstantVegf;
+
     double mConstantBackground;
 
     double mCMax;
@@ -56,7 +60,7 @@ private:
 public:
 
     // constructor 
-    SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf = 0.08,double constantBackground=0.1, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4, int PsproutFunctionTestNb = 0);
+    SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf = 0.08, double thresholdLength=2.0, double constantBackground=0.5, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4, int PsproutFunctionTestNb = 1);
 
     // destructor 
     ~SproutingRuleWithConstantVegf();

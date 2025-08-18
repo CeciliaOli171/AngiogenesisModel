@@ -16,7 +16,7 @@
         {
             "label": "Run Test",
             "type": "shell",
-            "command": "singularity exec --bind /hpc/coli171/Results:/home/chaste/testoutput /people/coli171/Containers/base_latest.sif /people/coli171/Chaste/Build/projects/ProjectChaste/test/${fileBasenameNoExtension}",
+            "command": "singularity exec --bind /hpc/coli171/Results:/home/chaste/testoutput /people/coli171/Containers/base_latest.sif /people/coli171/Chaste/Build/projects/AngiogenesisModel/test/${fileBasenameNoExtension}",
             "dependsOn": "Build Chaste",
             "group": {
                 "kind": "test",

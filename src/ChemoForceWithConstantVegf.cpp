@@ -9,8 +9,8 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-ChemoForceWithConstantVegf<DIM>::ChemoForceWithConstantVegf(double chiConstantVegf, double cx)
-    : ChemoForce<DIM>(chiConstantVegf, 0.0, 0.0, 0.0), mChiConstantVegf(chiConstantVegf), mCX(cx)
+ChemoForceWithConstantVegf<DIM>::ChemoForceWithConstantVegf(double chiConstantVegf, double hx, double constantBackground)
+    : ChemoForce<DIM>(chiConstantVegf, hx, 0.0, 0.0, 0.0, 0.0, 0.0), mChiConstantVegf(chiConstantVegf), mConstantBackground(constantBackground)
 {
     assert(chiConstantVegf>0);
 }
@@ -29,7 +29,7 @@ c_vector<double, DIM>& ChemoForceWithConstantVegf<DIM>::GetGradient(unsigned nod
 template<unsigned DIM>
 double ChemoForceWithConstantVegf<DIM>::GetMagnitudeGradient(unsigned node_index)
 {
-    return norm_2(GetGradient(node_index))/mChiAnalyticalApproxPde;
+    return norm_2(GetGradient(node_index));
 }
 
 template<unsigned DIM>
@@ -42,27 +42,15 @@ void ChemoForceWithConstantVegf<DIM>::CalculateVegfGradient(AbstractCellPopulati
     for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
     {
         // we collect the cell data necessary (node index and cell pointer)
-        unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-        CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index); 
-
-        c_vector<double, DIM> x_parent = rCellPopulation.GetLocationOfCellCentre(pCell);
-
-        c_vector<double, DIM> r_gradient_cell = zero_vector<double>(DIM);
-
-        if (pCell->GetMutationState()->IsType<TipCellMutationState>())
+        if (cell_iter->GetMutationState()->template IsType<TipCellMutationState>())
         {
-            if(DIM == 3){
-                r_gradient_cell(0) = -mCX; 
-                r_gradient_cell(1) = 0.0; 
-                r_gradient_cell(2) = 0.0; 
-            } else if (DIM == 2){
-                r_gradient_cell(0) = -mCX; 
-                r_gradient_cell(1) = 0.0; 
-            } else {
-                r_gradient_cell(0) = -mCX; 
-            }
+            unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
 
-            mGradientsVegfAnalyticalApproxPde[node_index] += r_gradient_cell;
+            c_vector<double, DIM> r_gradient_cell = zero_vector<double>(DIM);
+            
+            r_gradient_cell(0) = 0.0; 
+
+            mGradientsVegfAnalyticalApproxPde[node_index] = r_gradient_cell;
         }
     }
 }

@@ -1,5 +1,5 @@
-#ifndef SPROUTINGRULEWITHANALYTICALAPPROXIMATIONPDE_HPP_
-#define SPROUTINGRULEWITHANALYTICALAPPROXIMATIONPDE_HPP_
+#ifndef SPROUTINGRULETWOLESIONSYAXIS_HPP_
+#define SPROUTINGRULETWOLESIONSYAXIS_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
@@ -29,12 +29,12 @@ template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedCell
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedDivisionRule;
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-class SproutingRuleWithAnalyticalApproximationPde : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
+class SproutingRuleTwoLesionsYAxis : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
 {
 
 private:
 
-    double mMaxSproutingRateAnalyticalApproxPde;
+    double mMaxSproutingRateTwoLesionsYAxis;
 
     double mDiffusionCoefficient;
     double mDecayCoefficient;
@@ -46,9 +46,12 @@ private:
     double mPMax;
     double mPMin;
 
-    double mBoundaryCuboidMax;
-    double mSourceValue;
+    double mSourceValue1;
+    double mSourceValue2;
     double mConstantBackground;
+
+    double mLocationLesion1;
+    double mLocationLesion2;
 
     int mPsproutFunctionTestNb;
 
@@ -64,10 +67,10 @@ private:
 public:
 
     // constructor 
-    SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde = 0.08, double thresholdLength=2.0, double diffusionCoefficient=1e4, double decayCoefficient=1.0, double creationCoefficient=0.0, double consumptionCoefficient=1.0, double sourceValue=0.5, double constantBackground=0.1, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4, int PsproutFunctionTestNb = 1);
+    SproutingRuleTwoLesionsYAxis(double MaxSproutingRateTwoLesionsYAxis = 0.08, double thresholdLength=2.0, double diffusionCoefficient=1e4, double decayCoefficient=1.0, double creationCoefficient=0.0, double consumptionCoefficient=1.0, double sourceValue1=0.5, double sourceValue2=0.5, double constantBackground=0.1, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4, double locationLesion1 = 0.0, double locationLesion2 = 220.0, int PsproutFunctionTestNb = 1);
 
     // destructor 
-    ~SproutingRuleWithAnalyticalApproximationPde();
+    ~SproutingRuleTwoLesionsYAxis();
 
     // calculates the vegf concentration at a specified node 
     double GetVegfConcentrationAtNode(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell);
@@ -78,6 +81,6 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_ALL_DIMS(SproutingRuleWithAnalyticalApproximationPde)
+EXPORT_TEMPLATE_CLASS_ALL_DIMS(SproutingRuleTwoLesionsYAxis)
 
-#endif /*SPROUTINGRULEWITHANALYTICALPDEAPPROXIMATION_HPP_*/
+#endif /*SPROUTINGRULETWOLESIONSYAXIS_HPP_*/

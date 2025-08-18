@@ -28,6 +28,24 @@ class ParametersSensitivityRunner:
 
         return list_cellmutation
 
+    def AnastomosisTypes(file_anastomosis):
+        # initialisation of the list
+        list_anastomosis = []
+
+        # we open the file
+        f = open(file_anastomosis, 'r')
+
+        for line in f:
+            pass
+        last_line = line
+
+        list_anastomosis = [float(x) for x in last_line.split()[1:]]
+
+        # we close the file 
+        f.close()
+
+        return list_anastomosis
+
     # function reading the file 'results.viznodes' and returning an array containing the coordinates of all the nodes
     def NodesCoordinates(file_nodescoordinates, dim):
         # initialisation of the list
@@ -169,6 +187,15 @@ class ParametersSensitivityRunner:
 
         return arc, length 
 
+    def TotalNumberAnastomosis(file_anastomosis):
+        NumberAnastomosis = 0
+
+        list_anastomosis = ParametersSensitivityRunner.AnastomosisTypes(file_anastomosis)
+
+        for elem in list_anastomosis:
+            NumberAnastomosis += elem/2
+
+        return NumberAnastomosis
 
     # a function to obtain the total number of cells at the end of the simulation 
     def TotalNumberCells(file_cellmutation):
@@ -198,6 +225,18 @@ class ParametersSensitivityRunner:
                 NumberStalkCells += 1
 
         return NumberStalkCells
+
+    # a function to obtain the total number of branching points
+    def TotalNumberBranchingCells(file_cellmutation):
+        NumberBranchingCells = 0
+
+        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
+
+        for elem in list_cellmutation:
+            if(elem == 2):
+                NumberBranchingCells += 1
+
+        return NumberBranchingCells
 
     # a function to obtain the total number of branches at the end of the simulation 
     def TotalNumberBranches(file_cellmutation):
@@ -259,6 +298,119 @@ class ParametersSensitivityRunner:
         f.close()
 
         return list_nbcellsinplaneateachtimestep
+
+    def RatioAnastomosisPerTimeStep(file_anastomosis, file_cellmutation):
+        list_ratioanastomosis = []
+
+        # for each time step we want: number of tip cells, number of anastomosis events 
+        # we open the file
+        f_anastomosis = open(file_anastomosis, 'r')
+        f_tipcells = open(file_cellmutation, 'r')
+
+        list_anastomosis = []
+        list_tipcells = []
+
+        for line_anastomosis in f_anastomosis:
+            list_lineanastomosis = [float(x) for x in line_anastomosis.split()[1:]]       
+            anastomosispertime = 0
+            
+            for elem in list_lineanastomosis:
+                anastomosispertime += elem
+            
+            list_anastomosis.append(anastomosispertime/2)
+        f_anastomosis.close()
+
+        for line_tipcells in f_tipcells:
+            list_linetipcells = [float(x) for x in line_tipcells.split()[1:]]       
+            tipcellspertime = 0
+            
+            for elem in list_linetipcells:
+                if(int(elem) == 0):
+                    tipcellspertime += 1
+            
+            list_tipcells.append(tipcellspertime)
+        f_tipcells.close()
+
+        # calculation of the ratio
+        for k in range(len(list_anastomosis)-1):
+            if(list_tipcells[k]!=0):
+                ratioanastomosispertime = 100*(list_anastomosis[k+1]-list_anastomosis[k])/list_tipcells[k]
+            else:
+                ratioanastomosispertime = 0
+
+            list_ratioanastomosis.append(ratioanastomosispertime)
+
+        return list_ratioanastomosis
+
+    def AnastomosisPerTimeStep(file_anastomosis):
+        # for each time step we want: number of tip cells, number of anastomosis events 
+        # we open the file
+        f_anastomosis = open(file_anastomosis, 'r')
+
+        list_anastomosis = []
+
+        for line_anastomosis in f_anastomosis:
+            list_lineanastomosis = [float(x) for x in line_anastomosis.split()[1:]]       
+            anastomosispertime = 0
+            
+            for elem in list_lineanastomosis:
+                anastomosispertime += elem
+            
+            list_anastomosis.append(anastomosispertime/2)
+        f_anastomosis.close()
+
+        for k in range(1, len(list_anastomosis)):
+            list_anastomosis[k] = list_anastomosis[k]-list_anastomosis[k-1]
+
+        return list_anastomosis
+
+    def BranchesPerTimeStep(file_cellmutation):
+        list_branches = []
+
+        # for each time step we want: number of tip cells, number of anastomosis events 
+        # we open the file
+        f_branches = open(file_cellmutation, 'r')
+        list_branches = [1]
+
+        for line_branches in f_branches:
+            list_linebranches = [float(x) for x in line_branches.split()[1:]]       
+            branchespertime = 0
+            
+            for elem in list_linebranches:
+                if(elem == 2):
+                    branchespertime += 1
+                elif(elem == 0):
+                    branchespertime += 1
+            
+            list_branches.append(branchespertime)
+        f_branches.close()
+
+        list_branches = list_branches[1:]
+
+        return list_branches
+
+    def TipCellsPerTimeStep(file_cellmutation):
+        list_tipcells = []
+
+        # for each time step we want: number of tip cells, number of anastomosis events 
+        # we open the file
+        f_tipcells = open(file_cellmutation, 'r')
+        list_tipcells = [1]
+
+        for line_tipcells in f_tipcells:
+            list_linetipcells = [float(x) for x in line_tipcells.split()[1:]]       
+            tipcellspertime = 0
+            
+            for elem in list_linetipcells:
+                if(elem == 0):
+                    tipcellspertime += 1
+            
+            list_tipcells.append(tipcellspertime)
+        f_tipcells.close()
+
+        list_tipcells = list_tipcells[1:]
+
+        return list_tipcells
     
     # a function to obtain all the nodes in a specific plane (take into account the radius of the cell i.e. introduce an epsilon)
     def CellsInPlane(file_nodescoordinates, plane_normal_vector, dim):
@@ -332,7 +484,8 @@ class ParametersSensitivityRunner:
                     f.close()
 
                     return TimeFirstReachingPlane
-                
+        
+        TimeFirstReachingPlane = t
         f.close()
         return TimeFirstReachingPlane
     
@@ -794,6 +947,128 @@ class ParametersSensitivityRunner:
                 CoordinatesFurthestCell = CoordinatesNextCell
 
         return NormFurthestCell
+
+    def NormAndTimeFurthestCell(file_nodescoordinates, file_cellmutation, dim):
+        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
+
+        NumberNodes = array_nodescoordinates.shape[0]
+
+        # origin node 
+        CoordinatesOriginNode = np.zeros(dim)
+        for k in range(dim):
+            CoordinatesOriginNode[k] = array_nodescoordinates[0][k]
+
+        # initialisation
+        TimeFurthestCell = 0
+        NormFurthestCell = 0
+        CoordinatesFurthestCell = CoordinatesOriginNode
+
+        # we start by finding the furthest cell 
+        for k in range(NumberNodes):
+            if(dim==3):
+                CoordinatesNextCell = np.zeros(dim)
+                CoordinatesNextCell[0] = array_nodescoordinates[k][0]
+                CoordinatesNextCell[1] = array_nodescoordinates[k][1]
+                CoordinatesNextCell[2] = array_nodescoordinates[k][2]
+                NormNextCell = np.sqrt((CoordinatesNextCell[0]-CoordinatesOriginNode[0])**2 + (CoordinatesNextCell[1]-CoordinatesOriginNode[1])**2+ (CoordinatesNextCell[2]-CoordinatesOriginNode[2])**2)
+            elif(dim==2):
+                CoordinatesNextCell = np.zeros(dim)
+                CoordinatesNextCell[0] = array_nodescoordinates[k][0]
+                CoordinatesNextCell[1] = array_nodescoordinates[k][1]
+                NormNextCell = np.sqrt((CoordinatesNextCell[0]-CoordinatesOriginNode[0])**2 + (CoordinatesNextCell[1]-CoordinatesOriginNode[1])**2)
+            elif(dim==1):
+                CoordinatesNextCell = np.zeros(dim)
+                CoordinatesNextCell[0] = array_nodescoordinates[k][0]
+                NormNextCell = np.sqrt((CoordinatesNextCell[0]-CoordinatesOriginNode[0])**2)
+
+            if(NormNextCell > NormFurthestCell):
+                NormFurthestCell = NormNextCell
+                CoordinatesFurthestCell = CoordinatesNextCell
+
+        # we look when this cell reached this position 
+        eps = 1e-1
+
+        with open(file_nodescoordinates, 'r') as f:
+            for line in f:
+                t = float(line.split()[0])
+                list_nbcellsinplaneattimestept = [float(x) for x in line.split()[1:]]
+                NumberNodesTimeT = int((len(list_nbcellsinplaneattimestept))/dim)
+                array_nodescoordinates = np.reshape(list_nbcellsinplaneattimestept, (NumberNodesTimeT,dim))
+
+                for k in range(NumberNodesTimeT):
+                    if(dim==3):
+                        CoordinatesNextCell = np.zeros(dim)
+                        CoordinatesNextCell[0] = array_nodescoordinates[k][0]
+                        CoordinatesNextCell[1] = array_nodescoordinates[k][1]
+                        CoordinatesNextCell[2] = array_nodescoordinates[k][2]
+                        NormNextCell = np.sqrt((CoordinatesNextCell[0]-CoordinatesOriginNode[0])**2 + (CoordinatesNextCell[1]-CoordinatesOriginNode[1])**2+ (CoordinatesNextCell[2]-CoordinatesOriginNode[2])**2)
+                    elif(dim==2):
+                        CoordinatesNextCell = np.zeros(dim)
+                        CoordinatesNextCell[0] = array_nodescoordinates[k][0]
+                        CoordinatesNextCell[1] = array_nodescoordinates[k][1]
+                        NormNextCell = np.sqrt((CoordinatesNextCell[0]-CoordinatesOriginNode[0])**2 + (CoordinatesNextCell[1]-CoordinatesOriginNode[1])**2)
+                    elif(dim==1):
+                        CoordinatesNextCell = np.zeros(dim)
+                        CoordinatesNextCell[0] = array_nodescoordinates[k][0]
+                        NormNextCell = np.sqrt((CoordinatesNextCell[0]-CoordinatesOriginNode[0])**2)
+
+                    if(abs(NormNextCell- NormFurthestCell) < eps):
+                        TimeFurthestCell = t
+                        # we close the file 
+                        break
+        
+        return NormFurthestCell, TimeFurthestCell
+
+    def NormFirstTipCell(file_nodescoordinates, file_cellmutation, dim):
+        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
+        array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
+
+        # initialisation
+        list_normfirsttipcell = []
+
+        # origin node 
+        CoordinatesOriginNode = np.zeros(dim)
+        for k in range(dim):
+            CoordinatesOriginNode[k] = array_nodescoordinates[0][k]
+
+        with open(file_nodescoordinates, 'r') as f:
+            for line in f:
+                t = float(line.split()[0])
+                list_nbcellsinplaneattimestept = [float(x) for x in line.split()[1:]]
+                NumberNodesTimeT = int((len(list_nbcellsinplaneattimestept))/dim)
+                array_nodescoordinates = np.reshape(list_nbcellsinplaneattimestept, (NumberNodesTimeT,dim))
+
+                # we look for the furthest cell at this time 
+                # we consider the first cell of the line 
+                # initialisation
+                NormFurthestCell = 0
+                CoordinatesFurthestCell = CoordinatesOriginNode
+
+                for k in range(NumberNodesTimeT):
+                    if(dim==3):
+                        CoordinatesNextCell = np.zeros(dim)
+                        CoordinatesNextCell[0] = array_nodescoordinates[k][0]
+                        CoordinatesNextCell[1] = array_nodescoordinates[k][1]
+                        CoordinatesNextCell[2] = array_nodescoordinates[k][2]
+                        NormNextCell = np.sqrt((CoordinatesNextCell[0]-CoordinatesOriginNode[0])**2 + (CoordinatesNextCell[1]-CoordinatesOriginNode[1])**2+ (CoordinatesNextCell[2]-CoordinatesOriginNode[2])**2)
+                    elif(dim==2):
+                        CoordinatesNextCell = np.zeros(dim)
+                        CoordinatesNextCell[0] = array_nodescoordinates[k][0]
+                        CoordinatesNextCell[1] = array_nodescoordinates[k][1]
+                        NormNextCell = np.sqrt((CoordinatesNextCell[0]-CoordinatesOriginNode[0])**2 + (CoordinatesNextCell[1]-CoordinatesOriginNode[1])**2)
+                    elif(dim==1):
+                        CoordinatesNextCell = np.zeros(dim)
+                        CoordinatesNextCell[0] = array_nodescoordinates[k][0]
+                        NormNextCell = np.sqrt((CoordinatesNextCell[0]-CoordinatesOriginNode[0])**2)
+
+                    if(NormNextCell > NormFurthestCell):
+                        NormFurthestCell = NormNextCell
+                        CoordinatesFurthestCell = CoordinatesNextCell
+                
+                list_normfirsttipcell.append(NormFurthestCell)
+        
+        return list_normfirsttipcell
 
     # function returning the average area of the blood vessel tree 
     def AverageArea(file_nodescoordinates, file_cellmutation):

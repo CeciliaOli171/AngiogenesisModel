@@ -3,6 +3,8 @@
 #include "DifferentiatedCellProliferativeType.hpp"
 #include "VesselCellMutationState.hpp"
 
+#include "Debug.hpp"
+
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 PinnedCellsBoundaryCondition<ELEMENT_DIM,SPACE_DIM>::PinnedCellsBoundaryCondition(AbstractCellPopulation<ELEMENT_DIM,SPACE_DIM>* pCellPopulation,
                                                     std::vector<unsigned> pinned_node_indices)

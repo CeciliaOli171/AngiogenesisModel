@@ -85,6 +85,7 @@
 #include "TortuosityWriter.hpp"
 #include "PottsMeshWriter.hpp"
 #include "VtkMeshWriter.hpp"
+#include "AnastomosisWriter.hpp"
 
 // PDE solvers
 #include "BoundaryConditionsContainer.hpp"
@@ -141,6 +142,7 @@ public:
 
         // parameters for anastomosis 
         double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
+        double input_val_thresholdlength = command_line->GetDoubleCorrespondingToOption("-thresholdlength");;
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -201,6 +203,7 @@ public:
         cell_population.AddCellWriter<BranchesNumberWriter>();
         cell_population.AddCellWriter<BirthTimeCellWriter>();
         cell_population.AddCellWriter<TortuosityWriter>();
+        cell_population.AddCellWriter<AnastomosisWriter>();
 
         // fully constrain the first cell using the boundary condition 
         unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
@@ -261,7 +264,7 @@ public:
 
         // Chemotactic force (tip cells only) 
         typedef ChemoForceWithPdes<2> ChemoForceWithPdes;
-        MAKE_PTR_ARGS(ChemoForceWithPdes, p_chemo_force, (input_val_chi, p_pde_modifier));
+        MAKE_PTR_ARGS(ChemoForceWithPdes, p_chemo_force, (input_val_chi, 1e-4, 1e-4, 1e-4, p_pde_modifier));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
@@ -288,14 +291,14 @@ public:
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithPdes<2,2> SproutingRuleWithPdes;
-        MAKE_PTR_ARGS(SproutingRuleWithPdes, p_division_rule_to_set, (input_val_maxsproutingrate, p_pde_modifier, input_psproutfunctiontestnb));
+        MAKE_PTR_ARGS(SproutingRuleWithPdes, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, p_pde_modifier, input_psproutfunctiontestnb));
         
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<2> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength, input_val_thresholdlength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
         typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
@@ -344,6 +347,7 @@ public:
 
         // parameters for anastomosis 
         double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
+        double input_val_thresholdlength = command_line->GetDoubleCorrespondingToOption("-thresholdlength");;
 
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
@@ -404,6 +408,7 @@ public:
         cell_population.AddCellWriter<BranchesNumberWriter>();
         cell_population.AddCellWriter<BirthTimeCellWriter>();
         cell_population.AddCellWriter<TortuosityWriter>();
+        cell_population.AddCellWriter<AnastomosisWriter>();
 
         // fully constrain the first cell using the boundary condition 
         unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
@@ -465,7 +470,7 @@ public:
 
         // Chemotactic force (tip cells only) 
         typedef ChemoForceWithPdes<3> ChemoForceWithPdes;
-        MAKE_PTR_ARGS(ChemoForceWithPdes, p_chemo_force, (input_val_chi, p_pde_modifier));
+        MAKE_PTR_ARGS(ChemoForceWithPdes, p_chemo_force, (input_val_chi, 1e-4, 1e-4, 1e-4, p_pde_modifier));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
@@ -492,14 +497,14 @@ public:
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithPdes<3,3> SproutingRuleWithPdes;
-        MAKE_PTR_ARGS(SproutingRuleWithPdes, p_division_rule_to_set, (input_val_maxsproutingrate, p_pde_modifier, input_psproutfunctiontestnb));
+        MAKE_PTR_ARGS(SproutingRuleWithPdes, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, p_pde_modifier, input_psproutfunctiontestnb));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<3> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength));
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength, input_val_thresholdlength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
         typedef DirectionalPersistenceCellModifier<3> DirectionalPersistenceCellModifier;

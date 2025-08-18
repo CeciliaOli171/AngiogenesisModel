@@ -34,13 +34,15 @@ private:
 public:
 
     // constructor (default value according to Perfhal's parameters)
-    AngularForce(double omegaa = 5.56E-5); 
+    AngularForce(double omegaa = 1E-5); 
 
     // destructor 
     ~AngularForce();
 
     // calculates the nth value of a neighbouring node indices set 
     unsigned GetNthNeighbourIndice(std::set<unsigned> neighbouring_node_indices, int n);
+
+    std::set<unsigned> GetSameBranchNeighbours(AbstractCellPopulation<DIM, DIM>& rCellPopulation,NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pCell);
 
     // function calculating the angle between two vectors u and v 
     double GetAngleFromVectors(c_vector<double,DIM> u, c_vector<double,DIM> v);
