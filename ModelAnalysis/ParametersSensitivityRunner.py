@@ -239,16 +239,20 @@ class ParametersSensitivityRunner:
         return NumberBranchingCells
 
     # a function to obtain the total number of branches at the end of the simulation 
-    def TotalNumberBranches(file_cellmutation):
+    def TotalNumberBranches(file_branchesnumber, file_anastomosis):
         NumberBranches = 0
 
-        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
+        list_branchesnumber = ParametersSensitivityRunner.BranchesNumber(file_branchesnumber)
+        list_anastomosis = ParametersSensitivityRunner.AnastomosisTypes(file_anastomosis)
 
-        for elem in list_cellmutation:
-            if(elem == 2):
-                NumberBranches += 1
-            elif(elem == 0):
-                NumberBranches += 1
+        NumberBranches = max(list_branchesnumber)
+
+        AnastomosisTwoTips = 0
+        for elem in list_anastomosis:
+            if(elem == 1):
+                AnastomosisTwoTips += 1
+
+        NumberBranches = NumberBranches - AnastomosisTwoTips/2
 
         return NumberBranches
     
@@ -354,15 +358,36 @@ class ParametersSensitivityRunner:
             anastomosispertime = 0
             
             for elem in list_lineanastomosis:
-                anastomosispertime += elem
+                if(elem != 0):
+                    anastomosispertime += 1
             
-            list_anastomosis.append(anastomosispertime/2)
+            list_anastomosis.append(anastomosispertime)
         f_anastomosis.close()
 
-        for k in range(1, len(list_anastomosis)):
-            list_anastomosis[k] = list_anastomosis[k]-list_anastomosis[k-1]
+        list_anastomosis_final = np.zeros(len(list_anastomosis))
 
-        return list_anastomosis
+        for k in range(1, len(list_anastomosis)):
+            list_anastomosis_final[k-1] = list_anastomosis[k]-list_anastomosis[k-1]
+
+        return list_anastomosis_final
+
+    def TotalAnastomosisEvents(file_anastomosis):
+        totalanastomosis = 0
+
+        f_anastomosis = open(file_anastomosis, 'r')
+
+        for line in f_anastomosis:
+            pass
+        last_line = line
+
+        list_anastomosis = [float(x) for x in last_line.split()[1:]]
+
+        f_anastomosis.close()
+
+        for elem in list_anastomosis:
+            totalanastomosis += elem
+
+        return totalanastomosis/2
 
     def BranchesPerTimeStep(file_cellmutation):
         list_branches = []

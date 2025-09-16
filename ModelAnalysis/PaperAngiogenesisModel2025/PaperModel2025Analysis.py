@@ -3,12 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import statistics as stats
+import seaborn as sns
 
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator 
 from matplotlib.colors import LinearSegmentedColormap
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import matplotlib.patches as patches
 
 from scipy.spatial import ConvexHull
+from scipy.stats import linregress
 import scipy.integrate as integrate
 
 import os, sys
@@ -29,7 +33,7 @@ dim = 2
 # According to literature, for cancer, the tumour and the main blood vessel are separated by 40-140 micrometer, above that, necrosis and death of the tumour i.e. we can use that for the endometriotic model
 ref_point = 40
 ref_point_centre_lesion = 0 # do not really correspond to the centre of the lesion per se  
-AreaPlane = ref_point*150
+AreaPlane = ref_point*250
 
 # VEGF concentration parameters
 l_max = 150
@@ -68,19 +72,23 @@ GraphPsproutSourceTerm = False
 GraphPsproutPosition = False
 GraphPsproutKc = False
 
-GraphNbBranches = False
 GraphAnastomosis = False
 GraphAnastomosisBranches = False
-GraphAnastomosisTipCells = False
+GraphAnastomosisTipCells = True
 GraphAnastomosisRatio = False
 GraphAnastomosisRatioBranches = False
-GraphAnastomosisSource = False
+GraphTotalAnastomosisSource = False
+
+GraphNbBranches = False
+GraphNbTipCellsTime = False
+GraphNbBranchesNbTipCells = False
+GraphBarNbBranches = False
+
 GraphExpectedNbBranches = False
 GraphExpectedNbBranchesVEGF = False
 GraphNbBranchesANDExpectedNbBranchesGlobalHypothesis = False
 GraphNbBranchesANDExpectedNbBranchesLocalHypothesis = False
 GraphNbBranchesANDExpectedNbBranchesSameGraph = False
-GraphBarNbBranches = False
 
 GraphFurthestCell = False
 GraphTimeReachingFurthestCell = False
@@ -90,13 +98,47 @@ GraphNbCellsPlane = False
 GraphCellDensityInsideLesion = False
 GraphDensityCellInsideLesionComparedToTotalCells = False
 GraphBarCellsInPlane = False
-GraphErrorNbCellsPlanePositionLesion = True
+GraphErrorNbCellsPlanePositionLesion = False
 
 GraphConvergenceTime = False
 GraphFirstTimeCellReachingCentreLesion = False
 GraphFirstTimeCellReachingLesion = False
-GraphErrorFirstTimeCellReachingLesionPositionLesion = True
-GraphErrorVascularisationPercentagePositionLesion = True
+GraphErrorFirstTimeCellReachingLesionPositionLesion = False
+
+## Functions 
+
+def Psprout(x, c_max, Kc, GlobalOrLocal):
+    if GlobalOrLocal == 1:
+        c_0 = 0.1
+        vegf = (c_max-c_0)*np.exp(-Kc*x)+c_0
+        Psprout = lambdaSprout*vegf**n/(K**n + vegf**n)
+    else:
+        Psprout = lambdaSprout*c_max**n/(K**n + c_max**n)
+
+    return Psprout
+
+def Panastomosis(GlobalOrLocal, Pcomputation):
+    if GlobalOrLocal == 1:
+        Panastomosis = Pcomputation
+    else:
+        Panastomosis = Pcomputation
+
+    return Panastomosis
+
+def ExpectationSprouting(x, c_max, Kc, GlobalOrLocal):
+    # case of Psprout depending on VEGF
+    Sk = Psprout(l_max-0.3*x, c_max, Kc, GlobalOrLocal) # vessel segment division hyp
+    #Sk = Psprout(l_max-0.3*0.5*x, c_max, Kc, GlobalOrLocal) # tip cell division hyp
+    return Sk 
+
+def ExpectationAnastomosis(GlobalOrLocal, Pcomputation):
+    Ak = Panastomosis(GlobalOrLocal, Pcomputation) # vessel segment division hyp
+    return Ak 
+
+def ExpectationBranches(t, c_max, Kc, GlobalOrLocal, Pcomputation):
+    v = 0.68
+    Bn = 2*(1+ExpectationSprouting(v*t, c_max, Kc, GlobalOrLocal)-ExpectationAnastomosis(GlobalOrLocal, Pcomputation))**t - 1
+    return Bn
 
 ## Plots
 
@@ -321,11 +363,6 @@ if GraphNbBranches:
     totalnumberbranches_analyticalapproxpde_average = np.zeros(10)
     totalnumberbranches_constant_average = np.zeros(10)
 
-    error_analyticalapproxpde_lower = []
-    error_analyticalapproxpde_upper = []
-    error_constant_lower = []
-    error_constant_upper = []
-
     for k in range(1, 11):
         totalnumberbranches_analyticalapproxpde = []
         totalnumberbranches_constant = []
@@ -333,86 +370,124 @@ if GraphNbBranches:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
-            file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
-            file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
+            file_branchesnumber_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizbranchesnumber"
+            file_branchesnumber_constant = file_path_constant + "/results_from_time_0/results.vizbranchesnumber"
+            file_anastomosis_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizanastomosis"
+            file_anastomosis_constant = file_path_constant + "/results_from_time_0/results.vizanastomosis"
 
-            totalnumberbranches_analyticalapproxpde.append(runner.TotalNumberBranches(file_cellmutation_analyticalapproxpde))
-            totalnumberbranches_constant.append(runner.TotalNumberBranches(file_cellmutation_constant))
+            totalnumberbranches_analyticalapproxpde.append(runner.TotalNumberBranches(file_branchesnumber_analyticalapproxpde, file_anastomosis_analyticalapproxpde))
+            totalnumberbranches_constant.append(runner.TotalNumberBranches(file_branchesnumber_constant, file_anastomosis_constant))
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_analyticalapproxpde, alpha=0.5, color='#8c0000')
-        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_constant, alpha=0.5, color='#ff0004')
+        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_analyticalapproxpde, alpha=0.75, color='#C00000', marker='.', s = 180.0)
+        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_constant, alpha=0.75, color='#D4A100', marker='D', s = 35)
 
         # average of the results for one source term 
         totalnumberbranches_analyticalapproxpde_average[k-1] = stats.mean(totalnumberbranches_analyticalapproxpde)
         totalnumberbranches_constant_average[k-1] = stats.mean(totalnumberbranches_constant)
-
-        low_error_analyticalapproxpde = stats.mean(totalnumberbranches_analyticalapproxpde)-max(min(totalnumberbranches_analyticalapproxpde), 1e-2)
-        high_error_analyticalapproxpde = max(totalnumberbranches_analyticalapproxpde)-stats.mean(totalnumberbranches_analyticalapproxpde)
-        low_error_constant = stats.mean(totalnumberbranches_analyticalapproxpde)-max(min(totalnumberbranches_constant),1e-2)
-        high_error_constant = max(totalnumberbranches_constant)-stats.mean(totalnumberbranches_constant)
-
-        error_analyticalapproxpde_lower.append(low_error_analyticalapproxpde)
-        error_analyticalapproxpde_upper.append(high_error_analyticalapproxpde)
-        error_constant_lower.append(low_error_constant)
-        error_constant_upper.append(high_error_constant)
-
-    error_analyticalapproxpde = np.array([error_analyticalapproxpde_lower, error_analyticalapproxpde_upper])
-    error_constant = np.array([error_constant_lower, error_constant_upper])
  
-    ax.plot(sourceterm, totalnumberbranches_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#ff0004')
-    ax.plot(sourceterm, totalnumberbranches_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
-    #ax.errorbar(sourceterm, totalnumberbranches_constant_average, yerr = error_constant, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='xkcd:brown')
-    #ax.errorbar(sourceterm, totalnumberbranches_analyticalapproxpde_average, yerr = error_analyticalapproxpde, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='xkcd:tan')
-    ax.legend(loc='upper left', fontsize = 24)
+    ax.plot(sourceterm, totalnumberbranches_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#D4A100')
+    ax.plot(sourceterm, totalnumberbranches_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
 
-    ax.set_xlabel(r'$c_{max}$', fontsize = 26)
+    ax.legend(loc='upper left', fontsize = 24)
+    ax.set_xlabel(r'$c_{max}$', fontsize = 30)
     ax.set_ylabel('Number of Branches', fontsize = 26)
     ax.set_xticks(sourceterm)
     ax.tick_params(axis = 'both', labelsize = 24)
     plt.show()
     plt.savefig(main_file_path + "Figures/NbBranches.png")
 
-def Psprout(x, c_max, Kc, GlobalOrLocal):
-    if GlobalOrLocal == 1:
-        vegf = (c_max-c_0)*np.exp(-Kc*x)+c_0
-        Psprout = lambdaSprout*vegf**n/(K**n + vegf**n)
-    else:
-        Psprout = lambdaSprout*c_max**n/(K**n + c_max**n)
+if GraphNbTipCellsTime:
+    fig, ax = plt.subplots(1, 2, figsize = (12,8), dpi = 300, layout='constrained')
 
-    return Psprout
+    # we represent the percentage of tip cells going through anastomosis at each time steps 
+    # we have two different plots: one for the constant case and one for the steady-state of PDE case 
+    # for each cmax, we represent the percentage of the ratio anastomosis/tip cells previous time for each time step (except t=0)
+    # one cmax = one colour
+    sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    colors = ["xkcd:tomato red", "xkcd:coral", "xkcd:orange", "xkcd:sunshine yellow", "xkcd:lime", "xkcd:bright turquoise", "xkcd:bright sky blue", "xkcd:royal blue", "xkcd:bright lavender", "xkcd:magenta"]
+    t = np.linspace(0, Tend, int(Tend/13)+1)
 
-def Panastomosis(x, c_max, Kc, GlobalOrLocal, a):
-    n_anastomosis = n
-    K_anastomosis = K
+    for k in range(1,11):
+        tipcells_analyticalapproxpde = []
+        tipcells_constant = []
+        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+            file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
+            file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
-    if GlobalOrLocal == 1:
-        lambdaAnastomosis = a*lambdaSprout
-        vegf = (c_max-c_0)*np.exp(-Kc*x)+c_0
-        Panastomosis = lambdaAnastomosis*vegf**n_anastomosis/(K_anastomosis**n_anastomosis + vegf**n_anastomosis)
-        #Panastomosis = a
-    else:
-        lambdaAnastomosis = a*lambdaSprout
-        Panastomosis = lambdaAnastomosis*c_max**n_anastomosis/(K_anastomosis**n_anastomosis + c_max**n_anastomosis)
-        #Panastomosis = a
+            file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
+            file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
 
-    return Panastomosis
+            tipcells_analyticalapproxpde = runner.TipCellsPerTimeStep(file_cellmutation_analyticalapproxpde)
+            tipcells_constant = runner.TipCellsPerTimeStep(file_cellmutation_constant)
 
-def ExpectationSprouting(t, c_max, Kc, GlobalOrLocal):
-    # case of Psprout depending on VEGF
-    Sk = Psprout(l_max-0.3*t, c_max, Kc, GlobalOrLocal)
-    #Sk = Psprout(l_max-0.3*0.5*t, c_max, Kc, GlobalOrLocal)
-    return Sk 
+            if(j == 10):
+                ax[0].scatter(t, tipcells_analyticalapproxpde, color = colors[k-1], alpha = 0.5, label = f"cmax={sourceterm[k-1]}")
+                ax[1].scatter(t, tipcells_constant, color = colors[k-1], alpha = 0.5, label = f"cmax={sourceterm[k-1]}")
+            else:
+                ax[0].scatter(t, tipcells_analyticalapproxpde, color = colors[k-1], alpha = 0.5)
+                ax[1].scatter(t, tipcells_constant, color = colors[k-1], alpha = 0.5)
+    
+    ax[0].set_title('Lesion Hypothesis', fontsize = 24)
+    ax[1].set_title('ECM Hypothesis', fontsize = 24)
+    ax[0].set_xlabel(r'$t$', fontsize = 26)
+    ax[1].set_xlabel(r'$t$', fontsize = 26)
+    ax[0].set_ylabel('Number of Vessel Tips', fontsize = 26)
+    ax[0].legend(loc='upper left', fontsize = 12)
+    ax[1].legend(loc='upper left', fontsize = 12)
+    ax[0].tick_params(axis = 'both', labelsize = 24)
+    ax[1].tick_params(axis = 'both', labelsize = 24)
+    plt.savefig(main_file_path + "Figures/TipCellsTime.png")
 
-def ExpectationAnastomosis(t, c_max, Kc, GlobalOrLocal, a):
-    Ak = Panastomosis(l_max-0.3*t, c_max, Kc, GlobalOrLocal, a)
-    #Ak = Panastomosis(l_max-0.3*0.5*t, c_max, Kc, GlobalOrLocal, a)
-    return Ak 
+if GraphNbBranchesNbTipCells:
+    # plot 
+    fig, ax = plt.subplots(1, 2, figsize = (12,8), dpi = 300, layout='constrained')
 
-def ExpectationBranches(t, c_max, Kc, GlobalOrLocal, a):
-    #Bn = 2*(1+ExpectationSprouting(t, c_max, Kc, GlobalOrLocal)-ExpectationAnastomosis(t, c_max, Kc, GlobalOrLocal, a))**t - 1
-    Bn = 2*(1+(1-a)*ExpectationSprouting(t, c_max, Kc, GlobalOrLocal))**t - 1
-    return Bn
+    # we represent the percentage of tip cells going through anastomosis at each time steps 
+    # we have two different plots: one for the constant case and one for the steady-state of PDE case 
+    # for each cmax, we represent the percentage of the ratio anastomosis/tip cells previous time for each time step (except t=0)
+    # one cmax = one colour
+    sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    colors = ["xkcd:tomato red", "xkcd:coral", "xkcd:orange", "xkcd:sunshine yellow", "xkcd:lime", "xkcd:bright turquoise", "xkcd:bright sky blue", "xkcd:royal blue", "xkcd:bright lavender", "xkcd:magenta"]
+
+    list_m_analyticalapproxpde = []
+    list_m_constant = []
+
+    for k in range(1,11):
+        nbbranches_analyticalapproxpde = []
+        nbbranches_constant = []
+        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+            file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
+            file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
+
+            file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
+            file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
+
+            tipcells_analyticalapproxpde = runner.TipCellsPerTimeStep(file_cellmutation_analyticalapproxpde)
+            nbbranches_analyticalapproxpde = runner.BranchesPerTimeStep(file_cellmutation_analyticalapproxpde)
+            tipcells_constant = runner.TipCellsPerTimeStep(file_cellmutation_constant)
+            nbbranches_constant = runner.BranchesPerTimeStep(file_cellmutation_constant)
+
+            if(j == 10):
+                ax[0].scatter(tipcells_analyticalapproxpde, nbbranches_analyticalapproxpde, color = colors[k-1], alpha = 0.5, label = f"cmax={sourceterm[k-1]}")
+                ax[1].scatter(tipcells_constant, nbbranches_constant, color = colors[k-1], alpha = 0.5, label = f"cmax={sourceterm[k-1]}")
+            else:
+                ax[0].scatter(tipcells_analyticalapproxpde, nbbranches_analyticalapproxpde, color = colors[k-1], alpha = 0.5)
+                ax[1].scatter(tipcells_constant, nbbranches_constant, color = colors[k-1], alpha = 0.5)
+
+    # ax[0].plot(np.linspace(0,50,50), [0.31*item for item in np.linspace(0,50,50)], '--k', linewidth = 5.0, label=r'$a_{local} = 0.31$')
+    # ax[1].plot(np.linspace(0,150,150), [0.52*item for item in np.linspace(0,150,150)], '--k', linewidth = 5.0, label=r'$a_{global} = 0.52$') 
+    
+    ax[0].set_title('Lesion Hypothesis', fontsize = 24)
+    ax[1].set_title('ECM Hypothesis', fontsize = 24)
+    ax[0].set_xlabel('Number of Tip Cells', fontsize = 26)
+    ax[1].set_xlabel('Number of Tip Cells', fontsize = 26)
+    ax[0].set_ylabel('Number of Branches', fontsize = 26)
+    ax[0].legend(loc='upper left', fontsize = 12)
+    ax[1].legend(loc='upper left', fontsize = 12)
+    ax[0].tick_params(axis = 'both', labelsize = 24)
+    ax[1].tick_params(axis = 'both', labelsize = 24)
+    plt.savefig(main_file_path + "Figures/NbBranchesNbTipCells.png")
 
 if GraphAnastomosis:
     # plot 
@@ -424,7 +499,7 @@ if GraphAnastomosis:
     # one cmax = one colour
     sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     colors = ["xkcd:tomato red", "xkcd:coral", "xkcd:orange", "xkcd:sunshine yellow", "xkcd:lime", "xkcd:bright turquoise", "xkcd:bright sky blue", "xkcd:royal blue", "xkcd:bright lavender", "xkcd:magenta"]
-    t = np.linspace(0, Tend, int(Tend/13)+1)
+    t = np.linspace(0, Tend, int(Tend/Tcycle)+1)
 
     for k in range(1,11):
         anastomosis_analyticalapproxpde = []
@@ -446,13 +521,13 @@ if GraphAnastomosis:
                 ax[0].scatter(t, anastomosis_analyticalapproxpde, color = colors[k-1], alpha = 0.5)
                 ax[1].scatter(t, anastomosis_constant, color = colors[k-1], alpha = 0.5)
     
-    ax[0].set_title('Local Hypothesis', fontsize = 24)
-    ax[1].set_title('Global Hypothesis', fontsize = 24)
+    ax[0].set_title('Lesion Hypothesis', fontsize = 24)
+    ax[1].set_title('ECM Hypothesis', fontsize = 24)
     ax[0].set_xlabel(r'$t$', fontsize = 26)
     ax[1].set_xlabel(r'$t$', fontsize = 26)
     ax[0].set_ylabel('Anastomosis Events', fontsize = 26)
     ax[0].legend(loc='upper left', fontsize = 12)
-    # ax[1].legend(loc='upper left', fontsize = 24)
+    ax[1].legend(loc='upper left', fontsize = 12)
     ax[0].tick_params(axis = 'both', labelsize = 24)
     ax[1].tick_params(axis = 'both', labelsize = 24)
     plt.savefig(main_file_path + "Figures/Anastomosis.png")
@@ -494,13 +569,13 @@ if GraphAnastomosisBranches:
                 ax[0].scatter(branches_analyticalapproxpde, anastomosis_analyticalapproxpde, color = colors[k-1], alpha = 0.5)
                 ax[1].scatter(branches_constant, anastomosis_constant, color = colors[k-1], alpha = 0.5)
 
-    coeff_analyticalapproxpde = 13/140
-    coeff_constant = 120/750
-    ax[0].plot(np.linspace(0,150,150), [coeff_analyticalapproxpde*item for item in np.linspace(0,150,150)], '--k', linewidth = 5.0, label= fr'$a_{{local}} = {coeff_analyticalapproxpde}$')
-    ax[1].plot(np.linspace(0,750,750), [coeff_constant*item for item in np.linspace(0,750,750)], '--k', linewidth = 5.0, label= fr'$a_{{global}} = {coeff_constant}$')
+    # coeff_analyticalapproxpde = 13/140
+    # coeff_constant = 120/750
+    # ax[0].plot(np.linspace(0,150,150), [coeff_analyticalapproxpde*item for item in np.linspace(0,150,150)], '--k', linewidth = 5.0, label= fr'$a_{{local}} = {coeff_analyticalapproxpde}$')
+    # ax[1].plot(np.linspace(0,750,750), [coeff_constant*item for item in np.linspace(0,750,750)], '--k', linewidth = 5.0, label= fr'$a_{{global}} = {coeff_constant}$')
     
-    ax[0].set_title('Local Hypothesis', fontsize = 24)
-    ax[1].set_title('Global Hypothesis', fontsize = 24)
+    ax[0].set_title('Lesion Hypothesis', fontsize = 24)
+    ax[1].set_title('ECM Hypothesis', fontsize = 24)
     ax[0].set_xlabel('Nb of Branches', fontsize = 26)
     ax[1].set_xlabel('Number of Branches', fontsize = 26)
     ax[0].set_ylabel('Anastomosis Events', fontsize = 26)
@@ -514,16 +589,23 @@ if GraphAnastomosisTipCells:
     # plot 
     fig, ax = plt.subplots(1, 2, figsize = (12,8), dpi = 300, layout='constrained')
 
+    # colours and colourmaps
+    cmap_analyticalapproxpde = LinearSegmentedColormap.from_list('red_transparent', [(1.0, 0.0, 0.0, 0.0), (0.75, 0.0, 0.0, 1.0)])
+    cmap_constant = LinearSegmentedColormap.from_list('gold_transparent', [(1.0, 0.66, 0.0, 0.0), (0.83, 0.63, 0.0, 1.0)])
+    colors = ["xkcd:tomato red", "xkcd:coral", "xkcd:orange", "xkcd:sunshine yellow", "xkcd:lime", "xkcd:bright turquoise", "xkcd:bright sky blue", "xkcd:royal blue", "xkcd:bright lavender", "xkcd:magenta"]
+
     # we represent the percentage of tip cells going through anastomosis at each time steps 
     # we have two different plots: one for the constant case and one for the steady-state of PDE case 
     # for each cmax, we represent the percentage of the ratio anastomosis/tip cells previous time for each time step (except t=0)
     # one cmax = one colour
     sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    colors = ["xkcd:tomato red", "xkcd:coral", "xkcd:orange", "xkcd:sunshine yellow", "xkcd:lime", "xkcd:bright turquoise", "xkcd:bright sky blue", "xkcd:royal blue", "xkcd:bright lavender", "xkcd:magenta"]
     t = np.linspace(0, Tend, int(Tend/13)+1)
 
-    list_m_analyticalapproxpde = []
-    list_m_constant = []
+    # Storage for all data points across all (j, k)
+    all_tip_cells_analyticalapproxpde = []
+    all_anastomosis_analyticalapproxpde = []
+    all_tip_cells_constant = []
+    all_anastomosis_constant = []
 
     for k in range(1,11):
         anastomosis_analyticalapproxpde = []
@@ -543,25 +625,71 @@ if GraphAnastomosisTipCells:
             tipcells_constant = runner.TipCellsPerTimeStep(file_cellmutation_constant)
             anastomosis_constant = runner.AnastomosisPerTimeStep(file_anastomosis_constant)
 
-            if(j == 10):
-                ax[0].scatter(tipcells_analyticalapproxpde, anastomosis_analyticalapproxpde, color = colors[k-1], alpha = 0.5, label = f"cmax={sourceterm[k-1]}")
-                ax[1].scatter(tipcells_constant, anastomosis_constant, color = colors[k-1], alpha = 0.5, label = f"cmax={sourceterm[k-1]}")
-            else:
-                ax[0].scatter(tipcells_analyticalapproxpde, anastomosis_analyticalapproxpde, color = colors[k-1], alpha = 0.5)
-                ax[1].scatter(tipcells_constant, anastomosis_constant, color = colors[k-1], alpha = 0.5)
+            all_tip_cells_analyticalapproxpde.extend(tipcells_analyticalapproxpde)
+            all_anastomosis_analyticalapproxpde.extend(anastomosis_analyticalapproxpde)
+            all_tip_cells_constant.extend(tipcells_constant)
+            all_anastomosis_constant.extend(anastomosis_constant)
 
-    ax[0].plot(np.linspace(0,50,50), [0.31*item for item in np.linspace(0,50,50)], '--k', linewidth = 5.0, label=r'$a_{local} = 0.31$')
-    ax[1].plot(np.linspace(0,150,150), [0.52*item for item in np.linspace(0,150,150)], '--k', linewidth = 5.0, label=r'$a_{global} = 0.52$') 
+            # scatter plot 
+            # if(j == 10):
+            #     ax[1].scatter(tipcells_analyticalapproxpde, anastomosis_analyticalapproxpde, color = colors[k-1], alpha = 0.5, label = fr"$c_{{max}}={sourceterm[k-1]}$")
+            #     ax[0].scatter(tipcells_constant, anastomosis_constant, color = colors[k-1], alpha = 0.5, label = fr"$c_{{max}}={sourceterm[k-1]}$")
+            # else:
+            #     ax[1].scatter(tipcells_analyticalapproxpde, anastomosis_analyticalapproxpde, color = colors[k-1], alpha = 0.5)
+            #     ax[0].scatter(tipcells_constant, anastomosis_constant, color = colors[k-1], alpha = 0.5)
+
+    all_tip_cells_constant = np.round(np.array(all_tip_cells_constant, dtype=np.float64)).astype(np.int64)
+    all_anastomosis_constant = np.round(np.array(all_anastomosis_constant, dtype=np.float64)).astype(np.int64)
+    all_tip_cells_analyticalapproxpde = np.round(np.array(all_tip_cells_analyticalapproxpde, dtype=np.float64)).astype(np.int64)
+    all_anastomosis_analyticalapproxpde = np.round(np.array(all_anastomosis_analyticalapproxpde, dtype=np.float64)).astype(np.int64)
+
+    # hexbin plot 
+    hb0 = ax[0].hexbin(all_tip_cells_constant, all_anastomosis_constant, cmap=cmap_constant, bins='log', mincnt=1, extent = (0, max(all_tip_cells_constant), 0, max(all_anastomosis_constant)), gridsize=(30,9))
+    hb1 = ax[1].hexbin(all_tip_cells_analyticalapproxpde, all_anastomosis_analyticalapproxpde, cmap=cmap_analyticalapproxpde, bins = 'log', mincnt=1, extent = (0, max(all_tip_cells_analyticalapproxpde), 0, max(all_anastomosis_analyticalapproxpde)), gridsize = (10, 3))
+
+    weights_constant = []
+    for k in range(len(all_anastomosis_constant)):
+        if(all_tip_cells_constant[k] <= 0):
+            weights_constant.append(1)
+        elif(all_anastomosis_constant[k] == 0):
+            weights_constant.append(1)
+        else:
+            weights_constant.append(2)
+    sqrt_weights_constant = np.sqrt(weights_constant)
+
+    all_tip_cells_constant_weighted = all_tip_cells_constant * sqrt_weights_constant
+    all_anastomosis_constant_weighted = all_anastomosis_constant * sqrt_weights_constant
+
+    m_constant, p_constant, r_value, p_value, std_err = linregress(all_tip_cells_constant_weighted, all_anastomosis_constant_weighted)
+    ax[0].plot(np.linspace(0,150,150), [m_constant*item+p_constant for item in np.linspace(0,150,150)], '--k', linewidth = 5.0, label=fr'$P_{{a, ECM}} = {m_constant:.3g}$')
+
+    # m_analyticalapproxpde, p_analyticalapproxpde, r_value, p_value, std_err = linregress(all_tip_cells_analyticalapproxpde, all_anastomosis_analyticalapproxpde)
+    # ax[0].plot(np.linspace(0,50,50), [m_analyticalapproxpde*item+p_analyticalapproxpde for item in np.linspace(0,50,50)], '--k', linewidth = 5.0, label=fr'$a_{{lesion}} = {m_analyticalapproxpde}$') 
     
-    ax[0].set_title('Local Hypothesis', fontsize = 24)
-    ax[1].set_title('Global Hypothesis', fontsize = 24)
-    ax[0].set_xlabel('Nb of Tip Cells', fontsize = 26)
-    ax[1].set_xlabel('Nb of Tip Cells', fontsize = 26)
+    legend_box0 = patches.FancyBboxPatch((0.05, 0.83), 0.3, 0.13, transform=ax[0].transAxes, boxstyle="round,pad=0.02", facecolor='white', edgecolor='black', linewidth=1, alpha=0.25)
+    ax[0].add_patch(legend_box0)
+    ax[0].text(0.06, 0.83, fr'$P_{{a, ECM}} = {m_constant:.3g}$', transform=ax[0].transAxes, fontsize=14, verticalalignment='center')
+    ax[0].text(0.35, 0.92, 'Density', transform=ax[0].transAxes, fontsize=14, verticalalignment='center', horizontalalignment='right')
+    cax0 = inset_axes(ax[0], width="100%", height="45%", loc='upper left', bbox_to_anchor=(0.075, 0.85, 0.1, 0.1), bbox_transform=ax[0].transAxes, borderpad=0)
+    cb0 = fig.colorbar(hb0, cax=cax0, orientation='horizontal')
+    cb0.ax.tick_params(labelsize=10)
+    cb0.set_label('')
+
+    legend_box1 = patches.FancyBboxPatch((0.05, 0.87), 0.3, 0.09, transform=ax[1].transAxes, boxstyle="round,pad=0.02", facecolor='white', edgecolor='black', linewidth=1, alpha=0.25)
+    ax[1].add_patch(legend_box1)
+    ax[1].text(0.35, 0.92, 'Density', transform=ax[1].transAxes, fontsize=14, verticalalignment='center', horizontalalignment='right')
+    cax1 = inset_axes(ax[1], width="100%", height="45%", loc='upper left', bbox_to_anchor=(0.075, 0.85, 0.1, 0.1), bbox_transform=ax[1].transAxes, borderpad=0)
+    cb1 = fig.colorbar(hb1, cax=cax1, orientation='horizontal')
+    cb1.ax.tick_params(labelsize=10)
+    cb1.set_label('')
+
+    ax[1].set_title('Lesion Hypothesis', fontsize = 24)
+    ax[0].set_title('ECM Hypothesis', fontsize = 24)
+    ax[1].set_xlabel('Number of Tip Cells', fontsize = 26)
+    ax[0].set_xlabel('Number of Tip Cells', fontsize = 26)
     ax[0].set_ylabel('Anastomosis Events', fontsize = 26)
-    ax[0].legend(loc='upper left', fontsize = 12)
-    ax[1].legend(loc='upper left', fontsize = 12)
-    ax[0].tick_params(axis = 'both', labelsize = 24)
     ax[1].tick_params(axis = 'both', labelsize = 24)
+    ax[0].tick_params(axis = 'both', labelsize = 24)
     plt.savefig(main_file_path + "Figures/AnastomosisTipCells.png")
 
 if GraphAnastomosisRatio:
@@ -655,51 +783,49 @@ if GraphAnastomosisRatioBranches:
     ax[1].tick_params(axis = 'both', labelsize = 24)
     plt.savefig(main_file_path + "Figures/AnastomosisRatioNbBranches.png")
 
-if GraphAnastomosisSource:
+if GraphTotalAnastomosisSource:
     # plot 
-    fig, ax = plt.subplots(1, 2, figsize = (12,8), dpi = 300, layout='constrained')
+    fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
 
-    # we represent the percentage of tip cells going through anastomosis at each time steps 
-    # we have two different plots: one for the constant case and one for the steady-state of PDE case 
-    # for each cmax, we represent the percentage of the ratio anastomosis/tip cells previous time for each time step (except t=0)
-    # one cmax = one colour
+    # variable 
     sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    colors = ["xkcd:tomato red", "xkcd:coral", "xkcd:orange", "xkcd:sunshine yellow", "xkcd:lime", "xkcd:bright turquoise", "xkcd:bright sky blue", "xkcd:royal blue", "xkcd:bright lavender", "xkcd:magenta"]
-    t = np.linspace(0, Tend, 20)
 
-    for k in range(1,11):
-        anastomosisratio_analyticalapproxpde = []
-        anastomosisratio_constant = []
+    # loop over all the files 
+    totalanastomosis_analyticalapproxpde_average = np.zeros(10)
+    totalanastomosis_constant_average = np.zeros(10)
+
+    for k in range(1, 11):
+        totalanastomosis_analyticalapproxpde = []
+        totalanastomosis_constant = []
         for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
-            file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
             file_anastomosis_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizanastomosis"
-            file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
             file_anastomosis_constant = file_path_constant + "/results_from_time_0/results.vizanastomosis"
 
-            tipcells_analyticalapproxpde = runner.TipCellsPerTimeStep(file_cellmutation_analyticalapproxpde)
-            tipcells_constant = runner.TipCellsPerTimeStep(file_cellmutation_constant)
-            anastomosisratio_analyticalapproxpde = runner.RatioAnastomosisPerTimeStep(file_anastomosis_analyticalapproxpde, file_cellmutation_analyticalapproxpde)
-            anastomosisratio_constant = runner.RatioAnastomosisPerTimeStep(file_anastomosis_constant, file_cellmutation_constant)
+            totalanastomosis_analyticalapproxpde.append(runner.TotalAnastomosisEvents(file_anastomosis_analyticalapproxpde))
+            totalanastomosis_constant.append(runner.TotalAnastomosisEvents(file_anastomosis_constant))
 
-            if(j == 10):
-                ax[0].scatter([sourceterm[k-1] for j in range(len(anastomosisratio_analyticalapproxpde))], anastomosisratio_analyticalapproxpde, color = colors[k-1], alpha = 0.5, label = f"cmax={sourceterm[k-1]}")
-                ax[1].scatter([sourceterm[k-1] for j in range(len(anastomosisratio_constant))], anastomosisratio_constant, color = colors[k-1], alpha = 0.5, label = f"cmax={sourceterm[k-1]}")
-            else:
-                ax[0].scatter([sourceterm[k-1] for j in range(len(anastomosisratio_analyticalapproxpde))], anastomosisratio_analyticalapproxpde, color = colors[k-1], alpha = 0.5)
-                ax[1].scatter([sourceterm[k-1] for j in range(len(anastomosisratio_constant))], anastomosisratio_constant, color = colors[k-1], alpha = 0.5)
-                
-    ax[0].set_title('Local Hypothesis', fontsize = 24)
-    ax[1].set_title('Global Hypothesis', fontsize = 24)
-    ax[0].set_xlabel(r'$c_{max}$', fontsize = 26)
-    ax[1].set_xlabel(r'$c_{max}$', fontsize = 26)
-    ax[0].set_ylabel('Anastomosis Ratio', fontsize = 26)
-    ax[0].legend(loc='upper left', fontsize = 12)
-    ax[0].tick_params(axis = 'both', labelsize = 24)
-    ax[1].tick_params(axis = 'both', labelsize = 24)
-    plt.savefig(main_file_path + "Figures/AnastomosisRatioSource.png")
+        # scatter plot 
+        ax.scatter([sourceterm[k-1] for i in range(10)], totalanastomosis_analyticalapproxpde, alpha=0.75, color='#C00000', marker='.', s = 180.0)
+        ax.scatter([sourceterm[k-1] for i in range(10)], totalanastomosis_constant, alpha=0.75, color='#D4A100', marker='D', s = 35)
+
+        # average of the results for one source term 
+        totalanastomosis_analyticalapproxpde_average[k-1] = stats.mean(totalanastomosis_analyticalapproxpde)
+        totalanastomosis_constant_average[k-1] = stats.mean(totalanastomosis_constant)
+ 
+    ax.plot(sourceterm, totalanastomosis_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#D4A100')
+    ax.plot(sourceterm, totalanastomosis_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
+
+    ax.legend(loc='upper left', fontsize = 24)
+    ax.set_xlabel(r'$c_{max}$', fontsize = 30)
+    ax.set_ylabel('Total Anastomosis Events', fontsize = 26)
+    ax.set_xticks(sourceterm)
+    ax.tick_params(axis = 'both', labelsize = 24)
+    plt.show()
+    plt.savefig(main_file_path + "Figures/AnastomosisSource.png")
+
 
 if GraphExpectedNbBranches:
     fig = plt.subplots(figsize = (12,8), dpi = 300)
@@ -736,29 +862,23 @@ if GraphNbBranchesANDExpectedNbBranchesGlobalHypothesis:
         totalnumberbranches_constant = []
         for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
-            file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
+            file_branchesnumber_constant = file_path_constant + "/results_from_time_0/results.vizbranchesnumber"
+            file_anastomosis_constant = file_path_constant + "/results_from_time_0/results.vizanastomosis"
 
-            totalnumberbranches_constant.append(runner.TotalNumberBranches(file_cellmutation_constant))
+            totalnumberbranches_constant.append(runner.TotalNumberBranches(file_branchesnumber_constant, file_anastomosis_constant))
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_constant, alpha=0.5, color='xkcd:grey') #color='#ff0004'
+        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_constant, alpha=0.75, color='#D4A100', marker='D', s = 35) 
 
         # average of the results for one source term 
         totalnumberbranches_constant_average[k-1] = stats.mean(totalnumberbranches_constant)
 
-    # yGlobal4 = [ExpectationBranches(Tend/Tcycle, item, Kc, 0, 0.04) for item in sourceterm]
-    # yGlobal41 = [ExpectationBranches(Tend/Tcycle, item, Kc, 0, 0.041) for item in sourceterm]
-    # yGlobal42 = [ExpectationBranches(Tend/Tcycle, item, Kc, 0, 0.042) for item in sourceterm]
-    # yGlobal44 = [ExpectationBranches(Tend/Tcycle, item, Kc, 0, 0.044) for item in sourceterm]
-    # yGlobal46 = [ExpectationBranches(Tend/Tcycle, item, Kc, 0, 0.046) for item in sourceterm]
-    # yGlobal48 = [ExpectationBranches(Tend/Tcycle, item, Kc, 0, 0.048) for item in sourceterm]
-    # yGlobal5 = [ExpectationBranches(Tend/Tcycle, item, Kc, 0, 0.05) for item in sourceterm]
-
-    aglobal = ((120/750)+1)/2
-    yGlobal = [ExpectationBranches(Tend/Tcycle, item, Kc, 0, aglobal) for item in sourceterm]
+    #Pglobal = 0.039
+    Pglobal = 0.041
+    yGlobal = [ExpectationBranches(Tend/Tcycle, item, Kc, 0, Pglobal) for item in sourceterm]
  
-    ax.plot(sourceterm, totalnumberbranches_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color= 'xkcd:black') #color='#ff0004'
-    ax.plot(sourceterm, yGlobal, label = fr'$a_{{global}} = {aglobal}$', color = 'xkcd:pink')
+    ax.plot(sourceterm, totalnumberbranches_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color= '#D4A100') 
+    ax.plot(sourceterm, yGlobal, label = fr'Expected Number of Branches', color = 'xkcd:black')
 
     ax.legend(loc='upper left', fontsize = 24)
     ax.set_xlabel(r'$c_{max}$', fontsize = 26)
@@ -781,21 +901,22 @@ if GraphNbBranchesANDExpectedNbBranchesLocalHypothesis:
         totalnumberbranches_analyticalapproxpde = []
         for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
-            file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
+            file_branchesnumber_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizbranchesnumber"
+            file_anastomosis_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizanastomosis"
 
-            totalnumberbranches_analyticalapproxpde.append(runner.TotalNumberBranches(file_cellmutation_analyticalapproxpde))        
+            totalnumberbranches_analyticalapproxpde.append(runner.TotalNumberBranches(file_branchesnumber_analyticalapproxpde, file_anastomosis_analyticalapproxpde))        
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_analyticalapproxpde, alpha=0.5, color='#8c0000')
+        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_analyticalapproxpde, alpha=0.75, color='#C00000', marker='.', s = 180.0)
 
         # average of the results for one source term 
         totalnumberbranches_analyticalapproxpde_average[k-1] = stats.mean(totalnumberbranches_analyticalapproxpde)
 
-    ax.plot(sourceterm, totalnumberbranches_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
+    ax.plot(sourceterm, totalnumberbranches_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
 
-    alocal = ((13/140)+1)/2
-    yLocal = [ExpectationBranches(Tend/Tcycle, item, Kc, 1, alocal) for item in sourceterm]
-    ax.plot(sourceterm, yLocal, label = fr'$a_{{local}} = {alocal}$', color = 'xkcd:pink')
+    Plocal = 0.0
+    yLocal = [ExpectationBranches(Tend/Tcycle, item, Kc, 1, Plocal) for item in sourceterm]
+    ax.plot(sourceterm, yLocal, label = 'Expected Number of Branches', color = 'xkcd:black')
 
     ax.legend(loc='upper left', fontsize = 24)
     ax.set_xlabel(r'$c_{max}$', fontsize = 26)
@@ -824,13 +945,15 @@ if GraphNbBranchesANDExpectedNbBranchesSameGraph:
 
             file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
             file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
+            file_anastomosis_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizanastomosis"
+            file_anastomosis_constant = file_path_constant + "/results_from_time_0/results.vizanastomosis"
 
-            totalnumberbranches_analyticalapproxpde.append(runner.TotalNumberBranches(file_cellmutation_analyticalapproxpde))
-            totalnumberbranches_constant.append(runner.TotalNumberBranches(file_cellmutation_constant))
+            totalnumberbranches_analyticalapproxpde.append(runner.TotalNumberBranches(file_cellmutation_analyticalapproxpde, file_anastomosis_analyticalapproxpde))
+            totalnumberbranches_constant.append(runner.TotalNumberBranches(file_cellmutation_constant, file_anastomosis_constant))
 
         # scatter plot 
-        ax[0].scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_analyticalapproxpde, alpha=0.5, color='#8c0000')
-        ax[1].scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_constant, alpha=0.5, color='#ff0004')
+        ax[0].scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_analyticalapproxpde, alpha=0.5, color='#C00000')
+        ax[1].scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_constant, alpha=0.5, color='#D4A100')
 
         # average of the results for one source term 
         totalnumberbranches_analyticalapproxpde_average[k-1] = stats.mean(totalnumberbranches_analyticalapproxpde)
@@ -842,8 +965,8 @@ if GraphNbBranchesANDExpectedNbBranchesSameGraph:
     ax[1].plot(sourceterm, yGlobal, label = 'Expected Number Branches (Global Hypothesis)', color = 'xkcd:black')
     ax[0].plot(sourceterm, yLocal, label = 'Expected Number Branches (Local Hypothesis)', color = 'xkcd:black')
 
-    ax[1].plot(sourceterm, totalnumberbranches_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#ff0004')
-    ax[0].plot(sourceterm, totalnumberbranches_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
+    ax[1].plot(sourceterm, totalnumberbranches_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#D4A100')
+    ax[0].plot(sourceterm, totalnumberbranches_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
 
     ax[0].legend(loc='upper left', fontsize = 24)
     ax[1].legend(loc='upper left', fontsize = 24)
@@ -900,11 +1023,6 @@ if GraphNbCellsPlane:
 
     sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
-    error_analyticalapproxpde_lower = []
-    error_analyticalapproxpde_upper = []
-    error_constant_lower = []
-    error_constant_upper = []
-
     # loop over all the files 
     cellsafterplane_analyticalapproxpde_average = np.zeros(10)
     cellsafterplane_constant_average = np.zeros(10)
@@ -924,30 +1042,16 @@ if GraphNbCellsPlane:
             cellsafterplane_constant.append(runner.NbCellsAfterPlane(file_nodescoordinates_constant, ref_point, dim))
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], cellsafterplane_analyticalapproxpde, alpha=0.5, color='#8c0000')
-        ax.scatter([sourceterm[k-1] for i in range(10)], cellsafterplane_constant, alpha = 0.5, color='#ff0004')
+        ax.scatter([sourceterm[k-1] for i in range(10)], cellsafterplane_analyticalapproxpde, alpha=0.5, color='#C00000')
+        ax.scatter([sourceterm[k-1] for i in range(10)], cellsafterplane_constant, alpha = 0.5, color='#D4A100')
 
         # average of the results for one source term 
         cellsafterplane_analyticalapproxpde_average[k-1] = stats.mean(cellsafterplane_analyticalapproxpde)
         cellsafterplane_constant_average[k-1] = stats.mean(cellsafterplane_constant)
 
-        low_error_analyticalapproxpde = stats.mean(cellsafterplane_analyticalapproxpde)-max(min(cellsafterplane_analyticalapproxpde), 1e-2)
-        high_error_analyticalapproxpde = max(cellsafterplane_analyticalapproxpde)-stats.mean(cellsafterplane_analyticalapproxpde)
-        low_error_constant = stats.mean(cellsafterplane_analyticalapproxpde)-max(min(cellsafterplane_constant),1e-2)
-        high_error_constant = max(cellsafterplane_constant)-stats.mean(cellsafterplane_constant)
+    ax.plot(sourceterm, cellsafterplane_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#D4A100')
+    ax.plot(sourceterm, cellsafterplane_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
 
-        error_analyticalapproxpde_lower.append(low_error_analyticalapproxpde)
-        error_analyticalapproxpde_upper.append(high_error_analyticalapproxpde)
-        error_constant_lower.append(low_error_constant)
-        error_constant_upper.append(high_error_constant)
-
-    error_analyticalapproxpde = np.array([error_analyticalapproxpde_lower, error_analyticalapproxpde_upper])
-    error_constant = np.array([error_constant_lower, error_constant_upper])
-
-    ax.plot(sourceterm, cellsafterplane_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#ff0004')
-    ax.plot(sourceterm, cellsafterplane_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
-    #ax.errorbar(sourceterm, cellsafterplane_constant_average, yerr = error_constant, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='xkcd:brown')
-    #ax.errorbar(sourceterm, cellsafterplane_analyticalapproxpde_average, yerr = error_analyticalapproxpde, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='xkcd:tan')
     ax.set_xlabel(r'$c_{max}$', fontsize = 26)
     ax.set_ylabel('Cells In Lesion', fontsize = 26)
     ax.set_xticks(sourceterm)
@@ -981,17 +1085,17 @@ if GraphCellDensityInsideLesion:
             celldensity_constant.append(runner.NbCellsAfterPlane(file_nodescoordinates_constant, ref_point, dim)/AreaPlane)
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], celldensity_analyticalapproxpde, alpha=0.5, color='#8c0000')
-        ax.scatter([sourceterm[k-1] for i in range(10)], celldensity_constant, alpha = 0.5, color='#ff0004')
+        ax.scatter([sourceterm[k-1] for i in range(10)], celldensity_analyticalapproxpde, alpha=0.75, color='#C00000', marker='.', s = 180.0)
+        ax.scatter([sourceterm[k-1] for i in range(10)], celldensity_constant, alpha = 0.75, color='#D4A100', marker ='D', s = 35)
 
         # average of the results for one source term 
         celldensity_analyticalapproxpde_average[k-1] = stats.mean(celldensity_analyticalapproxpde)
         celldensity_constant_average[k-1] = stats.mean(celldensity_constant)
 
-    ax.plot(sourceterm, celldensity_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#ff0004')
-    ax.plot(sourceterm, celldensity_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
+    ax.plot(sourceterm, celldensity_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#D4A100')
+    ax.plot(sourceterm, celldensity_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
 
-    ax.set_xlabel(r'$c_{max}$', fontsize = 26)
+    ax.set_xlabel(r'$c_{max}$', fontsize = 30)
     ax.set_ylabel('Cell Density Inside Lesion', fontsize = 26)
     ax.set_xticks(sourceterm)
     ax.legend(loc='upper left', fontsize = 24)
@@ -1024,19 +1128,19 @@ if GraphDensityCellInsideLesionComparedToTotalCells:
             celldensitytotal_constant.append(100*runner.NbCellsAfterPlane(file_nodescoordinates_constant, ref_point, dim)/runner.TotalNumberCells(file_cellmutation_constant))
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], celldensitytotal_analyticalapproxpde, alpha=0.5, color='#8c0000')
-        ax.scatter([sourceterm[k-1] for i in range(10)], celldensitytotal_constant, alpha = 0.5, color='#ff0004')
+        ax.scatter([sourceterm[k-1] for i in range(10)], celldensitytotal_analyticalapproxpde, alpha=0.75, color='#C00000', marker='.', s = 180.0)
+        ax.scatter([sourceterm[k-1] for i in range(10)], celldensitytotal_constant, alpha = 0.75, color='#D4A100', marker='D', s = 35)
 
         # average of the results for one source term 
         celldensitytotal_analyticalapproxpde_average[k-1] = stats.mean(celldensitytotal_analyticalapproxpde)
         celldensitytotal_constant_average[k-1] = stats.mean(celldensitytotal_constant)
 
 
-    ax.plot(sourceterm, celldensitytotal_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#ff0004')
-    ax.plot(sourceterm, celldensitytotal_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
+    ax.plot(sourceterm, celldensitytotal_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#D4A100')
+    ax.plot(sourceterm, celldensitytotal_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
 
-    ax.set_xlabel(r'$c_{max}$', fontsize = 26)
-    ax.set_ylabel('Cell Density Inside Lesion Compared to Total Network', fontsize = 26)
+    ax.set_xlabel(r'$c_{max}$', fontsize = 30)
+    ax.set_ylabel('Percentage of Cell Density Inside Lesion', fontsize = 24)
     ax.set_xticks(sourceterm)
     ax.legend(loc='upper left', fontsize = 24)
     ax.tick_params(axis = 'both', labelsize = 24)
@@ -1046,63 +1150,83 @@ if GraphErrorNbCellsPlanePositionLesion:
     # plot 
     fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
 
-    sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-
-    error_analyticalapproxpde_lower = []
-    error_analyticalapproxpde_upper = []
-    error_constant_lower = []
-    error_constant_upper = []
+    DistanceLesionVessel = [60, 40, 20]
+    cellsinsidelesion_analyticalapproxpde = []
+    cellsinsidelesion_constant = []
 
     # loop over all the files 
-    celldensity_analyticalapproxpde_average = np.zeros(10)
-    celldensity_constant_average = np.zeros(10)
-    for k in range(1,11):
+    for i in DistanceLesionVessel:
         celldensity_analyticalapproxpde = []
         celldensity_constant = []
-        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-            file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
-            file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
-            file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
-            file_nodescoordinates_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.viznodes"
-            file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
-            file_nodescoordinates_constant = file_path_constant + "/results_from_time_0/results.viznodes"
+        for k in range(1,11):
+            for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
+                file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
-            celldensity_analyticalapproxpde.append(runner.NbCellsAfterPlane(file_nodescoordinates_analyticalapproxpde, ref_point, dim)/AreaPlane)
-            celldensity_constant.append(runner.NbCellsAfterPlane(file_nodescoordinates_constant, ref_point, dim)/AreaPlane)
+                file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
+                file_nodescoordinates_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.viznodes"
+                file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
+                file_nodescoordinates_constant = file_path_constant + "/results_from_time_0/results.viznodes"
 
-        # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], celldensity_analyticalapproxpde, alpha=0.5, color='#8c0000')
-        ax.scatter([sourceterm[k-1] for i in range(10)], celldensity_constant, alpha = 0.5, color='#ff0004')
+                celldensity_analyticalapproxpde.append(runner.NbCellsAfterPlane(file_nodescoordinates_analyticalapproxpde, i, dim)/(i*250))
+                celldensity_constant.append(runner.NbCellsAfterPlane(file_nodescoordinates_constant, i, dim)/(i*250))
 
-        # average of the results for one source term 
-        celldensity_analyticalapproxpde_average[k-1] = stats.mean(celldensity_analyticalapproxpde)
-        celldensity_constant_average[k-1] = stats.mean(celldensity_constant)
+        cellsinsidelesion_analyticalapproxpde.append(celldensity_analyticalapproxpde)
+        cellsinsidelesion_constant.append(celldensity_constant)
 
-        low_error_analyticalapproxpde = stats.mean(celldensity_analyticalapproxpde)-max(min(celldensity_analyticalapproxpde), 1e-2)
-        high_error_analyticalapproxpde = max(celldensity_analyticalapproxpde)-stats.mean(celldensity_analyticalapproxpde)
-        low_error_constant = stats.mean(celldensity_analyticalapproxpde)-max(min(celldensity_constant),1e-2)
-        high_error_constant = max(celldensity_constant)-stats.mean(celldensity_constant)
+    DistanceLesionVesselTicks = [90, 110, 130]
+    width = 5
+    position_constant = [item - width/2 for item in DistanceLesionVesselTicks]
+    position_analyticalapproxpde = [item + width/2 for item in DistanceLesionVesselTicks]
 
-        error_analyticalapproxpde_lower.append(low_error_analyticalapproxpde)
-        error_analyticalapproxpde_upper.append(high_error_analyticalapproxpde)
-        error_constant_lower.append(low_error_constant)
-        error_constant_upper.append(high_error_constant)
+    box_colors = ['#C00000', '#D4A100']
+    bp_analyticalapproxpde = ax.violinplot(cellsinsidelesion_analyticalapproxpde, positions = position_analyticalapproxpde, widths=width, showmeans=True, showmedians=False, showextrema=True) 
+    bp_constant = ax.violinplot(cellsinsidelesion_constant, positions = position_constant, widths=width, showmeans=True, showmedians=False, showextrema=True) 
 
-    error_analyticalapproxpde = np.array([error_analyticalapproxpde_lower, error_analyticalapproxpde_upper])
-    error_constant = np.array([error_constant_lower, error_constant_upper])
+    for i in range(len(position_analyticalapproxpde)):
+        d = position_analyticalapproxpde[i]
+        min_value = min(cellsinsidelesion_analyticalapproxpde[i])
+        max_value = max(cellsinsidelesion_analyticalapproxpde[i])
+        ax.vlines(d, min_value, max_value, linewidth = 2.0, color = box_colors[0])
+    for i in range(len(position_constant)):
+        d = position_constant[i]
+        min_value = min(cellsinsidelesion_constant[i])
+        max_value = max(cellsinsidelesion_constant[i])
+        ax.vlines(d, min_value, max_value, linewidth = 2.0, color = box_colors[1])
 
-    ax.plot(sourceterm, celldensity_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#ff0004')
-    ax.plot(sourceterm, celldensity_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
-    #ax.errorbar(sourceterm, celldensity_constant_average, yerr = error_constant, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='xkcd:brown')
-    #ax.errorbar(sourceterm, celldensity_analyticalapproxpde_average, yerr = error_analyticalapproxpde, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='xkcd:tan')
-    ax.set_xlabel(r'$c_{max}$', fontsize = 26)
+    for pc in bp_analyticalapproxpde['bodies']:
+        pc.set_facecolor(box_colors[0])
+        pc.set_edgecolor(box_colors[0])
+        pc.set_alpha(0.5)
+        pc.set_linewidth(0)
+    bp_analyticalapproxpde['cmeans'].set_color(box_colors[0])
+    bp_analyticalapproxpde['cmeans'].set_linewidth(2)
+    bp_analyticalapproxpde['cmins'].set_color(box_colors[0])
+    bp_analyticalapproxpde['cmins'].set_linewidth(2)
+    bp_analyticalapproxpde['cmaxes'].set_color(box_colors[0])
+    bp_analyticalapproxpde['cmaxes'].set_linewidth(2)
+
+    for pc in bp_constant['bodies']:
+        pc.set_facecolor(box_colors[1])
+        pc.set_edgecolor(box_colors[1])
+        pc.set_alpha(0.5)
+        pc.set_linewidth(0)
+    bp_constant['cmeans'].set_color(box_colors[1])
+    bp_constant['cmeans'].set_linewidth(2)
+    bp_constant['cmins'].set_color(box_colors[1])
+    bp_constant['cmins'].set_linewidth(2)
+    bp_constant['cmaxes'].set_color(box_colors[1])
+    bp_constant['cmaxes'].set_linewidth(2)
+
+    ax.set_xlabel('Distance Lesion / Parent Vessel', fontsize = 26)
     ax.set_ylabel('Cell Density Inside Lesion', fontsize = 26)
-    ax.set_xticks(sourceterm)
-    ax.legend(loc='upper left', fontsize = 24)
+    custom_lines = [plt.Line2D([0], [0], color=box_colors[1], lw=4), plt.Line2D([0], [0], color=box_colors[0], lw=4)]
+    ax.legend(custom_lines, ['ECM Hypothesis', 'Lesion Hypothesis'], loc='upper right', fontsize = 24)
+    ax.set_xticks(DistanceLesionVesselTicks)
     ax.tick_params(axis = 'both', labelsize = 24)
-    plt.show()
-    plt.savefig(main_file_path + "Figures/CellDensity.png")
+    plt.savefig(main_file_path + "Figures/ErrorCellDensityPositionLesion.png")
+
 
 # Furthest cell depending on source term for chemotactic force  
 if GraphFurthestCell:
@@ -1110,11 +1234,6 @@ if GraphFurthestCell:
     fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
 
     sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-
-    error_analyticalapproxpde_lower = []
-    error_analyticalapproxpde_upper = []
-    error_constant_lower = []
-    error_constant_upper = []
 
     # loop over all the files 
     furthestcell_analyticalapproxpde_average = np.zeros(10)
@@ -1135,38 +1254,25 @@ if GraphFurthestCell:
             furthestcell_constant.append(runner.NormFurthestCell(file_nodescoordinates_constant, file_cellmutation_constant, dim))
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], furthestcell_analyticalapproxpde, alpha=0.5, color='#8c0000')
-        ax.scatter([sourceterm[k-1] for i in range(10)], furthestcell_constant, alpha=0.5, color='#ff0004')
+        ax.scatter([sourceterm[k-1] for i in range(10)], furthestcell_analyticalapproxpde, alpha=0.75, color='#C00000', marker='.', s = 180.0)
+        ax.scatter([sourceterm[k-1] for i in range(10)], furthestcell_constant, alpha=0.75, color='#D4A100', marker='D', s = 35)
 
         # average of the results for one source term 
         furthestcell_analyticalapproxpde_average[k-1] = stats.mean(furthestcell_analyticalapproxpde)
         furthestcell_constant_average[k-1] = stats.mean(furthestcell_constant)
 
-        low_error_analyticalapproxpde = stats.mean(furthestcell_analyticalapproxpde)-min(furthestcell_analyticalapproxpde)
-        high_error_analyticalapproxpde = max(furthestcell_analyticalapproxpde)-stats.mean(furthestcell_analyticalapproxpde)
-        low_error_constant = stats.mean(furthestcell_analyticalapproxpde)-min(furthestcell_constant)
-        high_error_constant = max(furthestcell_constant)-stats.mean(furthestcell_constant)
-
-        error_analyticalapproxpde_lower.append(low_error_analyticalapproxpde)
-        error_analyticalapproxpde_upper.append(high_error_analyticalapproxpde)
-        error_constant_lower.append(low_error_constant)
-        error_constant_upper.append(high_error_constant)
-
-    error_analyticalapproxpde = np.array([error_analyticalapproxpde_lower, error_analyticalapproxpde_upper])
-    error_constant = np.array([error_constant_lower, error_constant_upper])
-
-    ax.plot(sourceterm, furthestcell_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#ff0004')
-    ax.plot(sourceterm, furthestcell_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
-    #ax.errorbar(sourceterm, furthestcell_constant_average, yerr = error_constant, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='xkcd:brown')
-    #ax.errorbar(sourceterm, furthestcell_analyticalapproxpde_average, yerr = error_analyticalapproxpde, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='xkcd:tan')
+    ax.plot(sourceterm, furthestcell_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#D4A100')
+    ax.plot(sourceterm, furthestcell_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
+    
     ax.legend(loc='upper right', fontsize = 24)
-    ax.set_xlabel(r'$c_{max}$', fontsize = 26)
+    ax.set_xlabel(r'$c_{max}$', fontsize = 30)
     ax.set_ylabel('Network Length', fontsize = 26)
     ax.set_xticks(sourceterm)
     ax.tick_params(axis = 'both', labelsize = 24)
     plt.show()
     plt.savefig(main_file_path + "Figures/FurthestCell.png")
 
+# Times
 if GraphFirstTimeCellReachingCentreLesion:
     # plot 
     fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
@@ -1197,8 +1303,8 @@ if GraphFirstTimeCellReachingCentreLesion:
             timefirstreachingcentrelesion_constant.append(runner.TimeFirstReachingPlane(file_nodescoordinates_constant, ref_point_centre_lesion, dim))
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachingcentrelesion_analyticalapproxpde, alpha=0.5, color='#8c0000')
-        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachingcentrelesion_constant, alpha=0.5, color='#ff0004')
+        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachingcentrelesion_analyticalapproxpde, alpha=0.5, color='#C00000')
+        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachingcentrelesion_constant, alpha=0.5, color='#D4A100')
 
         # average of the results for one source term 
         timefirstreachingcentrelesion_analyticalapproxpde_average[k-1] = stats.mean(timefirstreachingcentrelesion_analyticalapproxpde)
@@ -1217,8 +1323,8 @@ if GraphFirstTimeCellReachingCentreLesion:
     error_analyticalapproxpde = np.array([error_analyticalapproxpde_lower, error_analyticalapproxpde_upper])
     error_constant = np.array([error_constant_lower, error_constant_upper])
 
-    ax.plot(sourceterm, timefirstreachingcentrelesion_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#ff0004')
-    ax.plot(sourceterm, timefirstreachingcentrelesion_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
+    ax.plot(sourceterm, timefirstreachingcentrelesion_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#D4A100')
+    ax.plot(sourceterm, timefirstreachingcentrelesion_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
     #ax.errorbar(sourceterm, timefirstreachingcentrelesion_constant_average, yerr = error_constant, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='xkcd:brown')
     #ax.errorbar(sourceterm, timefirstreachingcentrelesion_analyticalapproxpde_average, yerr = error_analyticalapproxpde, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='xkcd:tan')
     ax.legend(loc='upper right', fontsize = 24)
@@ -1234,11 +1340,6 @@ if GraphFirstTimeCellReachingLesion:
     fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
 
     sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-
-    error_analyticalapproxpde_lower = []
-    error_analyticalapproxpde_upper = []
-    error_constant_lower = []
-    error_constant_upper = []
 
     # loop over all the files 
     timefirstreachinglesion_analyticalapproxpde_average = np.zeros(10)
@@ -1258,31 +1359,23 @@ if GraphFirstTimeCellReachingLesion:
             timefirstreachinglesion_analyticalapproxpde.append(runner.TimeFirstReachingPlane(file_nodescoordinates_analyticalapproxpde, ref_point, dim))
             timefirstreachinglesion_constant.append(runner.TimeFirstReachingPlane(file_nodescoordinates_constant, ref_point, dim))
 
-            # check that all simulations reach the lesion 
-            if(runner.TimeFirstReachingPlane(file_nodescoordinates_analyticalapproxpde, ref_point, dim) > 1900):
-                print("Approx PDE")
-                print(k)
-                print(j)
-            if(runner.TimeFirstReachingPlane(file_nodescoordinates_constant, ref_point, dim) > 1900):
-                print("Constant")
-                print(k)
-                print(j)
-
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachinglesion_analyticalapproxpde, alpha=0.5, color='#8c0000')
-        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachinglesion_constant, alpha=0.5, color='#ff0004')
+        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachinglesion_analyticalapproxpde, alpha=0.75, color='#C00000', marker='.', s = 180.0)
+        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachinglesion_constant, alpha=0.75, color='#D4A100', marker='D', s = 35)
 
         # average of the results for one source term 
         timefirstreachinglesion_analyticalapproxpde_average[k-1] = stats.mean(timefirstreachinglesion_analyticalapproxpde)
         timefirstreachinglesion_constant_average[k-1] = stats.mean(timefirstreachinglesion_constant)
 
-    ax.plot(sourceterm, timefirstreachinglesion_constant_average, marker = 'D', markersize = 6, label = 'Global Hypothesis', color='#ff0004')
-    ax.plot(sourceterm, timefirstreachinglesion_analyticalapproxpde_average, label = 'Local Hypothesis', marker = '.', markersize = 15.0, color='#8c0000')
+    ax.plot(sourceterm, timefirstreachinglesion_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#D4A100')
+    ax.plot(sourceterm, timefirstreachinglesion_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
  
     ax.legend(loc='upper left', fontsize = 24)
-    ax.set_xlabel(r'$c_{max}$', fontsize = 26)
-    ax.set_ylabel('Time to Reach Lesion', fontsize = 26)
+    ax.set_xlabel(r'$c_{max}$', fontsize = 30)
+    ax.set_ylabel('Time For Network to Reach Lesion', fontsize = 26)
     ax.set_xticks(sourceterm)
+    ax.set_yticks([1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000])
+    ax.set_ylim(1160, 2015)
     ax.tick_params(axis = 'both', labelsize = 24)
     plt.show()
     plt.savefig(main_file_path + "Figures/TimeFirstCellReachingLesion.png")
@@ -1319,8 +1412,8 @@ if GraphTimeReachingFurthestCell:
             t_constant.append(valuet_constant)
 
     # scatter plot 
-    ax.scatter(t_analyticalapproxpde, normfurthestcell_analyticalapproxpde, alpha=0.5, color='#8c0000')
-    ax.scatter(t_constant, normfurthestcell_constant, alpha=0.5, color='#ff0004')
+    ax.scatter(t_analyticalapproxpde, normfurthestcell_analyticalapproxpde, alpha=0.5, color='#C00000')
+    ax.scatter(t_constant, normfurthestcell_constant, alpha=0.5, color='#D4A100')
 
     #ax.legend(loc='upper right', fontsize = 24)
     ax.set_xlabel(r'$t$', fontsize = 26)
@@ -1334,10 +1427,12 @@ if GraphTimeNormFirstTipCell:
     fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
 
     sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    t = np.linspace(0, Tend, 21)
+    t = np.linspace(0, Tend, int(Tend/Tcycle)+1)
 
     normfirsttipcell_analyticalapproxpde = []
     normfirsttipcell_constant = []
+
+    slopes_velocity = []
 
     for k in range(1,11):
         for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
@@ -1352,13 +1447,121 @@ if GraphTimeNormFirstTipCell:
             valuenormfirsttipcell_analyticalapproxpde = runner.NormFirstTipCell(file_nodescoordinates_analyticalapproxpde, file_cellmutation_analyticalapproxpde, dim)
             valuenormfirsttipcell_constant = runner.NormFirstTipCell(file_nodescoordinates_constant, file_cellmutation_constant, dim)
 
-            # scatter plot 
-            ax.plot(t, valuenormfirsttipcell_analyticalapproxpde, color='#8c0000')
-            ax.plot(t, valuenormfirsttipcell_constant, color='#ff0004')
+            slope_analyticalapproxpde, intercept = np.polyfit(t, valuenormfirsttipcell_analyticalapproxpde, 1)
+            slope_constant, intercept = np.polyfit(t, valuenormfirsttipcell_constant, 1)
+            slopes_velocity.append(slope_analyticalapproxpde)
+            slopes_velocity.append(slope_constant)
 
-    #ax.legend(loc='upper right', fontsize = 24)
-    ax.set_xlabel(r'$t$', fontsize = 26)
-    ax.set_ylabel('Norm First Tip Cell', fontsize = 26)
+            # scatter plot 
+            if(j == 10 and k == 1):
+                ax.plot(t, valuenormfirsttipcell_analyticalapproxpde, color='#C00000', label = 'Lesion Hypothesis')
+                ax.plot(t, valuenormfirsttipcell_constant, color='#D4A100', label = 'ECM Hypothesis')
+            else:
+                ax.plot(t, valuenormfirsttipcell_analyticalapproxpde, color='#C00000')
+                ax.plot(t, valuenormfirsttipcell_constant, color='#D4A100')
+
+    velocity_value = np.mean(slopes_velocity)
+    velocity = [item*velocity_value for item in t]
+    ax.plot(t, velocity, color='xkcd:black', label=fr'$v = {velocity_value}$', linewidth = 5.0)
+
+    ax.set_xlabel(r'$t$', fontsize = 30)
+    ax.set_ylabel('Network Velocity', fontsize = 26)
     ax.tick_params(axis = 'both', labelsize = 24)
+    ax.legend(loc='upper left', fontsize = 24)
     plt.show()
     plt.savefig(main_file_path + "Figures/TimeReachingFirstTipCell.png")
+
+if GraphErrorFirstTimeCellReachingLesionPositionLesion:
+    # plot 
+    fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
+
+    DistanceLesionVessel = [60, 40, 20]
+    timereachinglesion_analyticalapproxpde = []
+    timereachinglesion_constant = []
+
+    # loop over all the files 
+    for i in DistanceLesionVessel:
+        time_analyticalapproxpde = []
+        time_constant = []
+
+        vascularisation_percentage_analyticalapproxpde = 0
+        vascularisation_percentage_constant = 0
+
+        for k in range(1,11):
+            for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
+                file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
+
+                file_nodescoordinates_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.viznodes"
+                file_nodescoordinates_constant = file_path_constant + "/results_from_time_0/results.viznodes"
+
+                timeseed_analyticalapproxpde = runner.TimeFirstReachingPlane(file_nodescoordinates_analyticalapproxpde, i, dim)
+                timeseed_constant = runner.TimeFirstReachingPlane(file_nodescoordinates_constant, i, dim)
+
+                # remove the not vascularised network
+                if timeseed_analyticalapproxpde < 1989.0:
+                    time_analyticalapproxpde.append(timeseed_analyticalapproxpde)
+                    vascularisation_percentage_analyticalapproxpde += 1
+                if timeseed_constant < 1989.0:
+                    time_constant.append(timeseed_constant)
+                    vascularisation_percentage_constant += 1
+
+        timereachinglesion_analyticalapproxpde.append(time_analyticalapproxpde)
+        timereachinglesion_constant.append(time_constant)
+
+        # Vascularisation table
+        # print(i)
+        # print(vascularisation_percentage_analyticalapproxpde)
+        # print(vascularisation_percentage_constant)
+
+    DistanceLesionVesselTicks = [90, 110, 130]
+    width = 5
+    position_constant = [item - width/2 for item in DistanceLesionVesselTicks]
+    position_analyticalapproxpde = [item + width/2 for item in DistanceLesionVesselTicks]
+
+    box_colors = ['#C00000', '#D4A100']
+    bp_analyticalapproxpde = ax.violinplot(timereachinglesion_analyticalapproxpde, positions = position_analyticalapproxpde, widths=width, showmeans=True, showmedians=False, showextrema=True) 
+    bp_constant = ax.violinplot(timereachinglesion_constant, positions = position_constant, widths=width, showmeans=True, showmedians=False, showextrema=True) 
+
+    for i in range(len(position_analyticalapproxpde)):
+        d = position_analyticalapproxpde[i]
+        min_value = min(timereachinglesion_analyticalapproxpde[i])
+        max_value = max(timereachinglesion_analyticalapproxpde[i])
+        ax.vlines(d, min_value, max_value, linewidth = 2.0, color = box_colors[0])
+    for i in range(len(position_constant)):
+        d = position_constant[i]
+        min_value = min(timereachinglesion_constant[i])
+        max_value = max(timereachinglesion_constant[i])
+        ax.vlines(d, min_value, max_value, linewidth = 2.0, color = box_colors[1])
+
+    for pc in bp_analyticalapproxpde['bodies']:
+        pc.set_facecolor(box_colors[0])
+        pc.set_edgecolor(box_colors[0])
+        pc.set_alpha(0.5)
+        pc.set_linewidth(0)
+    bp_analyticalapproxpde['cmeans'].set_color(box_colors[0])
+    bp_analyticalapproxpde['cmeans'].set_linewidth(2)
+    bp_analyticalapproxpde['cmins'].set_color(box_colors[0])
+    bp_analyticalapproxpde['cmins'].set_linewidth(2)
+    bp_analyticalapproxpde['cmaxes'].set_color(box_colors[0])
+    bp_analyticalapproxpde['cmaxes'].set_linewidth(2)
+
+    for pc in bp_constant['bodies']:
+        pc.set_facecolor(box_colors[1])
+        pc.set_edgecolor(box_colors[1])
+        pc.set_alpha(0.5)
+        pc.set_linewidth(0)
+    bp_constant['cmeans'].set_color(box_colors[1])
+    bp_constant['cmeans'].set_linewidth(2)
+    bp_constant['cmins'].set_color(box_colors[1])
+    bp_constant['cmins'].set_linewidth(2)
+    bp_constant['cmaxes'].set_color(box_colors[1])
+    bp_constant['cmaxes'].set_linewidth(2)
+
+    ax.set_xlabel('Distance Lesion / Vessel', fontsize = 26)
+    ax.set_ylabel('Time For Network To Reach Lesion', fontsize = 26)
+    custom_lines = [plt.Line2D([0], [0], color=box_colors[1], lw=4), plt.Line2D([0], [0], color=box_colors[0], lw=4)]
+    ax.legend(custom_lines, ['ECM Hypothesis', 'Lesion Hypothesis'], loc='lower right', fontsize = 24)
+    ax.set_xticks(DistanceLesionVesselTicks)
+    ax.tick_params(axis = 'both', labelsize = 24)
+    plt.savefig(main_file_path + "Figures/ErrorFirstTimeCellReachingLesionPositionLesion.png")
