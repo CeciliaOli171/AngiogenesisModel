@@ -31,6 +31,8 @@ template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedDivi
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 class SproutingRuleWithAnalyticalApproximationPde : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
 {
+    friend class TestForcesModel;
+    friend class TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPde;
 
 private:
 
@@ -50,8 +52,6 @@ private:
     double mSourceValue;
     double mConstantBackground;
 
-    int mPsproutFunctionTestNb;
-
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
     template<class Archive>
@@ -59,12 +59,27 @@ private:
     {
         // not in AbstractCentreBasedDivisionRule.hpp
         archive & boost::serialization::base_object<AbstractCentreBasedDivisionRule<ELEMENT_DIM, SPACE_DIM> >(*this);
+        archive & mMaxSproutingRateAnalyticalApproxPde;
+
+        archive & mDiffusionCoefficient;
+        archive & mDecayCoefficient;
+        archive & mCreationCoefficient;
+        archive & mConsumptionCoefficient;
+
+        archive & mCMax;
+        archive & mCMin;
+        archive & mPMax;
+        archive & mPMin;
+
+        archive & mBoundaryCuboidMax;
+        archive & mSourceValue;
+        archive & mConstantBackground;
     }
 
 public:
 
     // constructor 
-    SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde = 0.08, double thresholdLength=2.0, double diffusionCoefficient=1e4, double decayCoefficient=1.0, double creationCoefficient=0.0, double consumptionCoefficient=1.0, double sourceValue=0.5, double constantBackground=0.1, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4, int PsproutFunctionTestNb = 1);
+    SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde = 0.08, double thresholdLength=2.0, double diffusionCoefficient=1e4, double decayCoefficient=1.0, double creationCoefficient=0.0, double consumptionCoefficient=1.0, double sourceValue=0.5, double constantBackground=0.1, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4);
 
     // destructor 
     ~SproutingRuleWithAnalyticalApproximationPde();

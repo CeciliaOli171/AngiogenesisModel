@@ -4,19 +4,49 @@
 #include "AbstractCellPopulation.hpp"
 #include "TetrahedralMesh.hpp"
 #include "StemCellProliferativeType.hpp"
-#include "TipCellMutationState.hpp"
+#include "VesselTipMutationState.hpp"
 
 #include "Debug.hpp"
 
 template<unsigned DIM>
-VegfEquationPde<DIM>::VegfEquationPde(AbstractCellPopulation<DIM,DIM>& rCellPopulation, double duDtCoefficient, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double constantBackground)
-    : AveragedSourceParabolicPde<DIM>(rCellPopulation, duDtCoefficient, diffusionCoefficient, decayCoefficient), mrCellPopulation(rCellPopulation), mDuDtCoefficient(duDtCoefficient), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient), mConstantBackground(constantBackground)
+VegfEquationPde<DIM>::VegfEquationPde(AbstractCellPopulation<DIM,DIM>& rCellPopulation, double duDtCoefficient, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient)
+    : AveragedSourceParabolicPde<DIM>(rCellPopulation, duDtCoefficient, diffusionCoefficient, decayCoefficient), mrCellPopulation(rCellPopulation), mDuDtCoefficient(duDtCoefficient), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient)
 {
 }
 
 // template<unsigned DIM>
 // VegfEquationPde<DIM>:: ~VegfEquationPde(){
 // }
+
+template<unsigned DIM>
+double VegfEquationPde<DIM>::GetDuDtCoefficient()
+{
+    return mDuDtCoefficient;
+}
+
+template<unsigned DIM>
+double VegfEquationPde<DIM>::GetDiffusionCoefficient()
+{
+    return mDiffusionCoefficient;
+}
+
+template<unsigned DIM>
+double VegfEquationPde<DIM>::GetDecayCoefficient()
+{
+    return mDecayCoefficient;
+}
+
+template<unsigned DIM>
+double VegfEquationPde<DIM>::GetCreationCoefficient()
+{
+    return mCreationCoefficient;
+}
+
+template<unsigned DIM>
+double VegfEquationPde<DIM>::GetConsumptionCoefficient()
+{
+    return mConsumptionCoefficient;
+}
 
 template<unsigned DIM>
 void VegfEquationPde<DIM>::SetupSourceTerms(TetrahedralMesh<DIM,DIM>& rCoarseMesh, std::map<CellPtr, unsigned>* pCellPdeElementMap) // must be called before solve
@@ -52,7 +82,7 @@ void VegfEquationPde<DIM>::SetupSourceTerms(TetrahedralMesh<DIM,DIM>& rCoarseMes
         }
 
         //test for angiogenesis model pde
-        if (pCell->GetMutationState()->IsType<TipCellMutationState>()){
+        if (pCell->GetMutationState()->IsType<VesselTipMutationState>()){
             mCellDensityOnCoarseElements[elem_index] += 1.0;
         }
     }

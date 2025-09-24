@@ -47,7 +47,7 @@ if TestBaseline:
         file_cellmutation = file_path + "/results_from_time_0/results.vizmutationstates"
         file_nodescoordinates = file_path + "/results_from_time_0/results.viznodes"
 
-        baseline_furthestcell.append(runner.NormFurthestTipCell(file_nodescoordinates, file_cellmutation, dim))
+        baseline_furthestcell.append(runner.NormFurthestVesselTip(file_nodescoordinates, file_cellmutation, dim))
 
         # average of the results for one source term 
         baseline_furthestcell_average = stats.mean(baseline_furthestcell)
@@ -491,7 +491,7 @@ if GraphFurthestCell:
             file_cellmutation = file_path + "/results_from_time_0/results.vizmutationstates"
             file_nodescoordinates = file_path + "/results_from_time_0/results.viznodes"
 
-            linearfunction_furthestcell.append(runner.NormFurthestTipCell(file_nodescoordinates, file_cellmutation, dim))
+            linearfunction_furthestcell.append(runner.NormFurthestVesselTip(file_nodescoordinates, file_cellmutation, dim))
 
         # average of the results for one source term 
         linearfunction_furthestcell_average[k-1] = stats.mean(linearfunction_furthestcell)
@@ -507,7 +507,7 @@ if GraphFurthestCell:
             file_cellmutation = file_path + "/results_from_time_0/results.vizmutationstates"
             file_nodescoordinates = file_path + "/results_from_time_0/results.viznodes"
 
-            hillfunction1_furthestcell.append(runner.NormFurthestTipCell(file_nodescoordinates, file_cellmutation, dim))
+            hillfunction1_furthestcell.append(runner.NormFurthestVesselTip(file_nodescoordinates, file_cellmutation, dim))
 
         # average of the results for one source term 
         hillfunction1_furthestcell_average[k-1] = stats.mean(hillfunction1_furthestcell)
@@ -522,7 +522,7 @@ if GraphFurthestCell:
             file_cellmutation = file_path + "/results_from_time_0/results.vizmutationstates"
             file_nodescoordinates = file_path + "/results_from_time_0/results.viznodes"
 
-            hillfunction2_furthestcell.append(runner.NormFurthestTipCell(file_nodescoordinates, file_cellmutation, dim))
+            hillfunction2_furthestcell.append(runner.NormFurthestVesselTip(file_nodescoordinates, file_cellmutation, dim))
 
         # average of the results for one source term 
         hillfunction2_furthestcell_average[k-1] = stats.mean(hillfunction2_furthestcell)
@@ -537,7 +537,7 @@ if GraphFurthestCell:
             file_cellmutation = file_path + "/results_from_time_0/results.vizmutationstates"
             file_nodescoordinates = file_path + "/results_from_time_0/results.viznodes"
 
-            hillfunction3_furthestcell.append(runner.NormFurthestTipCell(file_nodescoordinates, file_cellmutation, dim))
+            hillfunction3_furthestcell.append(runner.NormFurthestVesselTip(file_nodescoordinates, file_cellmutation, dim))
 
         # average of the results for one source term 
         hillfunction3_furthestcell_average[k-1] = stats.mean(hillfunction3_furthestcell)

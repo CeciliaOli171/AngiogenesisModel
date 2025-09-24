@@ -30,13 +30,11 @@ double PersistenceForce<DIM>::GetPersistenceCoefficient()
 template<unsigned DIM>
 void PersistenceForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
-    //TRACE("Begin Persistence Force");
-    
     for(typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin();
          cell_iter != rCellPopulation.End();
          ++cell_iter) 
     {        
-        if (cell_iter->GetMutationState()->template IsType<TipCellMutationState>()) // && dt % 180 == 0 
+        if (cell_iter->GetMutationState()->template IsType<VesselTipMutationState>()) // && dt % 180 == 0 
         {
             c_vector<double, DIM> persistenceforce = zero_vector<double>(DIM); 
 
@@ -45,7 +43,6 @@ void PersistenceForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rC
             std::vector<std::string> mDataLabels = std::vector<std::string>{ "fx", "fy", "fz" };
             for(unsigned i = 0; i < DIM; ++i){
                 double f = (*cell_iter)->GetCellData()->GetItem(mDataLabels[i]);
-                //PRINT_VARIABLE(f)
                 persistenceforce(i) = mOmegap*f;
             
             }
@@ -57,8 +54,6 @@ void PersistenceForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rC
         }
 
     }
-
-    //TRACE("End Persistence Force");
 }
 
 template<unsigned DIM>

@@ -7,8 +7,8 @@
 #include "AbstractForce.hpp"
 #include "AbstractCellProliferativeType.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
-#include "TipCellMutationState.hpp"
-#include "VesselCellMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
 
 #include "SmartPointers.hpp"
 
@@ -16,7 +16,11 @@
 template<unsigned DIM>
 class PersistenceForce  : public AbstractForce<DIM>
 {
-friend class TestForcesModel;
+    friend class TestForcesModel;
+    friend class TestAngiogenesisModel;
+    friend class TestAngiogenesisModelWithVegfConcentrationPde;
+    friend class TestAngiogenesisModelWithVegfConcentrationConstant;
+    friend class TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPde;
 
 private:
 

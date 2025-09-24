@@ -122,7 +122,7 @@ if Graph3D:
                         list_consecutivebranches = runner.ConsecutiveBranches(file_consecutivebranches)
 
                         y_totalnumbercells.append(runner.TotalNumberCells(file_cellmutation))
-                        y_totalnumbertipcells.append(runner.TotalNumberTipCells(file_cellmutation))
+                        y_totalnumbertipcells.append(runner.TotalNumberVesselTips(file_cellmutation))
                         y_totalnumberstalkcells.append(runner.TotalNumberStalkCells(file_cellmutation))
                         y_totalnumberbranches.append(runner.TotalNumberBranches(file_cellmutation))
 
@@ -164,7 +164,7 @@ if Graph3D:
                     list_consecutivebranches = runner.ConsecutiveBranches(file_consecutivebranches)
 
                     y_totalnumbercells.append(runner.TotalNumberCells(file_cellmutation))
-                    y_totalnumbertipcells.append(runner.TotalNumberTipCells(file_cellmutation))
+                    y_totalnumbertipcells.append(runner.TotalNumberVesselTips(file_cellmutation))
                     y_totalnumberstalkcells.append(runner.TotalNumberStalkCells(file_cellmutation))
                     y_totalnumberbranches.append(runner.TotalNumberBranches(file_cellmutation))
 

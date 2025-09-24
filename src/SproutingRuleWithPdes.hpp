@@ -31,6 +31,8 @@ template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedDivi
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 class SproutingRuleWithPdes  : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
 {
+    friend class TestForcesModel;
+    friend class TestAngiogenesisModelWithVegfConcentrationPde;
 
 private:
 
@@ -38,7 +40,10 @@ private:
 
     boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > mpPdeModifier; 
 
-    int mPsproutFunctionTestNb;
+    double mCMax;
+    double mCMin;
+    double mPMax;
+    double mPMin;
 
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
@@ -47,12 +52,20 @@ private:
     {
         // not in AbstractCentreBasedDivisionRule.hpp
         archive & boost::serialization::base_object<AbstractCentreBasedDivisionRule<ELEMENT_DIM, SPACE_DIM> >(*this);
+        archive & mMaxSproutingRatePdes;
+
+        archive & mpPdeModifier; 
+
+        archive & mCMax;
+        archive & mCMin;
+        archive & mPMax;
+        archive & mPMin;
     }
 
 public:
 
     // constructor 
-    SproutingRuleWithPdes(double MaxSproutingRatePdes = 0.1, double thresholdLength=2.0, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> >(), int PsproutFunctionTestNb = 0);
+    SproutingRuleWithPdes(double MaxSproutingRatePdes = 0.08, double thresholdLength=2.0, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> >(), double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4);
 
     // destructor 
     ~SproutingRuleWithPdes();

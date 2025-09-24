@@ -5,9 +5,9 @@
 #include "NodeBasedCellPopulation.hpp"
 #include <tuple>
 
-#include "BranchingCellMutationState.hpp"
-#include "VesselCellMutationState.hpp"
-#include "TipCellMutationState.hpp"
+#include "BranchingSegmentMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
+#include "VesselTipMutationState.hpp"
 
 #include "Debug.hpp"
 
@@ -50,7 +50,7 @@ unsigned AngularForce<DIM>::GetNthNeighbourIndice(std::set<unsigned> neighbourin
 
 template<unsigned DIM>
 std::set<unsigned> AngularForce<DIM>::GetSameBranchNeighbours(AbstractCellPopulation<DIM, DIM>& rCellPopulation,NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pCell){  
-    std::set<unsigned> neighbours_set = p_node_population->GetNodesWithinNeighbourhoodRadius(pCell->GetCellId(),1.5);
+    std::set<unsigned> neighbours_set = p_node_population->GetNodesWithinNeighbourhoodRadius(pCell->GetCellId(),1.5); // we use here the cut-off length between two cells 
     std::set<unsigned> neighbours_set_same_branch;
 
     for(std::set<unsigned>::iterator k = neighbours_set.begin(); k != neighbours_set.end(); ++k){
@@ -109,7 +109,7 @@ std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> AngularForce<DIM>
         if (pNeighbourCell->GetCellData()->GetItem("BranchNumber") == pCell->GetCellData()->GetItem("BranchNumber")){
             // we add the cell to the new neighbour set 
             neighbouring_node_indices_same_branch.insert(*k);
-        } else if (pNeighbourCell->GetMutationState() ->IsType<BranchingCellMutationState>() && pCell->GetCellData()->GetItem("BranchingCell") == *k){
+        } else if (pNeighbourCell->GetMutationState() ->IsType<BranchingSegmentMutationState>() && pCell->GetCellData()->GetItem("BranchingSegment") == *k){
             neighbouring_node_indices_same_branch.insert(*k);
         } else if (pNeighbourCell->GetCellData()->GetItem("LoopNumber") == pCell->GetCellData()->GetItem("LoopNumber") && pNeighbourCell->GetCellData()->GetItem("LoopNumber") != 0) {
             // case of the cells in the same loop but with different branches number: use loop number 
@@ -275,7 +275,7 @@ void AngularForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellP
 
     for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
     {
-        if (cell_iter->GetMutationState()->template IsType<VesselCellMutationState>())
+        if (cell_iter->GetMutationState()->template IsType<VesselSegmentMutationState>())
         {
             c_vector<double, DIM> angularforce = zero_vector<double>(DIM);
 

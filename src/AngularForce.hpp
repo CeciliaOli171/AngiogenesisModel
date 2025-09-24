@@ -8,14 +8,18 @@
 #include "AbstractCellProliferativeType.hpp"
 #include "StemCellProliferativeType.hpp"
 #include "TransitCellProliferativeType.hpp"
-#include "VesselCellMutationState.hpp"
-#include "TipCellMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
+#include "VesselTipMutationState.hpp"
 
 
 template<unsigned DIM>
 class AngularForce  : public AbstractForce<DIM>
 {
 friend class TestForcesModel;
+friend class TestAngiogenesisModel;
+friend class TestAngiogenesisModelWithVegfConcentrationPde;
+friend class TestAngiogenesisModelWithVegfConcentrationConstant;
+friend class TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPde;
 
 private:
 
@@ -42,18 +46,16 @@ public:
     // calculates the nth value of a neighbouring node indices set 
     unsigned GetNthNeighbourIndice(std::set<unsigned> neighbouring_node_indices, int n);
 
+    // selects all the cells in the same branch
     std::set<unsigned> GetSameBranchNeighbours(AbstractCellPopulation<DIM, DIM>& rCellPopulation,NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pCell);
 
-    // function calculating the angle between two vectors u and v 
+    // calculates the angle between two vectors u and v 
     double GetAngleFromVectors(c_vector<double,DIM> u, c_vector<double,DIM> v);
 
-    // function calculating the angle and the two closest nodes to a third one 
-    // should be renamed since vessel segments can only have 2 neighbours 
-    // (we do not count the neighbour that is a branching point)
+    // calculates the angle and the two closest nodes to a third one (branching point not considered)
     std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> ClosestAngleVesselSegment(AbstractCellPopulation<DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
 
-    // function calculating the smallest angle made by a node with its neighbours 
-    // not used for now 
+    // calculates the smallest angle made by a node with its neighbours 
     std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> OptimalAngleVesselElement(AbstractCellPopulation<DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices); 
 
     // overrides AddForceContribution

@@ -8,8 +8,8 @@
 #include "AbstractLinearPde.hpp"
 #include "AbstractBoxDomainPdeModifier.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
-#include "TipCellMutationState.hpp"
-#include "VesselCellMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
 
 #include "ChemoForce.hpp"
 

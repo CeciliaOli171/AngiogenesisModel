@@ -7,6 +7,10 @@ template<unsigned  ELEMENT_DIM, unsigned SPACE_DIM=ELEMENT_DIM>
 class LinearMechanicalForceModified : public GeneralisedLinearSpringForce<ELEMENT_DIM, SPACE_DIM>
 {
     friend class TestForcesModel;
+    friend class TestAngiogenesisModel;
+    friend class TestAngiogenesisModelWithVegfConcentrationPde;
+    friend class TestAngiogenesisModelWithVegfConcentrationConstant;
+    friend class TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPde;
 
 private:
 

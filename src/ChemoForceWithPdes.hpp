@@ -8,21 +8,24 @@
 #include "AbstractLinearPde.hpp"
 #include "AbstractBoxDomainPdeModifier.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
-#include "TipCellMutationState.hpp"
-#include "VesselCellMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
 
 #include "ChemoForce.hpp"
+
 
 template<unsigned DIM>
 class ChemoForceWithPdes  : public ChemoForce<DIM>
 {
 friend class TestForces;
+friend class TestAngiogenesisModel;
+friend class TestAngiogenesisModelWithVegfConcentrationPde;
 
 private:
 
     double mChiPdes;
-    boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > mpPdeModifier;
 
+    boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > mpPdeModifier;
     std::vector<c_vector<double, DIM> > mGradientsVegfPdes;
 
     friend class boost::serialization::access;
@@ -30,6 +33,10 @@ private:
     void serialize(Archive & archive, const unsigned int version)
     {
         archive & boost::serialization::base_object<AbstractForce<DIM> >(*this);
+        archive & mChiPdes;
+
+        archive & mpPdeModifier;
+        archive & mGradientsVegfPdes;
     }
 
 public:

@@ -8,15 +8,18 @@
 #include "AbstractLinearPde.hpp"
 #include "AbstractBoxDomainPdeModifier.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
-#include "TipCellMutationState.hpp"
-#include "VesselCellMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
 
 #include "ChemoForce.hpp"
+
 
 template<unsigned DIM>
 class ChemoForceWithAnalyticalApproximationPde : public ChemoForce<DIM>
 {
 friend class TestForcesModel;
+friend class TestAngiogenesisModel;
+friend class TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPde;
 
 private:
 
@@ -36,6 +39,16 @@ private:
     void serialize(Archive & archive, const unsigned int version)
     {
         archive & boost::serialization::base_object<AbstractForce<DIM> >(*this);
+        archive & mChiAnalyticalApproxPde;
+
+        archive & mDiffusionCoefficient;
+        archive & mDecayCoefficient;
+        archive & mCreationCoefficient;
+        archive & mConsumptionCoefficient;
+        archive & mSourceValue;
+        archive & mConstantBackground;
+
+        archive & mGradientsVegfAnalyticalApproxPde;
     }
 
 public:

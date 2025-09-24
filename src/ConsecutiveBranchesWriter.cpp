@@ -34,5 +34,4 @@ template class ConsecutiveBranchesWriter<2,3>;
 template class ConsecutiveBranchesWriter<3,3>;
 
 #include "SerializationExportWrapperForCpp.hpp"
-// Declare identifier for the serializer
 EXPORT_TEMPLATE_CLASS_ALL_DIMS(ConsecutiveBranchesWriter)

@@ -152,10 +152,10 @@ class ParametersSensitivityRunner:
             else :
                 list_tipcellscoordinates.append(list_longestpath[k])
 
-        NbTipCells = int(len(list_tipcellscoordinates)/3)
+        NbVesselTips = int(len(list_tipcellscoordinates)/3)
 
         # we re arrange the tip cells coordinates list into an array 
-        array_tipcellscoordinates = np.reshape(list_tipcellscoordinates, (NbTipCells,dim))
+        array_tipcellscoordinates = np.reshape(list_tipcellscoordinates, (NbVesselTips,dim))
 
         # we look for the longest arc 
         arc = list_arcs[0]
@@ -167,23 +167,23 @@ class ParametersSensitivityRunner:
 
         # we collect the coordinates of the tip cell associated to the longest arc 
         if(dim==3):
-            TipCellLength_x = array_tipcellscoordinates[LongestArcNb][0]
-            TipCellLength_y = array_tipcellscoordinates[LongestArcNb][1]
-            TipCellLength_z = array_tipcellscoordinates[LongestArcNb][2]
+            VesselTipLength_x = array_tipcellscoordinates[LongestArcNb][0]
+            VesselTipLength_y = array_tipcellscoordinates[LongestArcNb][1]
+            VesselTipLength_z = array_tipcellscoordinates[LongestArcNb][2]
 
             # we calculate its norm 
-            length = np.sqrt(TipCellLength_x**2 + TipCellLength_y**2 + TipCellLength_z**2)
+            length = np.sqrt(VesselTipLength_x**2 + VesselTipLength_y**2 + VesselTipLength_z**2)
         elif(dim==2):
-            TipCellLength_x = array_tipcellscoordinates[LongestArcNb][0]
-            TipCellLength_y = array_tipcellscoordinates[LongestArcNb][1]
+            VesselTipLength_x = array_tipcellscoordinates[LongestArcNb][0]
+            VesselTipLength_y = array_tipcellscoordinates[LongestArcNb][1]
 
             # we calculate its norm 
-            length = np.sqrt(TipCellLength_x**2 + TipCellLength_y**2)
+            length = np.sqrt(VesselTipLength_x**2 + VesselTipLength_y**2)
         elif(dim==1):
-            TipCellLength_x = array_tipcellscoordinates[LongestArcNb][0]
+            VesselTipLength_x = array_tipcellscoordinates[LongestArcNb][0]
 
             # we calculate its norm 
-            length = np.sqrt(TipCellLength_x**2)
+            length = np.sqrt(VesselTipLength_x**2)
 
         return arc, length 
 
@@ -203,16 +203,16 @@ class ParametersSensitivityRunner:
         return len(list_cellmutation)
 
     # a function to obtain the total number of tip cells at the end of the simulation 
-    def TotalNumberTipCells(file_cellmutation):
-        NumberTipCells = 0
+    def TotalNumberVesselTips(file_cellmutation):
+        NumberVesselTips = 0
 
         list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
 
         for elem in list_cellmutation:
             if(int(elem) == 0):
-                NumberTipCells += 1
+                NumberVesselTips += 1
 
-        return NumberTipCells
+        return NumberVesselTips
 
     # a function to obtain the total number of stalk cells at the end of the simulation (including branching points)
     def TotalNumberStalkCells(file_cellmutation):
@@ -227,16 +227,16 @@ class ParametersSensitivityRunner:
         return NumberStalkCells
 
     # a function to obtain the total number of branching points
-    def TotalNumberBranchingCells(file_cellmutation):
-        NumberBranchingCells = 0
+    def TotalNumberBranchingSegments(file_cellmutation):
+        NumberBranchingSegments = 0
 
         list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
 
         for elem in list_cellmutation:
             if(elem == 2):
-                NumberBranchingCells += 1
+                NumberBranchingSegments += 1
 
-        return NumberBranchingCells
+        return NumberBranchingSegments
 
     # a function to obtain the total number of branches at the end of the simulation 
     def TotalNumberBranches(file_branchesnumber, file_anastomosis):
@@ -414,7 +414,7 @@ class ParametersSensitivityRunner:
 
         return list_branches
 
-    def TipCellsPerTimeStep(file_cellmutation):
+    def VesselTipsPerTimeStep(file_cellmutation):
         list_tipcells = []
 
         # for each time step we want: number of tip cells, number of anastomosis events 
@@ -750,7 +750,7 @@ class ParametersSensitivityRunner:
 
         while t < nb_test :
             # initialisation : at the beginning of the simulation : only 1 tip cell and hence only 1 branch 
-            NbTipCells = 1 
+            NbVesselTips = 1 
             NbCells = 1
             NumberExpectedConsecutiveBranches = 1 
 
@@ -758,12 +758,12 @@ class ParametersSensitivityRunner:
             #np.random.seed()
 
             for j in range(TNcycle):
-                NbCells = NbCells + NbTipCells
+                NbCells = NbCells + NbVesselTips
 
-                for i in range(NbTipCells):
+                for i in range(NbVesselTips):
                     proba = np.random.random()
                     if(proba <= Psprout):
-                        NbTipCells = NbTipCells + 1
+                        NbVesselTips = NbVesselTips + 1
                         NumberExpectedConsecutiveBranches = NumberExpectedConsecutiveBranches + 2
             
             t += 1
@@ -791,52 +791,52 @@ class ParametersSensitivityRunner:
         return NumberMaximumConsecutiveBranches, NumberExpectedConsecutiveBranches, NumberFormulaExpectedConsecutiveBranches
 
     # function returning the closest tip cell coordinates from the first fixed cell
-    def ClosestTipCell(file_nodescoordinates, file_cellmutation, dim):
+    def ClosestVesselTip(file_nodescoordinates, file_cellmutation, dim):
         list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
         array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
 
-        CoordinatesClosestTipCell = np.zeros((dim,1))
+        CoordinatesClosestVesselTip = np.zeros((dim,1))
         if (dim == 3):
-            CoordinatesClosestTipCell[0] = array_nodescoordinates[1][0]
-            CoordinatesClosestTipCell[1] = array_nodescoordinates[1][1]
-            CoordinatesClosestTipCell[2] = array_nodescoordinates[1][2]
-            NormClosestTipCell = np.sqrt(CoordinatesClosestTipCell[0]**2 + CoordinatesClosestTipCell[1]**2+ CoordinatesClosestTipCell[2]**2)
+            CoordinatesClosestVesselTip[0] = array_nodescoordinates[1][0]
+            CoordinatesClosestVesselTip[1] = array_nodescoordinates[1][1]
+            CoordinatesClosestVesselTip[2] = array_nodescoordinates[1][2]
+            NormClosestVesselTip = np.sqrt(CoordinatesClosestVesselTip[0]**2 + CoordinatesClosestVesselTip[1]**2+ CoordinatesClosestVesselTip[2]**2)
         elif(dim == 2):
-            CoordinatesClosestTipCell[0] = array_nodescoordinates[1][0]
-            CoordinatesClosestTipCell[1] = array_nodescoordinates[1][1]
-            NormClosestTipCell = np.sqrt(CoordinatesClosestTipCell[0]**2 + CoordinatesClosestTipCell[1]**2)
+            CoordinatesClosestVesselTip[0] = array_nodescoordinates[1][0]
+            CoordinatesClosestVesselTip[1] = array_nodescoordinates[1][1]
+            NormClosestVesselTip = np.sqrt(CoordinatesClosestVesselTip[0]**2 + CoordinatesClosestVesselTip[1]**2)
         elif(dim == 1):
-            CoordinatesClosestTipCell[0] = array_nodescoordinates[1][0]
-            NormClosestTipCell = np.sqrt(CoordinatesClosestTipCell[0]**2)
+            CoordinatesClosestVesselTip[0] = array_nodescoordinates[1][0]
+            NormClosestVesselTip = np.sqrt(CoordinatesClosestVesselTip[0]**2)
 
         NumberNodes = array_nodescoordinates.shape[0]
         for k in range(NumberNodes):
             if(list_cellmutation[k] == 0) :
                 if(dim == 3):
-                    CoordinatesNextTipCell = np.zeros((dim,1))
-                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]
-                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]
-                    CoordinatesNextTipCell[2] = array_nodescoordinates[k][2]
-                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2+ CoordinatesNextTipCell[2]**2)
+                    CoordinatesNextVesselTip = np.zeros((dim,1))
+                    CoordinatesNextVesselTip[0] = array_nodescoordinates[k][0]
+                    CoordinatesNextVesselTip[1] = array_nodescoordinates[k][1]
+                    CoordinatesNextVesselTip[2] = array_nodescoordinates[k][2]
+                    NormNextVesselTip = np.sqrt(CoordinatesNextVesselTip[0]**2 + CoordinatesNextVesselTip[1]**2+ CoordinatesNextVesselTip[2]**2)
                 elif(dim == 2):
-                    CoordinatesNextTipCell = np.zeros((dim,1))
-                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]
-                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]
-                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2)
+                    CoordinatesNextVesselTip = np.zeros((dim,1))
+                    CoordinatesNextVesselTip[0] = array_nodescoordinates[k][0]
+                    CoordinatesNextVesselTip[1] = array_nodescoordinates[k][1]
+                    NormNextVesselTip = np.sqrt(CoordinatesNextVesselTip[0]**2 + CoordinatesNextVesselTip[1]**2)
                 elif(dim == 1):
-                    CoordinatesNextTipCell = np.zeros((dim,1))
-                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]
-                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2)
+                    CoordinatesNextVesselTip = np.zeros((dim,1))
+                    CoordinatesNextVesselTip[0] = array_nodescoordinates[k][0]
+                    NormNextVesselTip = np.sqrt(CoordinatesNextVesselTip[0]**2)
 
-                if(NormNextTipCell < NormClosestTipCell):
-                    NormClosestTipCell = NormNextTipCell
-                    CoordinatesClosestTipCell = CoordinatesNextTipCell
+                if(NormNextVesselTip < NormClosestVesselTip):
+                    NormClosestVesselTip = NormNextVesselTip
+                    CoordinatesClosestVesselTip = CoordinatesNextVesselTip
 
-        return CoordinatesClosestTipCell, NormClosestTipCell
+        return CoordinatesClosestVesselTip, NormClosestVesselTip
 
     # function returning the furthest tip cell coordinates from the first fixed cell
     # ATTENTION FUNCTION FOR A FIXED FIRST CELL AT POSITION (25, 50, 50)
-    def FurthestTipCell(file_nodescoordinates, file_cellmutation, dim):
+    def FurthestVesselTip(file_nodescoordinates, file_cellmutation, dim):
         list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
         array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
 
@@ -845,95 +845,95 @@ class ParametersSensitivityRunner:
         while counter < NumberNodes:
             if(list_cellmutation[counter] == 0):
                 if(dim==3):
-                    CoordinatesFurthestTipCell = np.zeros((dim,1))
-                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
-                    CoordinatesFurthestTipCell[1] = array_nodescoordinates[1][1]-50
-                    CoordinatesFurthestTipCell[2] = array_nodescoordinates[1][2]-50
-                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2 + CoordinatesFurthestTipCell[1]**2+ CoordinatesFurthestTipCell[2]**2)
+                    CoordinatesFurthestVesselTip = np.zeros((dim,1))
+                    CoordinatesFurthestVesselTip[0] = array_nodescoordinates[1][0]-25
+                    CoordinatesFurthestVesselTip[1] = array_nodescoordinates[1][1]-50
+                    CoordinatesFurthestVesselTip[2] = array_nodescoordinates[1][2]-50
+                    NormFurthestVesselTip = np.sqrt(CoordinatesFurthestVesselTip[0]**2 + CoordinatesFurthestVesselTip[1]**2+ CoordinatesFurthestVesselTip[2]**2)
                 elif(dim==2):
-                    CoordinatesFurthestTipCell = np.zeros((dim,1))
-                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
-                    CoordinatesFurthestTipCell[1] = array_nodescoordinates[1][1]-50
-                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2 + CoordinatesFurthestTipCell[1]**2)
+                    CoordinatesFurthestVesselTip = np.zeros((dim,1))
+                    CoordinatesFurthestVesselTip[0] = array_nodescoordinates[1][0]-25
+                    CoordinatesFurthestVesselTip[1] = array_nodescoordinates[1][1]-50
+                    NormFurthestVesselTip = np.sqrt(CoordinatesFurthestVesselTip[0]**2 + CoordinatesFurthestVesselTip[1]**2)
                 elif(dim==1):
-                    CoordinatesFurthestTipCell = np.zeros((dim,1))
-                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
-                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2)
+                    CoordinatesFurthestVesselTip = np.zeros((dim,1))
+                    CoordinatesFurthestVesselTip[0] = array_nodescoordinates[1][0]-25
+                    NormFurthestVesselTip = np.sqrt(CoordinatesFurthestVesselTip[0]**2)
             counter += 1
 
         for k in range(NumberNodes):
             if(list_cellmutation[k] == 0):
                 if(dim==3):
-                    CoordinatesNextTipCell = np.zeros((dim,1))
-                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
-                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]-50
-                    CoordinatesNextTipCell[2] = array_nodescoordinates[k][2]-50
-                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2+ CoordinatesNextTipCell[2]**2)
+                    CoordinatesNextVesselTip = np.zeros((dim,1))
+                    CoordinatesNextVesselTip[0] = array_nodescoordinates[k][0]-25
+                    CoordinatesNextVesselTip[1] = array_nodescoordinates[k][1]-50
+                    CoordinatesNextVesselTip[2] = array_nodescoordinates[k][2]-50
+                    NormNextVesselTip = np.sqrt(CoordinatesNextVesselTip[0]**2 + CoordinatesNextVesselTip[1]**2+ CoordinatesNextVesselTip[2]**2)
                 elif(dim==2):
-                    CoordinatesNextTipCell = np.zeros((dim,1))
-                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
-                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]-50
-                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2)
+                    CoordinatesNextVesselTip = np.zeros((dim,1))
+                    CoordinatesNextVesselTip[0] = array_nodescoordinates[k][0]-25
+                    CoordinatesNextVesselTip[1] = array_nodescoordinates[k][1]-50
+                    NormNextVesselTip = np.sqrt(CoordinatesNextVesselTip[0]**2 + CoordinatesNextVesselTip[1]**2)
                 elif(dim==1):
-                    CoordinatesNextTipCell = np.zeros((dim,1))
-                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
-                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2)
+                    CoordinatesNextVesselTip = np.zeros((dim,1))
+                    CoordinatesNextVesselTip[0] = array_nodescoordinates[k][0]-25
+                    NormNextVesselTip = np.sqrt(CoordinatesNextVesselTip[0]**2)
 
-                if(NormNextTipCell > NormFurthestTipCell):
-                    NormFurthestTipCell = NormNextTipCell
-                    CoordinatesFurthestTipCell = CoordinatesNextTipCell
+                if(NormNextVesselTip > NormFurthestVesselTip):
+                    NormFurthestVesselTip = NormNextVesselTip
+                    CoordinatesFurthestVesselTip = CoordinatesNextVesselTip
 
-        return CoordinatesFurthestTipCell, NormFurthestTipCell
+        return CoordinatesFurthestVesselTip, NormFurthestVesselTip
     
-    def NormFurthestTipCell(file_nodescoordinates, file_cellmutation, dim):
+    def NormFurthestVesselTip(file_nodescoordinates, file_cellmutation, dim):
         list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
         array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
 
         NumberNodes = array_nodescoordinates.shape[0]
         counter = 0
-        NormFurthestTipCell = 0
+        NormFurthestVesselTip = 0
         while counter < NumberNodes:
             if(list_cellmutation[counter] == 0):
                 if(dim==3):
-                    CoordinatesFurthestTipCell = np.zeros(dim)
-                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
-                    CoordinatesFurthestTipCell[1] = array_nodescoordinates[1][1]-50
-                    CoordinatesFurthestTipCell[2] = array_nodescoordinates[1][2]-50
-                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2 + CoordinatesFurthestTipCell[1]**2+ CoordinatesFurthestTipCell[2]**2)
+                    CoordinatesFurthestVesselTip = np.zeros(dim)
+                    CoordinatesFurthestVesselTip[0] = array_nodescoordinates[1][0]-25
+                    CoordinatesFurthestVesselTip[1] = array_nodescoordinates[1][1]-50
+                    CoordinatesFurthestVesselTip[2] = array_nodescoordinates[1][2]-50
+                    NormFurthestVesselTip = np.sqrt(CoordinatesFurthestVesselTip[0]**2 + CoordinatesFurthestVesselTip[1]**2+ CoordinatesFurthestVesselTip[2]**2)
                 elif(dim==2):
-                    CoordinatesFurthestTipCell = np.zeros(dim)
-                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
-                    CoordinatesFurthestTipCell[1] = array_nodescoordinates[1][1]-50
-                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2 + CoordinatesFurthestTipCell[1]**2)
+                    CoordinatesFurthestVesselTip = np.zeros(dim)
+                    CoordinatesFurthestVesselTip[0] = array_nodescoordinates[1][0]-25
+                    CoordinatesFurthestVesselTip[1] = array_nodescoordinates[1][1]-50
+                    NormFurthestVesselTip = np.sqrt(CoordinatesFurthestVesselTip[0]**2 + CoordinatesFurthestVesselTip[1]**2)
                 elif(dim==1):
-                    CoordinatesFurthestTipCell = np.zeros(dim)
-                    CoordinatesFurthestTipCell[0] = array_nodescoordinates[1][0]-25
-                    NormFurthestTipCell = np.sqrt(CoordinatesFurthestTipCell[0]**2)
+                    CoordinatesFurthestVesselTip = np.zeros(dim)
+                    CoordinatesFurthestVesselTip[0] = array_nodescoordinates[1][0]-25
+                    NormFurthestVesselTip = np.sqrt(CoordinatesFurthestVesselTip[0]**2)
             counter += 1
 
         for k in range(NumberNodes):
             if(list_cellmutation[k] == 0):
                 if(dim==3):
-                    CoordinatesNextTipCell = np.zeros(dim)
-                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
-                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]-50
-                    CoordinatesNextTipCell[2] = array_nodescoordinates[k][2]-50
-                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2+ CoordinatesNextTipCell[2]**2)
+                    CoordinatesNextVesselTip = np.zeros(dim)
+                    CoordinatesNextVesselTip[0] = array_nodescoordinates[k][0]-25
+                    CoordinatesNextVesselTip[1] = array_nodescoordinates[k][1]-50
+                    CoordinatesNextVesselTip[2] = array_nodescoordinates[k][2]-50
+                    NormNextVesselTip = np.sqrt(CoordinatesNextVesselTip[0]**2 + CoordinatesNextVesselTip[1]**2+ CoordinatesNextVesselTip[2]**2)
                 elif(dim==2):
-                    CoordinatesNextTipCell = np.zeros(dim)
-                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
-                    CoordinatesNextTipCell[1] = array_nodescoordinates[k][1]-50
-                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2 + CoordinatesNextTipCell[1]**2)
+                    CoordinatesNextVesselTip = np.zeros(dim)
+                    CoordinatesNextVesselTip[0] = array_nodescoordinates[k][0]-25
+                    CoordinatesNextVesselTip[1] = array_nodescoordinates[k][1]-50
+                    NormNextVesselTip = np.sqrt(CoordinatesNextVesselTip[0]**2 + CoordinatesNextVesselTip[1]**2)
                 elif(dim==1):
-                    CoordinatesNextTipCell = np.zeros(dim)
-                    CoordinatesNextTipCell[0] = array_nodescoordinates[k][0]-25
-                    NormNextTipCell = np.sqrt(CoordinatesNextTipCell[0]**2)
+                    CoordinatesNextVesselTip = np.zeros(dim)
+                    CoordinatesNextVesselTip[0] = array_nodescoordinates[k][0]-25
+                    NormNextVesselTip = np.sqrt(CoordinatesNextVesselTip[0]**2)
 
-                if(NormNextTipCell > NormFurthestTipCell):
-                    NormFurthestTipCell = NormNextTipCell
-                    CoordinatesFurthestTipCell = CoordinatesNextTipCell
+                if(NormNextVesselTip > NormFurthestVesselTip):
+                    NormFurthestVesselTip = NormNextVesselTip
+                    CoordinatesFurthestVesselTip = CoordinatesNextVesselTip
 
-        return NormFurthestTipCell
+        return NormFurthestVesselTip
     
     def NormFurthestCell(file_nodescoordinates, file_cellmutation, dim):
         list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
@@ -1045,7 +1045,7 @@ class ParametersSensitivityRunner:
         
         return NormFurthestCell, TimeFurthestCell
 
-    def NormFirstTipCell(file_nodescoordinates, file_cellmutation, dim):
+    def NormFirstVesselTip(file_nodescoordinates, file_cellmutation, dim):
         list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
         array_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
 
@@ -1098,7 +1098,7 @@ class ParametersSensitivityRunner:
     # function returning the average area of the blood vessel tree 
     def AverageArea(file_nodescoordinates, file_cellmutation):
         # Method with the half sphere formula
-        # furthest_tip_cell, radius = FurthestTipCell(file_nodescoordinates, file_cellmutation)
+        # furthest_tip_cell, radius = FurthestVesselTip(file_nodescoordinates, file_cellmutation)
         # area = 2*np.pi*radius**2 # area of half a sphere 
 
         # Method with the convex hull 
@@ -1112,7 +1112,7 @@ class ParametersSensitivityRunner:
     # function returning the average volume of the blood vessel tree 
     def AverageVolume(file_nodescoordinates, file_cellmutation):
         # Method with the half sphere formula 
-        #furthest_tip_cell, radius = FurthestTipCell(file_nodescoordinates, file_cellmutation)
+        #furthest_tip_cell, radius = FurthestVesselTip(file_nodescoordinates, file_cellmutation)
         #volume = (2/3)*np.pi*radius**3 # volume of half a sphere 
 
         # Method with convex hull 

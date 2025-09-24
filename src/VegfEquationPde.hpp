@@ -11,6 +11,7 @@ template<unsigned DIM>
 class VegfEquationPde : public AveragedSourceParabolicPde<DIM>
 {
     friend class TestCellBasedParabolicPdes;
+    friend class TestForcesModel;
 
 private:
 
@@ -22,7 +23,13 @@ private:
     double mDecayCoefficient;
     double mCreationCoefficient;
     double mConsumptionCoefficient;
-    double mConstantBackground;
+
+    double GetDuDtCoefficient();
+    double GetDiffusionCoefficient();
+    double GetDecayCoefficient();
+    double GetCreationCoefficient();
+    double GetConsumptionCoefficient();
+
     std::vector<double> mCellDensityOnCoarseElements;
 
     template<class Archive>
@@ -34,13 +41,12 @@ private:
        archive & mDecayCoefficient;
        archive & mCreationCoefficient;
        archive & mConsumptionCoefficient;
-       archive & mConstantBackground;
        archive & mCellDensityOnCoarseElements;
     }
 
 public:
 
-    VegfEquationPde(AbstractCellPopulation<DIM, DIM>& rCellPopulation, double duDtCoefficient=1.0, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01, double constantBackground=0.1);
+    VegfEquationPde(AbstractCellPopulation<DIM, DIM>& rCellPopulation, double duDtCoefficient=1.0, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01);
 
     void SetupSourceTerms(TetrahedralMesh<DIM,DIM>& rCoarseMesh, std::map<CellPtr, unsigned>* pCellPdeElementMap=nullptr);
 

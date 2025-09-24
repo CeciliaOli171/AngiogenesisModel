@@ -3,9 +3,14 @@
 #include "Debug.hpp"
 
 template<unsigned SPACE_DIM>
-VegfBoundaryCondition<SPACE_DIM>::VegfBoundaryCondition(const double value, double boundaryCuboidMax)
-    : mValue(value), mBoundaryCuboidMax(boundaryCuboidMax)
+VegfBoundaryCondition<SPACE_DIM>::VegfBoundaryCondition(const double sourceterm, double boundaryCuboidMax)
+    : mSourceTerm(sourceterm), mBoundaryCuboidMax(boundaryCuboidMax)
 {
+}
+
+template<unsigned SPACE_DIM>
+double VegfBoundaryCondition<SPACE_DIM>::GetSourceTerm(){
+    return mSourceTerm;
 }
 
 template<unsigned SPACE_DIM>
@@ -17,7 +22,7 @@ double VegfBoundaryCondition<SPACE_DIM>::GetValue(const ChastePoint<SPACE_DIM>& 
         // periodic boundary condition:
         // obtain time of simulation t
         // mValue*sin(t) ? 
-        return mValue;
+        return mSourceTerm;
     } else {
         return 0.0;
     }

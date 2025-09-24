@@ -45,9 +45,9 @@
 
 #include "DifferentiatedCellProliferativeType.hpp"
 #include "TransitCellProliferativeType.hpp"
-#include "BranchingCellMutationState.hpp"
-#include "TipCellMutationState.hpp"
-#include "VesselCellMutationState.hpp"
+#include "BranchingSegmentMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
 #include "ApcOneHitCellMutationState.hpp"
 #include "ApcTwoHitCellMutationState.hpp"
 #include "BetaCateninOneHitCellMutationState.hpp"
@@ -173,9 +173,9 @@ public:
         std::vector<CellPtr> cells;
 
         // mutation states
-        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
-        MAKE_PTR(TipCellMutationState, p_tip_state);
-        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
 
         // proliferative states
         MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
@@ -270,7 +270,7 @@ public:
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithConstantVegf<2,2> SproutingRuleWithConstantVegf;
-        MAKE_PTR_ARGS(SproutingRuleWithConstantVegf, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin, input_psproutfunctiontestnb));
+        MAKE_PTR_ARGS(SproutingRuleWithConstantVegf, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin));
         
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
@@ -357,9 +357,9 @@ public:
         std::vector<CellPtr> cells;
 
         // mutation states
-        MAKE_PTR(BranchingCellMutationState, p_branching_state); 
-        MAKE_PTR(TipCellMutationState, p_tip_state);
-        MAKE_PTR(VesselCellMutationState, p_vessel_state);
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
 
         // proliferative states
         MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
@@ -454,7 +454,7 @@ public:
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithConstantVegf<3,3> SproutingRuleWithConstantVegf;
-        MAKE_PTR_ARGS(SproutingRuleWithConstantVegf, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin, input_psproutfunctiontestnb));
+        MAKE_PTR_ARGS(SproutingRuleWithConstantVegf, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);

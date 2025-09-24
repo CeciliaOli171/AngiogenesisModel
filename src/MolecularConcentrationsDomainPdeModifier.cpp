@@ -1,6 +1,6 @@
 #include "MolecularConcentrationsDomainPdeModifier.hpp"
 #include "SimpleLinearParabolicSolver.hpp"
-#include "TipCellMutationState.hpp"
+#include "VesselTipMutationState.hpp"
 
 #include "Debug.hpp"
 

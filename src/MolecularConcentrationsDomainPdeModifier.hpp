@@ -11,6 +11,9 @@
 template<unsigned DIM>
 class MolecularConcentrationsDomainPdeModifier : public AbstractBoxDomainPdeModifier<DIM>
 {
+    friend class TestForcesModel;
+    friend class TestAngiogenesisModelWithVegfConcentrationPde;
+
 private:
     double mBoundaryCuboidMax;
     double mInitialValue;
@@ -22,6 +25,9 @@ private:
     void serialize(Archive & archive, const unsigned int version)
     {
         archive & boost::serialization::base_object<AbstractBoxDomainPdeModifier<DIM> >(*this);
+        archive & mBoundaryCuboidMax;
+        archive & mInitialValue;
+        archive & mConstantBackground;
     }
 
 public:
@@ -29,12 +35,12 @@ public:
     // constructor
     MolecularConcentrationsDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(),
                                   boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(),
-                                  bool isNeumannBoundaryCondition=true,
+                                  bool isNeumannBoundaryCondition=false,
                                   boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid=boost::shared_ptr<ChasteCuboid<DIM> >(),
                                   double stepSize=1.0,
                                   Vec solution=nullptr, 
-                                  double boundaryCuboidMax=20.0,
-                                  double initialValue=0.1, double constantBackground=0.1);
+                                  double boundaryCuboidMax=0.0,
+                                  double initialValue=1.0, double constantBackground=0.1);
 
     // destructor
     ~MolecularConcentrationsDomainPdeModifier();
@@ -84,10 +90,10 @@ inline void load_construct_data(
 
     ::new(t)MolecularConcentrationsDomainPdeModifier<DIM>(boost::shared_ptr<AbstractLinearPde<DIM, DIM> >(),
                                                boost::shared_ptr<AbstractBoundaryCondition<DIM> >(),
-                                               true,
+                                               false,
                                                boost::shared_ptr<ChasteCuboid<DIM> >(),
                                                1.0,
-                                               solution);
+                                               solution, 0.0, 1.0, 0.1);
 }
 }
 } 

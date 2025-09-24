@@ -2,9 +2,9 @@
 
 #include "CellwiseDataGradient.hpp"
 #include "CellLabel.hpp"
-#include "VesselCellMutationState.hpp"
-#include "TipCellMutationState.hpp"
-#include "BranchingCellMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "BranchingSegmentMutationState.hpp"
 #include "UniformCellCycleModel.hpp"
 
 #include "RandomNumberGenerator.hpp"
@@ -18,8 +18,8 @@
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde, double thresholdLength, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double sourceValue, double constantBackground, double cMax, double cMin, double pMax, double pMin, int PsproutFunctionTestNb)
-    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateAnalyticalApproxPde, thresholdLength), mMaxSproutingRateAnalyticalApproxPde(MaxSproutingRateAnalyticalApproxPde), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient), mSourceValue(sourceValue), mConstantBackground(constantBackground), mCMax(cMax), mCMin(cMin), mPMax(pMax), mPMin(pMin), mPsproutFunctionTestNb(PsproutFunctionTestNb)
+SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithAnalyticalApproximationPde(double MaxSproutingRateAnalyticalApproxPde, double thresholdLength, double diffusionCoefficient, double decayCoefficient, double creationCoefficient, double consumptionCoefficient, double sourceValue, double constantBackground, double cMax, double cMin, double pMax, double pMin)
+    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateAnalyticalApproxPde, thresholdLength), mMaxSproutingRateAnalyticalApproxPde(MaxSproutingRateAnalyticalApproxPde), mDiffusionCoefficient(diffusionCoefficient), mDecayCoefficient(decayCoefficient), mCreationCoefficient(creationCoefficient), mConsumptionCoefficient(consumptionCoefficient), mSourceValue(sourceValue), mConstantBackground(constantBackground), mCMax(cMax), mCMin(cMin), mPMax(pMax), mPMin(pMin)
 {
 }
 
@@ -45,15 +45,10 @@ double SproutingRuleWithAnalyticalApproximationPde<ELEMENT_DIM, SPACE_DIM>::GetS
 
     double vegf_concentration = GetVegfConcentrationAtNode(rCellPopulation, pParentCell);
 
-    if(mPsproutFunctionTestNb == 0){
-        // Linear function
-        Psprout = mMaxSproutingRateAnalyticalApproxPde*vegf_concentration; // test since the concentration is between 0 and 1
-    } else if(mPsproutFunctionTestNb == 1){
-        // Hill function 
-        double n = (1/log(mCMax/mCMin))*log((mPMax/mPMin)*(1-mPMin)/(1-mPMax));
-        double K = pow(mCMax*((1-mPMax)/mPMax),(1/n));
-        Psprout = mMaxSproutingRateAnalyticalApproxPde*pow(vegf_concentration,n)/(pow(K, n) + pow(vegf_concentration,n));
-    } 
+    // Hill function 
+    double n = (1/log(mCMax/mCMin))*log((mPMax/mPMin)*(1-mPMin)/(1-mPMax));
+    double K = pow(mCMax*((1-mPMax)/mPMax),(1/n));
+    Psprout = mMaxSproutingRateAnalyticalApproxPde*pow(vegf_concentration,n)/(pow(K, n) + pow(vegf_concentration,n));
      
     return Psprout;
 }

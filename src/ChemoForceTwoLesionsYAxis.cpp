@@ -41,7 +41,7 @@ void ChemoForceTwoLesionsYAxis<DIM>::CalculateVegfGradient(AbstractCellPopulatio
 
     for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
     {
-        if (cell_iter->GetMutationState()->template IsType<TipCellMutationState>())
+        if (cell_iter->GetMutationState()->template IsType<VesselTipMutationState>())
         {
             // we collect the cell data necessary (node index and cell pointer)
             unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);

@@ -35,9 +35,9 @@
 
 #include "DifferentiatedCellProliferativeType.hpp"
 #include "TransitCellProliferativeType.hpp"
-#include "BranchingCellMutationState.hpp"
-#include "TipCellMutationState.hpp"
-#include "VesselCellMutationState.hpp"
+#include "BranchingSegmentMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
 #include "ApcOneHitCellMutationState.hpp"
 #include "ApcTwoHitCellMutationState.hpp"
 #include "BetaCateninOneHitCellMutationState.hpp"
@@ -118,9 +118,9 @@ public:
           std::vector<CellPtr> cells;
 
           // mutation states
-          MAKE_PTR(BranchingCellMutationState, p_branching_state); 
-          MAKE_PTR(TipCellMutationState, p_tip_state);
-          MAKE_PTR(VesselCellMutationState, p_vessel_state);
+          MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+          MAKE_PTR(VesselTipMutationState, p_tip_state);
+          MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
 
           // proliferative states
           MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
@@ -252,9 +252,9 @@ public:
           std::vector<CellPtr> cells;
 
           // mutation states
-          MAKE_PTR(BranchingCellMutationState, p_branching_state); 
-          MAKE_PTR(TipCellMutationState, p_tip_state);
-          MAKE_PTR(VesselCellMutationState, p_vessel_state);
+          MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+          MAKE_PTR(VesselTipMutationState, p_tip_state);
+          MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
 
           // proliferative states
           MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 

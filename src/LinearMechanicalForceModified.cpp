@@ -2,9 +2,9 @@
 #include "CellLabel.hpp"
 #include "CellData.hpp"
 
-#include "BranchingCellMutationState.hpp"
-#include "TipCellMutationState.hpp"
-#include "VesselCellMutationState.hpp"
+#include "BranchingSegmentMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
 
 #include "Debug.hpp"
 
@@ -38,28 +38,28 @@ double LinearMechanicalForceModified<ELEMENT_DIM, SPACE_DIM>::VariableSpringCons
     double branch_leader_A = pCellA->GetCellData()->GetItem("BranchingLeader");
     double branch_leader_B = pCellB->GetCellData()->GetItem("BranchingLeader");
 
-    double branch_point_A = pCellA->GetCellData()->GetItem("BranchingCell");
-    double branch_point_B = pCellB->GetCellData()->GetItem("BranchingCell");
+    double branch_point_A = pCellA->GetCellData()->GetItem("BranchingSegment");
+    double branch_point_B = pCellB->GetCellData()->GetItem("BranchingSegment");
 
     // if both the cells are on the same branch, then the factor is equal to 1
     // if the cells are not on the same branch, then they exert no attraction or repulsion to each other 
     if(branch_number_A == branch_number_B){
         ConstMultiFactor = 1.0;
-    } else if (pCellA->GetMutationState() ->IsType<BranchingCellMutationState>() && branch_leader_A == node_index_B){
+    } else if (pCellA->GetMutationState() ->IsType<BranchingSegmentMutationState>() && branch_leader_A == node_index_B){
         ConstMultiFactor = 1.0;
-    } else if (pCellA->GetMutationState() ->IsType<BranchingCellMutationState>() && branch_point_A == node_index_B){
+    } else if (pCellA->GetMutationState() ->IsType<BranchingSegmentMutationState>() && branch_point_A == node_index_B){
         ConstMultiFactor = 1.0;
-    } else if (pCellA->GetMutationState() ->IsType<BranchingCellMutationState>() && branch_leader_B == node_index_A){
+    } else if (pCellA->GetMutationState() ->IsType<BranchingSegmentMutationState>() && branch_leader_B == node_index_A){
         ConstMultiFactor = 1.0;
-    } else if (pCellA->GetMutationState() ->IsType<BranchingCellMutationState>() && branch_point_B == node_index_A){
+    } else if (pCellA->GetMutationState() ->IsType<BranchingSegmentMutationState>() && branch_point_B == node_index_A){
         ConstMultiFactor = 1.0;
-    } else if (pCellB->GetMutationState() ->IsType<BranchingCellMutationState>() && branch_leader_B == node_index_A){
+    } else if (pCellB->GetMutationState() ->IsType<BranchingSegmentMutationState>() && branch_leader_B == node_index_A){
         ConstMultiFactor = 1.0;
-    } else if (pCellB->GetMutationState() ->IsType<BranchingCellMutationState>() && branch_point_B == node_index_A){
+    } else if (pCellB->GetMutationState() ->IsType<BranchingSegmentMutationState>() && branch_point_B == node_index_A){
         ConstMultiFactor = 1.0;
-    } else if (pCellB->GetMutationState() ->IsType<BranchingCellMutationState>() && branch_leader_A == node_index_B){
+    } else if (pCellB->GetMutationState() ->IsType<BranchingSegmentMutationState>() && branch_leader_A == node_index_B){
         ConstMultiFactor = 1.0;
-    } else if (pCellB->GetMutationState() ->IsType<BranchingCellMutationState>() && branch_point_A == node_index_B){
+    } else if (pCellB->GetMutationState() ->IsType<BranchingSegmentMutationState>() && branch_point_A == node_index_B){
         ConstMultiFactor = 1.0;
     } else if (isCloserThanRestLength)  {
         ConstMultiFactor = 1.0;

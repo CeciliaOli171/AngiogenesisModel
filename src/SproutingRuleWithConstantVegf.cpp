@@ -2,9 +2,9 @@
 
 #include "CellwiseDataGradient.hpp"
 #include "CellLabel.hpp"
-#include "VesselCellMutationState.hpp"
-#include "TipCellMutationState.hpp"
-#include "BranchingCellMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "BranchingSegmentMutationState.hpp"
 #include "UniformCellCycleModel.hpp"
 
 #include "RandomNumberGenerator.hpp"
@@ -18,8 +18,8 @@
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf, double thresholdLength, double constantBackground, double cMax, double cMin, double pMax, double pMin, int PsproutFunctionTestNb)
-    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateConstantVegf, thresholdLength), mMaxSproutingRateConstantVegf(MaxSproutingRateConstantVegf), mConstantBackground(constantBackground), mCMax(cMax), mCMin(cMin), mPMax(pMax), mPMin(pMin), mPsproutFunctionTestNb(PsproutFunctionTestNb)
+SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf, double thresholdLength, double constantBackground, double cMax, double cMin, double pMax, double pMin)
+    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRateConstantVegf, thresholdLength), mMaxSproutingRateConstantVegf(MaxSproutingRateConstantVegf), mConstantBackground(constantBackground), mCMax(cMax), mCMin(cMin), mPMax(pMax), mPMin(pMin)
 {
 }
 
@@ -34,15 +34,10 @@ double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbab
     double Psprout;
     double vegf_concentration = mConstantBackground;
 
-    if(mPsproutFunctionTestNb == 0){
-        // Linear function
-        Psprout = mMaxSproutingRateConstantVegf*vegf_concentration; // test since the concentration is between 0 and 1
-    } else if(mPsproutFunctionTestNb == 1){
-        // Hill function 
-        double n = (1/log(mCMax/mCMin))*log((mPMax/mPMin)*(1-mPMin)/(1-mPMax));
-        double K = pow(mCMax*((1-mPMax)/mPMax),(1/n));
-        Psprout = mMaxSproutingRateConstantVegf*pow(vegf_concentration,n)/(pow(K, n) + pow(vegf_concentration,n));
-    } 
+    // Hill function 
+    double n = (1/log(mCMax/mCMin))*log((mPMax/mPMin)*(1-mPMin)/(1-mPMax));
+    double K = pow(mCMax*((1-mPMax)/mPMax),(1/n));
+    Psprout = mMaxSproutingRateConstantVegf*pow(vegf_concentration,n)/(pow(K, n) + pow(vegf_concentration,n));
 
     mSproutingProbabilityWithConstantVegf = Psprout;
 

@@ -1,7 +1,7 @@
 #include "PinnedCellsBoundaryCondition.hpp"
 #include "NodeBasedCellPopulation.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
-#include "VesselCellMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
 
 #include "Debug.hpp"
 

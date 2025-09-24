@@ -31,22 +31,21 @@ template<unsigned ELEMENT_DIM, unsigned SPACE_DIM> class AbstractCentreBasedDivi
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 class SproutingRuleWithConstantVegf : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
 {
-friend class TestForcesModel;
+    friend class TestForcesModel;
+    friend class TestAngiogenesisModelWithVegfConcentrationConstant;
 
 private:
     double mSproutingProbabilityWithConstantVegf;
-    double GetSproutingProbabilityWithConstantVegf();
-
     double mMaxSproutingRateConstantVegf;
-
-    double mConstantBackground;
-
+    
     double mCMax;
     double mCMin;
     double mPMax;
     double mPMin;
 
-    int mPsproutFunctionTestNb;
+    double mConstantBackground;
+
+    double GetSproutingProbabilityWithConstantVegf();
 
     // allow to archive the force model object in a cell-based simulation 
     friend class boost::serialization::access;
@@ -55,12 +54,21 @@ private:
     {
         // not in AbstractCentreBasedDivisionRule.hpp
         archive & boost::serialization::base_object<AbstractCentreBasedDivisionRule<ELEMENT_DIM, SPACE_DIM> >(*this);
+        archive & mSproutingProbabilityWithConstantVegf;
+        archive & mMaxSproutingRateConstantVegf;
+        
+        archive & mCMax;
+        archive & mCMin;
+        archive & mPMax;
+        archive & mPMin;
+
+        archive & mConstantBackground;
     }
 
 public:
 
     // constructor 
-    SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf = 0.08, double thresholdLength=2.0, double constantBackground=0.5, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4, int PsproutFunctionTestNb = 1);
+    SproutingRuleWithConstantVegf(double MaxSproutingRateConstantVegf = 0.08, double thresholdLength=2.0, double constantBackground=0.5, double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4);
 
     // destructor 
     ~SproutingRuleWithConstantVegf();

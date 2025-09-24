@@ -74,14 +74,14 @@ GraphPsproutKc = False
 
 GraphAnastomosis = False
 GraphAnastomosisBranches = False
-GraphAnastomosisTipCells = True
+GraphAnastomosisVesselTips = True
 GraphAnastomosisRatio = False
 GraphAnastomosisRatioBranches = False
 GraphTotalAnastomosisSource = False
 
 GraphNbBranches = False
-GraphNbTipCellsTime = False
-GraphNbBranchesNbTipCells = False
+GraphNbVesselTipsTime = False
+GraphNbBranchesNbVesselTips = False
 GraphBarNbBranches = False
 
 GraphExpectedNbBranches = False
@@ -92,7 +92,7 @@ GraphNbBranchesANDExpectedNbBranchesSameGraph = False
 
 GraphFurthestCell = False
 GraphTimeReachingFurthestCell = False
-GraphTimeNormFirstTipCell = False
+GraphTimeNormFirstVesselTip = False
 
 GraphNbCellsPlane = False
 GraphCellDensityInsideLesion = False
@@ -397,7 +397,7 @@ if GraphNbBranches:
     plt.show()
     plt.savefig(main_file_path + "Figures/NbBranches.png")
 
-if GraphNbTipCellsTime:
+if GraphNbVesselTipsTime:
     fig, ax = plt.subplots(1, 2, figsize = (12,8), dpi = 300, layout='constrained')
 
     # we represent the percentage of tip cells going through anastomosis at each time steps 
@@ -418,8 +418,8 @@ if GraphNbTipCellsTime:
             file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
             file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
 
-            tipcells_analyticalapproxpde = runner.TipCellsPerTimeStep(file_cellmutation_analyticalapproxpde)
-            tipcells_constant = runner.TipCellsPerTimeStep(file_cellmutation_constant)
+            tipcells_analyticalapproxpde = runner.VesselTipsPerTimeStep(file_cellmutation_analyticalapproxpde)
+            tipcells_constant = runner.VesselTipsPerTimeStep(file_cellmutation_constant)
 
             if(j == 10):
                 ax[0].scatter(t, tipcells_analyticalapproxpde, color = colors[k-1], alpha = 0.5, label = f"cmax={sourceterm[k-1]}")
@@ -437,9 +437,9 @@ if GraphNbTipCellsTime:
     ax[1].legend(loc='upper left', fontsize = 12)
     ax[0].tick_params(axis = 'both', labelsize = 24)
     ax[1].tick_params(axis = 'both', labelsize = 24)
-    plt.savefig(main_file_path + "Figures/TipCellsTime.png")
+    plt.savefig(main_file_path + "Figures/VesselTipsTime.png")
 
-if GraphNbBranchesNbTipCells:
+if GraphNbBranchesNbVesselTips:
     # plot 
     fig, ax = plt.subplots(1, 2, figsize = (12,8), dpi = 300, layout='constrained')
 
@@ -463,9 +463,9 @@ if GraphNbBranchesNbTipCells:
             file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
             file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
 
-            tipcells_analyticalapproxpde = runner.TipCellsPerTimeStep(file_cellmutation_analyticalapproxpde)
+            tipcells_analyticalapproxpde = runner.VesselTipsPerTimeStep(file_cellmutation_analyticalapproxpde)
             nbbranches_analyticalapproxpde = runner.BranchesPerTimeStep(file_cellmutation_analyticalapproxpde)
-            tipcells_constant = runner.TipCellsPerTimeStep(file_cellmutation_constant)
+            tipcells_constant = runner.VesselTipsPerTimeStep(file_cellmutation_constant)
             nbbranches_constant = runner.BranchesPerTimeStep(file_cellmutation_constant)
 
             if(j == 10):
@@ -487,7 +487,7 @@ if GraphNbBranchesNbTipCells:
     ax[1].legend(loc='upper left', fontsize = 12)
     ax[0].tick_params(axis = 'both', labelsize = 24)
     ax[1].tick_params(axis = 'both', labelsize = 24)
-    plt.savefig(main_file_path + "Figures/NbBranchesNbTipCells.png")
+    plt.savefig(main_file_path + "Figures/NbBranchesNbVesselTips.png")
 
 if GraphAnastomosis:
     # plot 
@@ -585,7 +585,7 @@ if GraphAnastomosisBranches:
     ax[1].tick_params(axis = 'both', labelsize = 24)
     plt.savefig(main_file_path + "Figures/AnastomosisBranches.png")
 
-if GraphAnastomosisTipCells:
+if GraphAnastomosisVesselTips:
     # plot 
     fig, ax = plt.subplots(1, 2, figsize = (12,8), dpi = 300, layout='constrained')
 
@@ -620,9 +620,9 @@ if GraphAnastomosisTipCells:
             file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
             file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
 
-            tipcells_analyticalapproxpde = runner.TipCellsPerTimeStep(file_cellmutation_analyticalapproxpde)
+            tipcells_analyticalapproxpde = runner.VesselTipsPerTimeStep(file_cellmutation_analyticalapproxpde)
             anastomosis_analyticalapproxpde = runner.AnastomosisPerTimeStep(file_anastomosis_analyticalapproxpde)
-            tipcells_constant = runner.TipCellsPerTimeStep(file_cellmutation_constant)
+            tipcells_constant = runner.VesselTipsPerTimeStep(file_cellmutation_constant)
             anastomosis_constant = runner.AnastomosisPerTimeStep(file_anastomosis_constant)
 
             all_tip_cells_analyticalapproxpde.extend(tipcells_analyticalapproxpde)
@@ -690,7 +690,7 @@ if GraphAnastomosisTipCells:
     ax[0].set_ylabel('Anastomosis Events', fontsize = 26)
     ax[1].tick_params(axis = 'both', labelsize = 24)
     ax[0].tick_params(axis = 'both', labelsize = 24)
-    plt.savefig(main_file_path + "Figures/AnastomosisTipCells.png")
+    plt.savefig(main_file_path + "Figures/AnastomosisVesselTips.png")
 
 if GraphAnastomosisRatio:
     # plot 
@@ -761,8 +761,8 @@ if GraphAnastomosisRatioBranches:
             file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
             file_anastomosis_constant = file_path_constant + "/results_from_time_0/results.vizanastomosis"
 
-            tipcells_analyticalapproxpde = runner.TipCellsPerTimeStep(file_cellmutation_analyticalapproxpde)
-            tipcells_constant = runner.TipCellsPerTimeStep(file_cellmutation_constant)
+            tipcells_analyticalapproxpde = runner.VesselTipsPerTimeStep(file_cellmutation_analyticalapproxpde)
+            tipcells_constant = runner.VesselTipsPerTimeStep(file_cellmutation_constant)
             anastomosisratio_analyticalapproxpde = runner.RatioAnastomosisPerTimeStep(file_anastomosis_analyticalapproxpde, file_cellmutation_analyticalapproxpde)
             anastomosisratio_constant = runner.RatioAnastomosisPerTimeStep(file_anastomosis_constant, file_cellmutation_constant)
 
@@ -1422,7 +1422,7 @@ if GraphTimeReachingFurthestCell:
     plt.show()
     plt.savefig(main_file_path + "Figures/TimeReachingFurthestCell.png")
 
-if GraphTimeNormFirstTipCell:
+if GraphTimeNormFirstVesselTip:
     # plot 
     fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
 
@@ -1444,8 +1444,8 @@ if GraphTimeNormFirstTipCell:
             file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
             file_nodescoordinates_constant = file_path_constant + "/results_from_time_0/results.viznodes"
 
-            valuenormfirsttipcell_analyticalapproxpde = runner.NormFirstTipCell(file_nodescoordinates_analyticalapproxpde, file_cellmutation_analyticalapproxpde, dim)
-            valuenormfirsttipcell_constant = runner.NormFirstTipCell(file_nodescoordinates_constant, file_cellmutation_constant, dim)
+            valuenormfirsttipcell_analyticalapproxpde = runner.NormFirstVesselTip(file_nodescoordinates_analyticalapproxpde, file_cellmutation_analyticalapproxpde, dim)
+            valuenormfirsttipcell_constant = runner.NormFirstVesselTip(file_nodescoordinates_constant, file_cellmutation_constant, dim)
 
             slope_analyticalapproxpde, intercept = np.polyfit(t, valuenormfirsttipcell_analyticalapproxpde, 1)
             slope_constant, intercept = np.polyfit(t, valuenormfirsttipcell_constant, 1)
@@ -1469,7 +1469,7 @@ if GraphTimeNormFirstTipCell:
     ax.tick_params(axis = 'both', labelsize = 24)
     ax.legend(loc='upper left', fontsize = 24)
     plt.show()
-    plt.savefig(main_file_path + "Figures/TimeReachingFirstTipCell.png")
+    plt.savefig(main_file_path + "Figures/TimeReachingFirstVesselTip.png")
 
 if GraphErrorFirstTimeCellReachingLesionPositionLesion:
     # plot 

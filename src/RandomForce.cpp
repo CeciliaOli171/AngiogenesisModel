@@ -7,7 +7,7 @@
 #include "RandomNumberGenerator.hpp"
 #include "Debug.hpp"
 #include "SimulationTime.hpp"
-#include "BranchingCellMutationState.hpp"
+#include "BranchingSegmentMutationState.hpp"
 
 template<unsigned DIM>
 RandomForce<DIM>::RandomForce(double sigma)
@@ -32,8 +32,6 @@ double RandomForce<DIM>::GetRandomSensitivity()
 template<unsigned DIM>
 void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
-    // TRACE("Begin Random Force");
-
     // we applied the force to the cell population corresponding 
     // here, the random force is applied to every cell 
     for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin();
@@ -63,8 +61,6 @@ void RandomForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPo
         // test time force 
         //for(int i = 0; i < 100; ++i){rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(randomforce);}
     }
-
-    //TRACE("End Random Force");
 }
 
 template<unsigned DIM>

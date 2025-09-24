@@ -42,13 +42,11 @@ void ChemoForceWithConstantVegf<DIM>::CalculateVegfGradient(AbstractCellPopulati
     for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
     {
         // we collect the cell data necessary (node index and cell pointer)
-        if (cell_iter->GetMutationState()->template IsType<TipCellMutationState>())
+        if (cell_iter->GetMutationState()->template IsType<VesselTipMutationState>())
         {
             unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
 
             c_vector<double, DIM> r_gradient_cell = zero_vector<double>(DIM);
-            
-            r_gradient_cell(0) = 0.0; 
 
             mGradientsVegfAnalyticalApproxPde[node_index] = r_gradient_cell;
         }

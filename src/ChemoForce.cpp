@@ -10,16 +10,9 @@
 
 template<unsigned DIM>
 ChemoForce<DIM>::ChemoForce(double chi, double hx, double hy, double hz, double cx, double cy, double cz)
-    : AbstractForce<DIM>(), mChi(chi)
+    : AbstractForce<DIM>(), mChi(chi), mHX(hx), mHY(hy), mHZ(hz), mCX(cx), mCY(cy), mCZ(cz)
 {
     assert(chi>0);
-
-    assert(cx>0);
-    assert(cy>0);
-    assert(cz>0);
-    mCX = cx;
-    mCY = cy;
-    mCZ = cz;
 
     assert(hx>0);
     assert(hy>0);
@@ -27,6 +20,13 @@ ChemoForce<DIM>::ChemoForce(double chi, double hx, double hy, double hz, double 
     mHX = hx;
     mHY = hy;
     mHZ = hz;
+
+    assert(cx>0);
+    assert(cy>0);
+    assert(cz>0);
+    mCX = cx;
+    mCY = cy;
+    mCZ = cz;
 }
 
 template<unsigned DIM>
@@ -38,24 +38,6 @@ template<unsigned DIM>
 double ChemoForce<DIM>::GetChemotacticSensitivity()
 {
     return mChi;
-}
-
-template<unsigned DIM>
-double ChemoForce<DIM>::GetChemotacticGradientCoefficientXAxis()
-{
-    return mCX;
-}
-
-template<unsigned DIM>
-double ChemoForce<DIM>::GetChemotacticGradientCoefficientYAxis()
-{
-    return mCY;
-}
-
-template<unsigned DIM>
-double ChemoForce<DIM>::GetChemotacticGradientCoefficientZAxis()
-{
-    return mCZ;
 }
 
 template<unsigned DIM>
@@ -74,6 +56,24 @@ template<unsigned DIM>
 double ChemoForce<DIM>::GetChemoattractantGradientFactorZAxis()
 {
     return mHZ;
+}
+
+template<unsigned DIM>
+double ChemoForce<DIM>::GetChemotacticGradientCoefficientXAxis()
+{
+    return mCX;
+}
+
+template<unsigned DIM>
+double ChemoForce<DIM>::GetChemotacticGradientCoefficientYAxis()
+{
+    return mCY;
+}
+
+template<unsigned DIM>
+double ChemoForce<DIM>::GetChemotacticGradientCoefficientZAxis()
+{
+    return mCZ;
 }
 
 template<unsigned DIM>
@@ -97,7 +97,7 @@ void ChemoForce<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPo
 
     for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
     {
-        if ((*cell_iter)->GetMutationState()->template IsType<TipCellMutationState>())
+        if ((*cell_iter)->GetMutationState()->template IsType<VesselTipMutationState>())
         {
             unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
 
@@ -122,8 +122,6 @@ void ChemoForce<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPo
 template<unsigned DIM>
 void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
 {
-    //TRACE("Begin Chemotactic Force");
-
     // we calculate the gradient of the solution of the vegf pde 
     CalculateVegfGradient(rCellPopulation);
     
@@ -131,7 +129,7 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
          cell_iter != rCellPopulation.End();
          ++cell_iter)
     {
-        if ((*cell_iter)->GetMutationState()->template IsType<TipCellMutationState>()) // && dt % 180 == 0 
+        if ((*cell_iter)->GetMutationState()->template IsType<VesselTipMutationState>()) 
         {
             // initialisation 
             c_vector<double, DIM> chemoforce = zero_vector<double>(DIM);
@@ -155,7 +153,6 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
 
             // force += chi * gradC
             if(magnitude_gradient_cell != 0.0){
-                // chemoforce = r_gradient_cell/magnitude_gradient_cell;
                 chemoforce = mChi*r_gradient_cell;
             } 
 
@@ -165,8 +162,6 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
             // for(int i = 0; i < 100; ++i){rCellPopulation.GetNode(node_index)->AddAppliedForceContribution(chemoforce);}
         }
     }
-
-    //TRACE("End Chemotactic Force");
 }
 
 template<unsigned DIM>

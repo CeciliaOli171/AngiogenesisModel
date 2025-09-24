@@ -5,20 +5,13 @@
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
 
-/**
- * Subclass of AbstractCellMutationState defining a 'wild type' mutation state.
- */
-class BranchingCellMutationState : public AbstractCellMutationState
+
+class BranchingSegmentMutationState : public AbstractCellMutationState
 {
 private:
-    /** Needed for serialization. */
+    
     friend class boost::serialization::access;
-    /**
-     * Archive the cell mutation state.
-     *
-     * @param archive the archive
-     * @param version the current version of this class
-     */
+    
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
     {
@@ -26,14 +19,12 @@ private:
     }
 
 public:
-    /**
-     * Constructor.
-     */
-    BranchingCellMutationState();
+    
+    // constructor
+    BranchingSegmentMutationState();
 };
 
 #include "SerializationExportWrapper.hpp"
-// Declare identifier for the serializer
-CHASTE_CLASS_EXPORT(BranchingCellMutationState)
+CHASTE_CLASS_EXPORT(BranchingSegmentMutationState)
 
 #endif /* BRANCHINGCELLMUTATIONSTATE_HPP_ */

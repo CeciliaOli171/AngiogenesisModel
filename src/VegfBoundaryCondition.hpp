@@ -9,9 +9,16 @@
 template<unsigned SPACE_DIM>
 class VegfBoundaryCondition : public AbstractBoundaryCondition<SPACE_DIM>
 {
+    
 private:
 
     friend class boost::serialization::access;
+    friend class TestForcesModel;
+
+    double mSourceTerm;
+    double mBoundaryCuboidMax;
+
+    double GetSourceTerm();
     
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
@@ -19,12 +26,9 @@ private:
         archive & boost::serialization::base_object<AbstractBoundaryCondition<SPACE_DIM> >(*this);
     }
 
-    double mValue;
-    double mBoundaryCuboidMax;
-
 public:
 
-    VegfBoundaryCondition(const double value, double boundaryCuboidMax);
+    VegfBoundaryCondition(const double sourceterm=0.1, double boundaryCuboidMax=10);
 
     double GetValue(const ChastePoint<SPACE_DIM>& rX) const;
 };
@@ -42,21 +46,22 @@ inline void save_construct_data(
     Archive & ar, const VegfBoundaryCondition<SPACE_DIM> * t, const unsigned int file_version)
 {
     const ChastePoint<SPACE_DIM> p;
-    const double value = t->GetValue(p);
+    const double sourceterm = t->GetValue(p);
 
-    ar & value;
+    ar & sourceterm;
 }
 
 template<class Archive, unsigned SPACE_DIM>
 inline void load_construct_data(
     Archive & ar, VegfBoundaryCondition<SPACE_DIM> * t, const unsigned int file_version)
 {
-    double value;
+    double sourceterm;
     double boundaryCuboidMax;
-    ar & value;
+
+    ar & sourceterm;
     ar & boundaryCuboidMax;
 
-    ::new(t)VegfBoundaryCondition<SPACE_DIM>(value, boundaryCuboidMax);
+    ::new(t)VegfBoundaryCondition<SPACE_DIM>(sourceterm, boundaryCuboidMax);
 }
 }
 } 

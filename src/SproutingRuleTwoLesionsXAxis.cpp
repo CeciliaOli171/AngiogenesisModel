@@ -2,9 +2,9 @@
 
 #include "CellwiseDataGradient.hpp"
 #include "CellLabel.hpp"
-#include "VesselCellMutationState.hpp"
-#include "TipCellMutationState.hpp"
-#include "BranchingCellMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "BranchingSegmentMutationState.hpp"
 #include "UniformCellCycleModel.hpp"
 
 #include "RandomNumberGenerator.hpp"

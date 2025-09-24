@@ -125,7 +125,7 @@ for j in range(1,10):
         x1.append(Psprout)
         y_totalnumbercells1.append(runner.TotalNumberCells(file_cellmutation))
         y_numbercellsplane1.append(runner.NbCellsPlane(file_nodescoordinates, plane_normal_vector))
-        y_totalnumbertipcells1.append(runner.TotalNumberTipCells(file_cellmutation))
+        y_totalnumbertipcells1.append(runner.TotalNumberVesselTips(file_cellmutation))
         y_totalnumberstalkcells1.append(runner.TotalNumberStalkCells(file_cellmutation))
         y_totalnumberbranches1.append(runner.TotalNumberBranches(file_cellmutation))
 
@@ -158,7 +158,7 @@ for j in range(1,10):
         x2.append(Psprout)
         y_totalnumbercells2.append(runner.TotalNumberCells(file_cellmutation))
         y_numbercellsplane2.append(runner.NbCellsPlane(file_nodescoordinates, plane_normal_vector))
-        y_totalnumbertipcells2.append(runner.TotalNumberTipCells(file_cellmutation))
+        y_totalnumbertipcells2.append(runner.TotalNumberVesselTips(file_cellmutation))
         y_totalnumberstalkcells2.append(runner.TotalNumberStalkCells(file_cellmutation))
         y_totalnumberbranches2.append(runner.TotalNumberBranches(file_cellmutation))
 

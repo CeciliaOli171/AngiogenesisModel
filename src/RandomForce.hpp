@@ -31,7 +31,7 @@ private:
 public:
 
     // constructor 
-    RandomForce(double sigma=0.4);
+    RandomForce(double sigma=0.1);
 
     // destructor 
     ~RandomForce();

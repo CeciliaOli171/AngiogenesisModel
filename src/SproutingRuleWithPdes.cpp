@@ -2,9 +2,9 @@
 
 #include "CellwiseDataGradient.hpp"
 #include "CellLabel.hpp"
-#include "VesselCellMutationState.hpp"
-#include "TipCellMutationState.hpp"
-#include "BranchingCellMutationState.hpp"
+#include "VesselSegmentMutationState.hpp"
+#include "VesselTipMutationState.hpp"
+#include "BranchingSegmentMutationState.hpp"
 #include "UniformCellCycleModel.hpp"
 
 #include "RandomNumberGenerator.hpp"
@@ -18,8 +18,8 @@
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRatePdes, double thresholdLength, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier, int PsproutFunctionTestNb)
-    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRatePdes, thresholdLength), mMaxSproutingRatePdes(MaxSproutingRatePdes), mpPdeModifier(pPdeModifier), mPsproutFunctionTestNb(PsproutFunctionTestNb)
+SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRatePdes, double thresholdLength, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier, double cMax, double cMin, double pMax, double pMin)
+    : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRatePdes, thresholdLength), mMaxSproutingRatePdes(MaxSproutingRatePdes), mpPdeModifier(pPdeModifier), mCMax(cMax), mCMin(cMin), mPMax(pMax), mPMin(pMin)
 {
 }
 
@@ -40,19 +40,10 @@ double SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbability(Ab
     Element<SPACE_DIM,SPACE_DIM>* p_element = p_coarse_mesh->GetElement(elem_index);
     double vegf_concentration = previous_solution[p_element->GetNodeGlobalIndex(0)];
 
-    if(mPsproutFunctionTestNb == 0){
-        // Linear function
-        Psprout = mMaxSproutingRatePdes*vegf_concentration; // test since the concentration is between 0 and 1
-    } else if(mPsproutFunctionTestNb == 1){
-        // Hill function 
-        double cmax = 1;
-        double cmin = 0.5;
-        double Pmax = 0.98;
-        double Pmin = 0.4;
-        double n = (1/log(cmax/cmin))*log((Pmax/Pmin)*(1-Pmin)/(1-Pmax));
-        double K = pow(cmax*((1-Pmax)/Pmax),(1/n));
-        Psprout = mMaxSproutingRatePdes*pow(vegf_concentration,n)/(pow(K, n) + pow(vegf_concentration,n));
-    }
+    // Hill function 
+    double n = (1/log(mCMax/mCMin))*log((mPMax/mPMin)*(1-mPMin)/(1-mPMax));
+    double K = pow(mCMax*((1-mPMax)/mPMax),(1/n));
+    Psprout = mMaxSproutingRatePdes*pow(vegf_concentration,n)/(pow(K, n) + pow(vegf_concentration,n));
 
     return Psprout;
 }
