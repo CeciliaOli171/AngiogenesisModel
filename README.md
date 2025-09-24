@@ -75,21 +75,21 @@ We define:
 #### Mechanical Force
 
 Cells interact with each other only if their centres are separated by less than a cut-off distance $l_c$. Only cells in the same branch experience this force; branching segments belong to all the branches they are connected to. For all cells, we use the following mechanical force [Meineke2001,Germano2023,Osborne2017]: 
-$F_{M, c} =$
+
 
 ```math 
-\sum_{i \in \mathcal{N}} S_d l_d \log(1 + \frac{x_{i,c}}{l_d}) \frac{\x_i - \x_c}{|\x_i - \x_c|} if l_{i,c} - l_d < |\x_i - \x_c| < l_{i,c}
+\sum_{i \in \mathcal{N}} S_d l_d \log(1 + \frac{x_{i,c}}{l_d}) \frac{x_i - x_c}{|x_i - x_c|} if l_{i,c} - l_d < |x_i - x_c| < l_{i,c}
 ```
 
 ```math
-\sum_{i \in \mathcal{N}} S_d x_{i, c} \exp(- \rho \frac{x_{i, c}}{l_d}) \frac{\x_i - \x_c}{|\x_i - \x_c|} if l_{i,c} < |\x_i - \x_c| < l_c
+F_{M, c} = \sum_{i \in \mathcal{N}} S_d x_{i, c} \exp(- \rho \frac{x_{i, c}}{l_d}) \frac{x_i - x_c}{|x_i - x_c|} if l_{i,c} < |x_i - x_c| < l_c
 ```
 
 ```math
-\textbf{0} if |\x_i - \x_c| > l_c 
+\textbf{0} if |x_i - x_c| > l_c 
 ```
 
-with $c \in \mathcal{C}$ and $x_{n,c} = |\x_n - \x_c| - l_{n, c}$. $\mathcal{N}$ is the set of the node's neighbours in the same branch, $S_d$ is the spring stiffness, $l_d$ is the cut-off distance for the connectivity of the nodes and $l_{n,c}$ is the rest length of the spring between the cells $n$ and $c$. 
+with $c \in \mathcal{C}$ and $x_{n,c} = |x_n - x_c| - l_{n, c}$. $\mathcal{N}$ is the set of the node's neighbours in the same branch, $S_d$ is the spring stiffness, $l_d$ is the cut-off distance for the connectivity of the nodes and $l_{n,c}$ is the rest length of the spring between the cells $n$ and $c$. 
 
 
 #### Random Force
@@ -133,9 +133,9 @@ where $\omega_a$ is the angular spring constant and $\alpha_{angular}$ the angle
 ## Molecular Concentrations Model
 
 ### Vascular Endothelial Growth Factor (VEGF) PDE
-VEGF is released by the lesion and activates the VTs so they migrate toward the lesion. We describe the VEGF concentration $c(\textbf{x},t)$ at position $\textbf{x}$ and time $t$ by the following PDE:
+VEGF is released by the lesion and activates the VTs so they migrate toward the lesion. We describe the VEGF concentration $c(x,t)$ at position $x$ and time $t$ by the following PDE:
 ```math
-  \frac{\partial c}{\partial t}(\textbf{x},t) &= D_c \Delta c(\textbf{x},t) - \epsilon_c n(\textbf{x},t) c(\textbf{x},t) - (M_c-A_c) c(\textbf{x},t)
+  \frac{\partial c}{\partial t}(x,t) &= D_c \Delta c(x,t) - \epsilon_c n(x,t) c(x,t) - (M_c-A_c) c(x,t)
 ```
 where $D_c$ is the diffusion coefficient, $\epsilon_c$ the consumption rate by \acrshort{vt}s, $A_c$ the creation rate, $M_c$ the decay rate and $n(\x,t)$ the density of \acrshort{vt} at position $\x$ and time $t$. 
 
@@ -143,16 +143,15 @@ where $D_c$ is the diffusion coefficient, $\epsilon_c$ the consumption rate by \
 ### Initial and Boundary Conditions
 we consider that initially the concentration of \acrshort{vegf} in the \acrshort{ecm} is equal to the baseline concentration $c_0$ since the lesion has not started to diffuse \acrshort{vegf} yet. We assume that the \acrshort{vegf} concentration is maximal equal to $c_{\max}$ at the lesion border $\Gamma$ at all times therefore we use a Dirichlet boundary condition. We summarise those conditions in the following system:
 ```math
-    c(\x, 0) &= c_0, \; \forall \x \notin \Gamma, (IC) \\ 
-    c(\x \in \Gamma, t) &= c_{\max}, \; \forall t \geq 0, (BC)
+    c(x, 0) &= c_0, \forall \x \notin \Gamma, (IC) \\ 
+    c(x \in \Gamma, t) &= c_{\max}, \forall t \geq 0, (BC)
 ```
 
 
 ### Steady-State Model
 If we consider only the VEGF concentration and that the diffusion is the same in the whole $y$ and $z$ axis, then we can consider a steady state for the PDE in one dimension. As in Daub and Merks [DaubMerks2013], we neglect the consumption term by the VTs. We obtain a one-dimensional ODE, similar to Daub and Merks [DaubMerks2013], that can be solved analytically when decay is greater than creation (i.e. $M_c > A_c$):
 ```math
-\forall \text{x} \in \Omega, \; c(\text{x}) &= (c_{\max}-c_0) e^{-K_c \text{x}} + c_0 \; \;
-    & \text{with} \; \; K_c = \sqrt{\frac{M_c-A_c}{D_c}}
+\forall x \in \Omega, c(x) = (c_{\max}-c_0) e^{-K_c x} + c_0 with \; \; K_c = \sqrt{\frac{M_c-A_c}{D_c}}
 ```
     
 
@@ -165,7 +164,7 @@ If we consider only the VEGF concentration and that the diffusion is the same in
 
 Experimental results show that there is an increase in VEGF and Ang-2 concentration and number of branches close to the lesion [Donnez1998,Hur2006,Jingting2008]. We note $c_{\min}$ the minimal VEGF concentration value necessary in order to activate Ang-2 and to observe the first branches in the blood network. We consider for the function $F$ in $P_{sprout}$ equation, a Hill function with a Hill coefficient $n$ and half saturation constant $K$: 
 ```math
-    P_{sprout}{(\x, t)} = F(c, \x, t) = \lambda \frac{a{(\x, t)}^n}{a{(\x, t)}^n+K_a^n} = \lambda \frac{c{(\x, t)}^n}{c{(\x, t)}^n+K^n}
+    P_{sprout}{(x, t)} = F(c, x, t) = \lambda \frac{a{(x, t)}^n}{a{(x, t)}^n+K_a^n} = \lambda \frac{c{(x, t)}^n}{c{(x, t)}^n+K^n}
 ```
 with $K = \frac{K_a}{A}$.
 
