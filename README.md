@@ -2,7 +2,7 @@
 
 ## Introduction 
 
-We develop an agent-based model to describe endometriotic lesions' mechanics. We start by establishing an angiogenesis model for endometriotic lesions. Indeed, angiogenesis is one of the main phenomenon contributing to the implantation and proliferation of lesions. By establishing a vascular network, they have access to hormones and nutrients promoting their growth.	We choose the overlapping spheres method for our agent-based model. We describe the molecular concentrations around the lesion using reaction-diffusion PDEs. We use the open source simulation package Chaste [1,2] in C++ to perform simulations and the open source software Paraview [2] to view the results. 
+We develop an agent-based model to describe endometriotic lesions' mechanics. We start by establishing an angiogenesis model for endometriotic lesions. Indeed, angiogenesis is one of the main phenomenon contributing to the implantation and proliferation of lesions. By establishing a vascular network, they have access to hormones and nutrients promoting their growth.	We choose the overlapping spheres method for our agent-based model. We describe the molecular concentrations around the lesion using reaction-diffusion PDEs. We use the open source simulation package Chaste [1,2] in C++ to perform simulations and the open source software Paraview [3] to view the results. 
 
 ## Agent-Based Model
 
@@ -20,13 +20,13 @@ VTs are a section of vasculature. They are composed of several type of cells and
 
 VSs are located inside the blood vessels. They also are a part of the blood vessels and so composed by different type of cells. They follow the vessel tips movement, however, unlike the latter, they are not activated by any exterior factor.
 
-Branching cells are VSs located at branching points 3.2. The difference between them and regular VSs resides in the following assumption: the mechanical force exerted by their three neighbours is high enough to neglect the angular force exerted by each branch. Their interaction with their micro-environment is described by the random force.
+Branching cells are VSs located at branching points. The difference between them and regular VSs resides in the following assumption: the mechanical force exerted by their three neighbours is high enough to neglect the angular force exerted by each branch. Their interaction with their micro-environment is described by the random force.
 
 Additionally, we apply boundary conditions to the first cell starting the blood vessel - that we can consider as the centre of mass of the system. This cell is fully constrained, thus, it is not moving.
 
 ### Cell Cycle and Division 
 
-VTs and VSs differ also by their dividing property: only VTs divide. According to a probability of sprouting ($P_{sprout}$), they divide into either a VS and a VT, lengthening the vessel (asymmetric division); or into two VTs, creating a new sprout (symmetric division). Literature shows that VEGF influences endothelial cells proliferation [Cristofanilli2002,Costa2016,Becit2001]. VEGF concentration needs to reach a certain threshold in order to activate Ang-2. The combination of VEGF and Ang-2 leads to the creation of new sprouts [RamsauerDAmore2002]. Therefore the sprouting probability $P_{sprout}$ is a function of Ang-2 concentration $a$ at a time $t$ and position $x$: 
+VTs and VSs differ also by their dividing property: only VTs divide. According to a probability of sprouting ($P_{sprout}$), they divide into either a VS and a VT, lengthening the vessel (asymmetric division); or into two VTs, creating a new sprout (symmetric division). Literature shows that VEGF influences endothelial cells proliferation [4,5,6]. VEGF concentration needs to reach a certain threshold in order to activate Ang-2. The combination of VEGF and Ang-2 leads to the creation of new sprouts [7]. Therefore the sprouting probability $P_{sprout}$ is a function of Ang-2 concentration $a$ at a time $t$ and position $x$: 
 ```math
 		P_{sprout}(x, t) = \lambda \frac{c(x, t)^n}{c(x, t)^n+ K^n} 
 ```
@@ -74,7 +74,7 @@ We define:
 
 #### Mechanical Force
 
-Cells interact with each other only if their centres are separated by less than a cut-off distance $l_c$. Only cells in the same branch experience this force; branching segments belong to all the branches they are connected to. For all cells, we use the following mechanical force [Meineke2001,Germano2023,Osborne2017]: 
+Cells interact with each other only if their centres are separated by less than a cut-off distance $l_c$. Only cells in the same branch experience this force; branching segments belong to all the branches they are connected to. For all cells, we use the following mechanical force [8,9,10]: 
 
 
 ```math 
@@ -105,7 +105,7 @@ where $\sigma$ is the sensitivity of the cell to random fluctuations and $\xi_c$
 
 #### Chemotactic Force
 
-VT movement is subject to the molecular factors present around them. Among them, VEGF is responsible for their migration toward the lesion [Donnez1998, Takehara2004]. For VT, we use the following chemotactic force:
+VT movement is subject to the molecular factors present around them. Among them, VEGF is responsible for their migration toward the lesion [11,12]. For VT, we use the following chemotactic force:
 ```math
 	F_{H, p} = \chi H(\nabla c, c, h), \; p \in \mathcal{P}
 ```
@@ -114,7 +114,7 @@ where $\chi$ is the chemotactic sensitivity, $c$ the VEGF concentration that is 
 
 #### Persistence Force
 
-VT move along the ECM fibres [DaubMerks2013,YouStallcup2017,McLaren2000]. For VT, we use a persistence force from Perfhal et al. [Perfhal2017]:
+VT move along the ECM fibres [13,14,15]. For VT, we use a persistence force from Perfhal et al. [16]:
 ```math
 	F_{P, p} = \omega_p \frac{x_p(t) - x_p(t-\tau)}{|x_p(t) - x_p(t-\tau)|}, \; p \in \mathcal{P}
 ```
@@ -123,7 +123,7 @@ where $\omega_p$ is the persistence coefficient and $\tau$ is the directional pe
 
 #### Angular Force
 
-The angular force describes the interactions between the VS and its micro-environment. VS follow the VT movement and therefore align with the ECM fibres [DaubMerks2013,YouStallcup2017,McLaren2000]. This force is not applied to branching segments. For VS, we use an angular force from Perfhal et al. [Perfhal2017]: 
+The angular force describes the interactions between the VS and its micro-environment. VS follow the VT movement and therefore align with the ECM fibres [13,14,15]. This force is not applied to branching segments. For VS, we use an angular force from Perfhal et al. [16]: 
 ```math
 	F_{A, s} = \omega_a (\alpha_{angular} - \pi) \frac{(x_b - x_s) + (x_c - x_s)}{|(x_b - x_s) + (x_c - x_s)|}, \; s \in \mathcal{S}, \; b,c \in \mathcal{C}-\{s\} 
 ```
@@ -151,7 +151,7 @@ we consider that initially the concentration of VEGF in the ECM is equal to the 
 
 
 ### Steady-State Model
-If we consider only the VEGF concentration and that the diffusion is the same in the whole $y$ and $z$ axis, then we can consider a steady state for the PDE in one dimension. As in Daub and Merks [DaubMerks2013], we neglect the consumption term by the VTs. We obtain a one-dimensional ODE, similar to Daub and Merks [DaubMerks2013], that can be solved analytically when decay is greater than creation (i.e. $M_c > A_c$):
+If we consider only the VEGF concentration and that the diffusion is the same in the whole $y$ and $z$ axis, then we can consider a steady state for the PDE in one dimension. As in Daub and Merks [13], we neglect the consumption term by the VTs. We obtain a one-dimensional ODE, similar to Daub and Merks [13], that can be solved analytically when decay is greater than creation (i.e. $M_c > A_c$):
 ```math
 \forall x \in \Omega, c(x) = (c_{\max}-c_0) e^{-K_c x} + c_0 with \; \; K_c = \sqrt{\frac{M_c-A_c}{D_c}}
 ```
@@ -164,7 +164,7 @@ If we consider only the VEGF concentration and that the diffusion is the same in
 
 ### Cell Division 
 
-Experimental results show that there is an increase in VEGF and Ang-2 concentration and number of branches close to the lesion [Donnez1998,Hur2006,Jingting2008]. We note $c_{\min}$ the minimal VEGF concentration value necessary in order to activate Ang-2 and to observe the first branches in the blood network. We consider for the function $F$ in $P_{sprout}$ equation, a Hill function with a Hill coefficient $n$ and half saturation constant $K$: 
+Experimental results show that there is an increase in VEGF and Ang-2 concentration and number of branches close to the lesion [11,17,18]. We note $c_{\min}$ the minimal VEGF concentration value necessary in order to activate Ang-2 and to observe the first branches in the blood network. We consider for the function $F$ in $P_{sprout}$ equation, a Hill function with a Hill coefficient $n$ and half saturation constant $K$: 
 ```math
     P_{sprout}{(x, t)} = F(c, x, t) = \lambda \frac{a{(x, t)}^n}{a{(x, t)}^n+K_a^n} = \lambda \frac{c{(x, t)}^n}{c{(x, t)}^n+K^n}
 ```
@@ -232,32 +232,32 @@ Quantitative comparison:
 
 [3] Ahrens, J., Geveci, B., & Law, C. (2005). ParaView: An End-User Tool for Large-Data Visualization. In Visualization Handbook (pp. 717–731). Elsevier. https://doi.org/10.1016/B978-012387582-2/50038-1
 
-[3] Cristofanilli, M., Charnsangavej, C., & Hortobagyi, G. N. (2002). Angiogenesis modulation in cancer research: Novel clinical approaches. Nature Reviews Drug Discovery, 1(6), 415–426. https://doi.org/10.1038/nrd819
+[4] Cristofanilli, M., Charnsangavej, C., & Hortobagyi, G. N. (2002). Angiogenesis modulation in cancer research: Novel clinical approaches. Nature Reviews Drug Discovery, 1(6), 415–426. https://doi.org/10.1038/nrd819
 
-[4] Costa, G., Harrington, K. I., Lovegrove, H. E., Page, D. J., Chakravartula, S., Bentley, K., & Herbert, S. P. (2016). Asymmetric division coordinates collective cell migration in angiogenesis. Nature Cell Biology, 18(12), 1292–1301. https://doi.org/10.1038/ncb3443
+[5] Costa, G., Harrington, K. I., Lovegrove, H. E., Page, D. J., Chakravartula, S., Bentley, K., & Herbert, S. P. (2016). Asymmetric division coordinates collective cell migration in angiogenesis. Nature Cell Biology, 18(12), 1292–1301. https://doi.org/10.1038/ncb3443
 
-[5] Becit, N., Ceviz, M., Koçak, H., Yekeler, İ., Ünlü, Y., Çelenk, Ç., & Akın, Y. (2001). The Effect of Vascular Endothelial Growth Factor on Angiogenesis.An Experimental Study. European Journal of Vascular and Endovascular Surgery, 22(4), 310–316. https://doi.org/10.1053/ejvs.2001.1468
+[6] Becit, N., Ceviz, M., Koçak, H., Yekeler, İ., Ünlü, Y., Çelenk, Ç., & Akın, Y. (2001). The Effect of Vascular Endothelial Growth Factor on Angiogenesis.An Experimental Study. European Journal of Vascular and Endovascular Surgery, 22(4), 310–316. https://doi.org/10.1053/ejvs.2001.1468
 
-[6] Ramsauer, M., & D’Amore, P. A. (2002). Getting Tie(2)d up in angiogenesis. Journal of Clinical Investigation, 110(11), 1615–1617. https://doi.org/10.1172/JCI0217326
+[7] Ramsauer, M., & D’Amore, P. A. (2002). Getting Tie(2)d up in angiogenesis. Journal of Clinical Investigation, 110(11), 1615–1617. https://doi.org/10.1172/JCI0217326
 
-[7] Meineke, F. A., Potten, C. S., & Loeffler, M. (2001). Cell migration and organization in the intestinal crypt using a lattice‐free model. Cell Proliferation, 34(4), 253–266. https://doi.org/10.1046/j.0960-7722.2001.00216.x
+[8] Meineke, F. A., Potten, C. S., & Loeffler, M. (2001). Cell migration and organization in the intestinal crypt using a lattice‐free model. Cell Proliferation, 34(4), 253–266. https://doi.org/10.1046/j.0960-7722.2001.00216.x
 
-[8] Germano, D. P. J., Zanca, A., Johnston, S. T., Flegg, J. A., & Osborne, J. M. (2022). Free and interfacial boundaries in individual-based models of multicellular biological systems [Preprint]. Biophysics. https://doi.org/10.1101/2022.12.13.520331
+[9] Germano, D. P. J., Zanca, A., Johnston, S. T., Flegg, J. A., & Osborne, J. M. (2022). Free and interfacial boundaries in individual-based models of multicellular biological systems [Preprint]. Biophysics. https://doi.org/10.1101/2022.12.13.520331
 
-[9] Osborne, J. M., Fletcher, A. G., Pitt-Francis, J. M., Maini, P. K., & Gavaghan, D. J. (2017). Comparing individual-based approaches to modelling the self-organization of multicellular tissues. PLOS Computational Biology, 13(2), e1005387. https://doi.org/10.1371/journal.pcbi.1005387
+[10] Osborne, J. M., Fletcher, A. G., Pitt-Francis, J. M., Maini, P. K., & Gavaghan, D. J. (2017). Comparing individual-based approaches to modelling the self-organization of multicellular tissues. PLOS Computational Biology, 13(2), e1005387. https://doi.org/10.1371/journal.pcbi.1005387
 
-[10] Donnez, J., Smoes, P., Gillerot, S., Casanas-Roux, F., & Nisolle, M. (1998). Vascular endothelial growth factor (VEGF) in endometriosis. Human Reproduction, 13(6), 1686–1690. https://doi.org/10.1093/humrep/13.6.1686
+[11] Donnez, J., Smoes, P., Gillerot, S., Casanas-Roux, F., & Nisolle, M. (1998). Vascular endothelial growth factor (VEGF) in endometriosis. Human Reproduction, 13(6), 1686–1690. https://doi.org/10.1093/humrep/13.6.1686
 
-[11] Takehara, M., Ueda, M., Yamashita, Y., Terai, Y., Hung, Y.-C., & Ueki, M. (2004). Vascular endothelial growth factor A and C gene expression in endometriosis. Human Pathology, 35(11), 1369–1375. https://doi.org/10.1016/j.humpath.2004.07.020
+[12] Takehara, M., Ueda, M., Yamashita, Y., Terai, Y., Hung, Y.-C., & Ueki, M. (2004). Vascular endothelial growth factor A and C gene expression in endometriosis. Human Pathology, 35(11), 1369–1375. https://doi.org/10.1016/j.humpath.2004.07.020
 
-[12] Daub, J. T., & Merks, R. M. H. (2013). A Cell-Based Model of Extracellular-Matrix-Guided Endothelial Cell Migration During Angiogenesis. Bulletin of Mathematical Biology, 75(8), 1377–1399. https://doi.org/10.1007/s11538-013-9826-5
+[13] Daub, J. T., & Merks, R. M. H. (2013). A Cell-Based Model of Extracellular-Matrix-Guided Endothelial Cell Migration During Angiogenesis. Bulletin of Mathematical Biology, 75(8), 1377–1399. https://doi.org/10.1007/s11538-013-9826-5
 
-[13] You, W.-K., & Stallcup, W. (2017). Localization of VEGF to Vascular ECM Is an Important Aspect of Tumor Angiogenesis. Cancers, 9(8), 97. https://doi.org/10.3390/cancers9080097 
+[14] You, W.-K., & Stallcup, W. (2017). Localization of VEGF to Vascular ECM Is an Important Aspect of Tumor Angiogenesis. Cancers, 9(8), 97. https://doi.org/10.3390/cancers9080097 
 
-[14] McLaren, J. (2000). Vascular endothelial growth factor and endometriotic angiogenesis. Human Reproduction Update, 6(1), 45–55. https://doi.org/10.1093/humupd/6.1.45 
+[15] McLaren, J. (2000). Vascular endothelial growth factor and endometriotic angiogenesis. Human Reproduction Update, 6(1), 45–55. https://doi.org/10.1093/humupd/6.1.45 
 
-[15] Perfahl, H., Hughes, B. D., Alarcón, T., Maini, P. K., Lloyd, M. C., Reuss, M., & Byrne, H. M. (2017). 3D hybrid modelling of vascular network formation. Journal of Theoretical Biology, 414, 254–268. https://doi.org/10.1016/j.jtbi.2016.11.013
+[16] Perfahl, H., Hughes, B. D., Alarcón, T., Maini, P. K., Lloyd, M. C., Reuss, M., & Byrne, H. M. (2017). 3D hybrid modelling of vascular network formation. Journal of Theoretical Biology, 414, 254–268. https://doi.org/10.1016/j.jtbi.2016.11.013
 
-[16] Hur, S. E. (2006). Angiopoietin-1, angiopoietin-2 and Tie-2 expression in eutopic endometrium in advanced endometriosis. Molecular Human Reproduction, 12(7), 421–426. https://doi.org/10.1093/molehr/gal049
+[17] Hur, S. E. (2006). Angiopoietin-1, angiopoietin-2 and Tie-2 expression in eutopic endometrium in advanced endometriosis. Molecular Human Reproduction, 12(7), 421–426. https://doi.org/10.1093/molehr/gal049
 
-[17] Jingting, C., Yangde, Z., Yi, Z., Mengxiong, L., Rong, Y., Yu, Z., Guoqing, P., & Lixiu, P. (2008). Expression of heparanase and angiopoietin-2 in patients with endometriosis. European Journal of Obstetrics & Gynecology and Reproductive Biology, 136(2), 199–209. https://doi.org/10.1016/j.ejogrb.2006.09.018
+[18] Jingting, C., Yangde, Z., Yi, Z., Mengxiong, L., Rong, Y., Yu, Z., Guoqing, P., & Lixiu, P. (2008). Expression of heparanase and angiopoietin-2 in patients with endometriosis. European Journal of Obstetrics & Gynecology and Reproductive Biology, 136(2), 199–209. https://doi.org/10.1016/j.ejogrb.2006.09.018
