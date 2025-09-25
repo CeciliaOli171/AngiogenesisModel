@@ -135,9 +135,9 @@ where $\omega_a$ is the angular spring constant and $\alpha_{angular}$ the angle
 ### Vascular Endothelial Growth Factor (VEGF) PDE
 VEGF is released by the lesion and activates the VTs so they migrate toward the lesion. We describe the VEGF concentration $c(x,t)$ at position $x$ and time $t$ by the following PDE:
 ```math
-  \frac{\partial c}{\partial t}(x,t) &= D_c \Delta c(x,t) - \epsilon_c n(x,t) c(x,t) - (M_c-A_c) c(x,t)
+  \frac{\partial c}{\partial t}(x,t) = D_c \Delta c(x,t) - \epsilon_c n(x,t) c(x,t) - (M_c-A_c) c(x,t)
 ```
-where $D_c$ is the diffusion coefficient, $\epsilon_c$ the consumption rate by \acrshort{vt}s, $A_c$ the creation rate, $M_c$ the decay rate and $n(\x,t)$ the density of \acrshort{vt} at position $\x$ and time $t$. 
+where $D_c$ is the diffusion coefficient, $\epsilon_c$ the consumption rate by \acrshort{vt}s, $A_c$ the creation rate, $M_c$ the decay rate and $n(x,t)$ the density of \acrshort{vt} at position $x$ and time $t$. 
 
 
 ### Initial and Boundary Conditions
