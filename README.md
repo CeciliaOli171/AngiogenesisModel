@@ -2,7 +2,7 @@
 
 ## Introduction 
 
-Our overall goal is to develop an agent-based model to describe endometriotic lesions' mechanics. We start by establishing an angiogenesis model for endometriotic lesions. Indeed, angiogenesis is one of the main phenomenon contributing to the implantation and proliferation of lesions. By establishing a vascular network, they have access to hormones and nutrients promoting their growth.	We choose the overlapping spheres method for our agent-based model. We describe the molecular concentrations around the lesion using reaction-diffusion PDEs. We use the open source simulation package Chaste [1] in C++ to perform simulations and the open source software Paraview [2] to view the results. 
+We develop an agent-based model to describe endometriotic lesions' mechanics. We start by establishing an angiogenesis model for endometriotic lesions. Indeed, angiogenesis is one of the main phenomenon contributing to the implantation and proliferation of lesions. By establishing a vascular network, they have access to hormones and nutrients promoting their growth.	We choose the overlapping spheres method for our agent-based model. We describe the molecular concentrations around the lesion using reaction-diffusion PDEs. We use the open source simulation package Chaste [1,2] in C++ to perform simulations and the open source software Paraview [2] to view the results. 
 
 ## Agent-Based Model
 
@@ -123,7 +123,7 @@ where $\omega_p$ is the persistence coefficient and $\tau$ is the directional pe
 
 #### Angular Force
 
-The angular force describes the interactions between the VS and its micro-environment. VS follow the VT movement and therefore align with the \acrshort{ecm} fibres [DaubMerks2013,YouStallcup2017,McLaren2000]. This force is not applied to branching segments. For VS, we use an angular force from Perfhal et al. [Perfhal2017]: 
+The angular force describes the interactions between the VS and its micro-environment. VS follow the VT movement and therefore align with the ECM fibres [DaubMerks2013,YouStallcup2017,McLaren2000]. This force is not applied to branching segments. For VS, we use an angular force from Perfhal et al. [Perfhal2017]: 
 ```math
 	F_{A, s} = \omega_a (\alpha_{angular} - \pi) \frac{(x_b - x_s) + (x_c - x_s)}{|(x_b - x_s) + (x_c - x_s)|}, \; s \in \mathcal{S}, \; b,c \in \mathcal{C}-\{s\} 
 ```
@@ -137,11 +137,11 @@ VEGF is released by the lesion and activates the VTs so they migrate toward the 
 ```math
   \frac{\partial c}{\partial t}(x,t) = D_c \Delta c(x,t) - \epsilon_c n(x,t) c(x,t) - (M_c-A_c) c(x,t)
 ```
-where $D_c$ is the diffusion coefficient, $\epsilon_c$ the consumption rate by \acrshort{vt}s, $A_c$ the creation rate, $M_c$ the decay rate and $n(x,t)$ the density of \acrshort{vt} at position $x$ and time $t$. 
+where $D_c$ is the diffusion coefficient, $\epsilon_c$ the consumption rate by VTs, $A_c$ the creation rate, $M_c$ the decay rate and $n(x,t)$ the density of VT at position $x$ and time $t$. 
 
 
 ### Initial and Boundary Conditions
-we consider that initially the concentration of \acrshort{vegf} in the \acrshort{ecm} is equal to the baseline concentration $c_0$ since the lesion has not started to diffuse \acrshort{vegf} yet. We assume that the \acrshort{vegf} concentration is maximal equal to $c_{\max}$ at the lesion border $\Gamma$ at all times therefore we use a Dirichlet boundary condition. We summarise those conditions in the following system:
+we consider that initially the concentration of VEGF in the ECM is equal to the baseline concentration $c_0$ since the lesion has not started to diffuse VEGF yet. We assume that the VEGF concentration is maximal equal to $c_{\max}$ at the lesion border $\Gamma$ at all times therefore we use a Dirichlet boundary condition. We summarise those conditions in the following system:
 ```math
     c(x, 0) = c_0, \forall \x \notin \Gamma, (IC) 
 ```
@@ -184,6 +184,31 @@ F_{H, p} = \chi (\nabla c+{(-h, 0, 0)}^T), p \in \mathcal{P}
 
 ## Code 
 
+### Model Analysis 
+
+* Number of branches
+* Time to reach lesion 
+* Percentage of vascularisation
+* Cell density
+* Network velocity
+* Expected number of branches 
+
+### Source 
+
+* Forces: angular, chemotactic, directional persistence, linear mechanical force, persistence, random
+* Cell cycle: sprouting, anastomosis (comprised inside daughter cell file)
+* Cell mutation: branching cells, daughter cell, pinned cell (BC), tip cell, vessel segment
+* Writers (used for the analysis of the model): birth time cells, branches number, consecutive branches, tortuosity
+
+### Test
+
+* Test of all the forces in the models individually (TestForcesModel.hpp)
+* Test of the angiogenesis model in 2D and 3D (TestAngiogenesisModel.hpp)
+* Test of the molecular model (TestSolvingMolecularConcentrationsPdes.hpp)
+* Test of the hybrid model with a constant VEGF concentration (TestAngiogenesisWithVegfConcentrationConstant.hpp)
+* Test of the hybrid model in the steady-state case of VEGF concentration PDE (TestAngiogenesisWithVegfConcentrationAnalyticalApproximationOfPde.hpp)
+* Test of the hybrid model with a VEGF concentration PDE(TestAngiogenesisWithVegfConcentrationConstant.hpp)
+
 ### Image Analysis Pipeline
 
 To be modified and completed for the comparison between the mathematical model and the image analysis.
@@ -192,40 +217,47 @@ Quantitative comparison:
 * number of cells in one plane 
 * neighbouring distance 
 
-### Model Analysis 
-
-ParametersSensitivityRunner: class written for the model analysis. 
-
-Model analysis files:
-* Sprouting probability tests
-* Forces coefficients tests
-
-### Source 
-
-Source files:
-* Forces: angular, chemotactic, directional persistence, linear mechanical force, persistence, random
-* Cell cycle: sprouting, anastomosis (comprised inside daughter cell file)
-* Cell mutation: branching cells, daughter cell, pinned cell (BC), tip cell, vessel segment
-* Writers (used for the analysis of the model): birth time cells, branches number, consecutive branches, tortuosity
-
-### Test
-
-Test files:
-* Test of all the forces in the model individually
-* Test of the model in 2D and 3D 
 
 ## Future Goals 
  
 1. couple this angiogenesis model with blood flow model 
+2. write a pipeline between image analysis and model to validate it 
+3. adapt the model for endometrial angiogenesis 
 
 ## Bibliography
 
-[1] G. R. Mirams, C. J. Arthurs, M. O. Bernabeu, R. Bordas, J. Cooper, A. Corrias, Y. Davit, S.-J. Dunn, A. G. FleVTher, D. G. Harvey, M. E. Marsh, J. M. Osborne, P. Pathmanathan, J. Pitt-Francis, J. Southern, N. Zemzemi, and D. J Gavaghan. Chaste: An open source c++ library for computational physiology and biology. PLOS Computational Biology, 9(3)(e1002970), 2013.
+[1] Mirams, G. R., Arthurs, C. J., Bernabeu, M. O., Bordas, R., Cooper, J., Corrias, A., Davit, Y., Dunn, S.-J., Fletcher, A. G., Harvey, D. G., Marsh, M. E., Osborne, J. M., Pathmanathan, P., Pitt-Francis, J., Southern, J., Zemzemi, N., & Gavaghan, D. J. (2013). Chaste: An Open Source C++ Library for Computational Physiology and Biology. PLOS Computational Biology, 9(3), e1002970. https://doi.org/10.1371/journal.pcbi.1002970
 
-[2] J. Ahrens, B. Geveci, and C. Law. Paraview: An end-user tool for large-data visualization. in visualization handbook. Elsevier, pages 717–731, 2005.
+[2] Pitt-Francis, J., Pathmanathan, P., Bernabeu, M. O., Bordas, R., Cooper, J., Fletcher, A. G., Mirams, G. R., Murray, P., Osborne, J. M., Walter, A., Chapman, S. J., Garny, A., Van Leeuwen, I. M. M., Maini, P. K., Rodríguez, B., Waters, S. L., Whiteley, J. P., Byrne, H. M., & Gavaghan, D. J. (2009). Chaste: A test-driven approach to software development for biological modelling. Computer Physics Communications, 180(12), 2452–2471. https://doi.org/10.1016/j.cpc.2009.07.019
 
-[35] F. A. Meineke, C. S. Potten, and M. Loeffler. Cell migration and organization in the intestinal crypt using a lattice-free model. Cell Proliferation, 34(4):253–266, 2001.
+[3] Ahrens, J., Geveci, B., & Law, C. (2005). ParaView: An End-User Tool for Large-Data Visualization. In Visualization Handbook (pp. 717–731). Elsevier. https://doi.org/10.1016/B978-012387582-2/50038-1
 
-[42] H. Perfahl, B. D. Hughes, T. Alarco ́n, P. K. Maini, M. C. Lloyd, M. Reuss, and H. M Byrne. 3d hybrid modelling of vascular network formation. Journal of Theoretical Biology, 414:254–268, 2017.
+[3] Cristofanilli, M., Charnsangavej, C., & Hortobagyi, G. N. (2002). Angiogenesis modulation in cancer research: Novel clinical approaches. Nature Reviews Drug Discovery, 1(6), 415–426. https://doi.org/10.1038/nrd819
 
-[43] J. Pitt-Francis, P. Pathmanathan, M. O. Bernabeu, R. Bordas, J. Cooper, A. G. Fletcher, G. R. Mirams, P. Murray, J. M. Osborne, A. Walter, S. J. Chapman, A. Garny, I. M. M. Van Leeuwen, P. K. Maini, B. Rodr ́ıguez, S. L. Waters, J. P. Whiteley, H. M. Byrne, and D. J Gavaghan. Chaste: A test-driven approach to software development for biological modelling. Computer Physics Communica- tions, 180(12):2452–2471, 2009.
+[4] Costa, G., Harrington, K. I., Lovegrove, H. E., Page, D. J., Chakravartula, S., Bentley, K., & Herbert, S. P. (2016). Asymmetric division coordinates collective cell migration in angiogenesis. Nature Cell Biology, 18(12), 1292–1301. https://doi.org/10.1038/ncb3443
+
+[5] Becit, N., Ceviz, M., Koçak, H., Yekeler, İ., Ünlü, Y., Çelenk, Ç., & Akın, Y. (2001). The Effect of Vascular Endothelial Growth Factor on Angiogenesis.An Experimental Study. European Journal of Vascular and Endovascular Surgery, 22(4), 310–316. https://doi.org/10.1053/ejvs.2001.1468
+
+[6] Ramsauer, M., & D’Amore, P. A. (2002). Getting Tie(2)d up in angiogenesis. Journal of Clinical Investigation, 110(11), 1615–1617. https://doi.org/10.1172/JCI0217326
+
+[7] Meineke, F. A., Potten, C. S., & Loeffler, M. (2001). Cell migration and organization in the intestinal crypt using a lattice‐free model. Cell Proliferation, 34(4), 253–266. https://doi.org/10.1046/j.0960-7722.2001.00216.x
+
+[8] Germano, D. P. J., Zanca, A., Johnston, S. T., Flegg, J. A., & Osborne, J. M. (2022). Free and interfacial boundaries in individual-based models of multicellular biological systems [Preprint]. Biophysics. https://doi.org/10.1101/2022.12.13.520331
+
+[9] Osborne, J. M., Fletcher, A. G., Pitt-Francis, J. M., Maini, P. K., & Gavaghan, D. J. (2017). Comparing individual-based approaches to modelling the self-organization of multicellular tissues. PLOS Computational Biology, 13(2), e1005387. https://doi.org/10.1371/journal.pcbi.1005387
+
+[10] Donnez, J., Smoes, P., Gillerot, S., Casanas-Roux, F., & Nisolle, M. (1998). Vascular endothelial growth factor (VEGF) in endometriosis. Human Reproduction, 13(6), 1686–1690. https://doi.org/10.1093/humrep/13.6.1686
+
+[11] Takehara, M., Ueda, M., Yamashita, Y., Terai, Y., Hung, Y.-C., & Ueki, M. (2004). Vascular endothelial growth factor A and C gene expression in endometriosis. Human Pathology, 35(11), 1369–1375. https://doi.org/10.1016/j.humpath.2004.07.020
+
+[12] Daub, J. T., & Merks, R. M. H. (2013). A Cell-Based Model of Extracellular-Matrix-Guided Endothelial Cell Migration During Angiogenesis. Bulletin of Mathematical Biology, 75(8), 1377–1399. https://doi.org/10.1007/s11538-013-9826-5
+
+[13] You, W.-K., & Stallcup, W. (2017). Localization of VEGF to Vascular ECM Is an Important Aspect of Tumor Angiogenesis. Cancers, 9(8), 97. https://doi.org/10.3390/cancers9080097 
+
+[14] McLaren, J. (2000). Vascular endothelial growth factor and endometriotic angiogenesis. Human Reproduction Update, 6(1), 45–55. https://doi.org/10.1093/humupd/6.1.45 
+
+[15] Perfahl, H., Hughes, B. D., Alarcón, T., Maini, P. K., Lloyd, M. C., Reuss, M., & Byrne, H. M. (2017). 3D hybrid modelling of vascular network formation. Journal of Theoretical Biology, 414, 254–268. https://doi.org/10.1016/j.jtbi.2016.11.013
+
+[16] Hur, S. E. (2006). Angiopoietin-1, angiopoietin-2 and Tie-2 expression in eutopic endometrium in advanced endometriosis. Molecular Human Reproduction, 12(7), 421–426. https://doi.org/10.1093/molehr/gal049
+
+[17] Jingting, C., Yangde, Z., Yi, Z., Mengxiong, L., Rong, Y., Yu, Z., Guoqing, P., & Lixiu, P. (2008). Expression of heparanase and angiopoietin-2 in patients with endometriosis. European Journal of Obstetrics & Gynecology and Reproductive Biology, 136(2), 199–209. https://doi.org/10.1016/j.ejogrb.2006.09.018
