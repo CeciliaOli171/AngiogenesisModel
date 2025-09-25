@@ -143,8 +143,10 @@ where $D_c$ is the diffusion coefficient, $\epsilon_c$ the consumption rate by \
 ### Initial and Boundary Conditions
 we consider that initially the concentration of \acrshort{vegf} in the \acrshort{ecm} is equal to the baseline concentration $c_0$ since the lesion has not started to diffuse \acrshort{vegf} yet. We assume that the \acrshort{vegf} concentration is maximal equal to $c_{\max}$ at the lesion border $\Gamma$ at all times therefore we use a Dirichlet boundary condition. We summarise those conditions in the following system:
 ```math
-    c(x, 0) &= c_0, \forall \x \notin \Gamma, (IC) \\ 
-    c(x \in \Gamma, t) &= c_{\max}, \forall t \geq 0, (BC)
+    c(x, 0) = c_0, \forall \x \notin \Gamma, (IC) 
+```
+```math
+    c(x \in \Gamma, t) = c_{\max}, \forall t \geq 0, (BC)
 ```
 
 
