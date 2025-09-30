@@ -112,7 +112,7 @@ class TestAngiogenesisModelWithVegfConcentrationConstant : public AbstractCellBa
 
 public:
 
-    void TestAngiogenesisModelWithVegfConcentrationConstantIn2D() 
+    void NoTestAngiogenesisModelWithVegfConcentrationConstantIn2D() 
     {
         ///////////
         // INPUT // 
@@ -296,7 +296,7 @@ public:
     }
 
 
-    void NoTestAngiogenesisModelWithVegfConcentrationConstantIn3D() 
+    void TestAngiogenesisModelWithVegfConcentrationConstantIn3D() 
     {
         ///////////
         // INPUT // 
@@ -330,7 +330,7 @@ public:
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
         double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
-        std::string output_directory_constantvegf = command_line->GetStringCorrespondingToOption("-output_directory_constantvegf");
+        std::string output_directory_constantvegf = command_line->GetStringCorrespondingToOption("-output_directory_vegfconstant");
 
         ////////////
         // MESHES // 

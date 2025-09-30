@@ -74,7 +74,7 @@ GraphPsproutKc = False
 
 GraphAnastomosis = False
 GraphAnastomosisBranches = False
-GraphAnastomosisVesselTips = True
+GraphAnastomosisVesselTips = False
 GraphAnastomosisRatio = False
 GraphAnastomosisRatioBranches = False
 GraphTotalAnastomosisSource = False
@@ -96,7 +96,7 @@ GraphTimeNormFirstVesselTip = False
 
 GraphNbCellsPlane = False
 GraphCellDensityInsideLesion = False
-GraphDensityCellInsideLesionComparedToTotalCells = False
+GraphDensityCellInsideLesionComparedToTotalCells = True
 GraphBarCellsInPlane = False
 GraphErrorNbCellsPlanePositionLesion = False
 
@@ -1140,7 +1140,7 @@ if GraphDensityCellInsideLesionComparedToTotalCells:
     ax.plot(sourceterm, celldensitytotal_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
 
     ax.set_xlabel(r'$c_{max}$', fontsize = 30)
-    ax.set_ylabel('Percentage of Cell Density Inside Lesion', fontsize = 24)
+    ax.set_ylabel("Percentage of Network's Cells Inside Lesion", fontsize = 24)
     ax.set_xticks(sourceterm)
     ax.legend(loc='upper left', fontsize = 24)
     ax.tick_params(axis = 'both', labelsize = 24)

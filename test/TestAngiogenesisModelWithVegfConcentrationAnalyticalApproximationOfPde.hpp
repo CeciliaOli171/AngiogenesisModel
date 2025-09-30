@@ -111,7 +111,7 @@ class TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPde : p
 
 public:
 
-    void TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn2D() throw(Exception)
+    void NoTestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn2D() throw(Exception)
     {
         ///////////
         // INPUT // 
@@ -301,7 +301,7 @@ public:
         SimulationTime::Destroy();
     }
 
-    void NoTestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn3D() 
+    void TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn3D() 
     {
         ///////////
         // INPUT // 
@@ -342,7 +342,7 @@ public:
         // general parameters (time, random seed, output directory)
         double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
         double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
-        std::string output_directory_analyticalapproxvegf = command_line->GetStringCorrespondingToOption("-output_directory_analyticalvegf");
+        std::string output_directory_analyticalapproxvegf = command_line->GetStringCorrespondingToOption("-output_directory_analyticalapproxvegf");
 
         ////////////
         // MESHES // 
