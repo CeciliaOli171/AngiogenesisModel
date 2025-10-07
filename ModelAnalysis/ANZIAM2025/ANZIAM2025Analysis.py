@@ -236,10 +236,10 @@ if GraphBarNbBranches:
     # plot 
     fig = plt.subplots(figsize = (12,8), dpi = 300)
     PsproutFunctions = ["Linear \n Function", "Hill Function \n (n=1)", "Hill Function \n (n=2)", "Hill Function \n (n=3)"]
-    BranchesNumber = [linearfunction_totalnumberbranches, hillfunction1_totalnumberbranches, hillfunction2_totalnumberbranches, hillfunction3_totalnumberbranches]
+    BranchNumber = [linearfunction_totalnumberbranches, hillfunction1_totalnumberbranches, hillfunction2_totalnumberbranches, hillfunction3_totalnumberbranches]
     PsproutFunctionsFormula = np.arange(len(PsproutFunctions))
     box_colors = ['xkcd:brown green', 'xkcd:tan', 'xkcd:light brown', 'xkcd:brown']
-    bp = plt.boxplot(BranchesNumber, labels=PsproutFunctions, patch_artist=True, manage_ticks = True, medianprops=dict(color='black', linewidth=2), whiskerprops=dict(color='black', linewidth=1), flierprops=dict(marker='o', color='black', markersize=5)) 
+    bp = plt.boxplot(BranchNumber, labels=PsproutFunctions, patch_artist=True, manage_ticks = True, medianprops=dict(color='black', linewidth=2), whiskerprops=dict(color='black', linewidth=1), flierprops=dict(marker='o', color='black', markersize=5)) 
     for i, patch in enumerate(bp['boxes']):  # `plt.gca().artists` gives the box patches
         patch.set_facecolor(box_colors[i])  # Set the facecolor for each box
     plt.ylabel('Number of Branches')

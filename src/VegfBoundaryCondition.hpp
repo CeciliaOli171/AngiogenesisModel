@@ -5,21 +5,34 @@
 
 #include <boost/serialization/base_object.hpp>
 
+/**
+ * A class for the boundary condition for the reaction-diffusion pde of vegf concentration for our angiogenesis model.
+ */
 
 template<unsigned SPACE_DIM>
 class VegfBoundaryCondition : public AbstractBoundaryCondition<SPACE_DIM>
 {
+    friend class TestForcesModel;
     
 private:
-
-    friend class boost::serialization::access;
-    friend class TestForcesModel;
-
+    /* parameters */
     double mSourceTerm;
     double mBoundaryCuboidMax;
 
+    /**
+     * @return source term.
+     */
     double GetSourceTerm();
     
+    /* serialisation */
+    friend class boost::serialization::access;
+
+    /**
+     * Archive the member variables.
+     *
+     * @param archive
+     * @param version
+     */
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
     {
@@ -27,9 +40,23 @@ private:
     }
 
 public:
-
+    /**
+     * Constructor.
+     *
+     * @param sourceterm vegf source term
+     * @param boundaryCuboidMax boundary max of cuboid
+     */
     VegfBoundaryCondition(const double sourceterm=0.1, double boundaryCuboidMax=10);
 
+    /**
+     * Overridden GetValue() method.
+     * 
+     * Computes the boundary condition at a Chaste point.
+     * 
+     * @param rX The point at which to evaluate the boundary condition
+     *
+     * @return the value of the boundary condition at a given point.
+     */
     double GetValue(const ChastePoint<SPACE_DIM>& rX) const;
 };
 

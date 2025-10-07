@@ -75,12 +75,12 @@
 #include "VegfBoundaryCondition.hpp"
 #include "MolecularConcentrationsDomainPdeModifier.hpp"
 
-class TestForcesModel : public AbstractCellBasedTestSuite
+class TestForcesModel : public AbstractCellBasedTestSuite //, AbstractCellBasedWithTimingsTestSuite
 {
 
 public:
 
-    void NoTestCellMutationStates()
+    void TestCellMutationStates()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -5311,7 +5311,7 @@ public:
             MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
             MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 8));
             MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
-            SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
+            SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1.0, 0.3, 0.98, 0.4);
 
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);

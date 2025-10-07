@@ -79,7 +79,7 @@
 // Writers
 #include "CellMutationStatesCountWriter.hpp"
 #include "ConsecutiveBranchesWriter.hpp"
-#include "BranchesNumberWriter.hpp"
+#include "BranchNumberWriter.hpp"
 #include "CellMutationStatesWriter.hpp"
 #include "BirthTimeCellWriter.hpp"
 #include "TortuosityWriter.hpp"
@@ -204,7 +204,7 @@ public:
         cell_population.AddCellPopulationCountWriter<CellMutationStatesCountWriter>();
         cell_population.AddCellWriter<CellMutationStatesWriter>();
         cell_population.AddCellWriter<ConsecutiveBranchesWriter>();
-        cell_population.AddCellWriter<BranchesNumberWriter>();
+        cell_population.AddCellWriter<BranchNumberWriter>();
         cell_population.AddCellWriter<BirthTimeCellWriter>();
         cell_population.AddCellWriter<TortuosityWriter>();
         cell_population.AddCellWriter<AnastomosisWriter>();
@@ -395,7 +395,7 @@ public:
         cell_population.AddCellPopulationCountWriter<CellMutationStatesCountWriter>();
         cell_population.AddCellWriter<CellMutationStatesWriter>();
         cell_population.AddCellWriter<ConsecutiveBranchesWriter>();
-        cell_population.AddCellWriter<BranchesNumberWriter>();
+        cell_population.AddCellWriter<BranchNumberWriter>();
         cell_population.AddCellWriter<BirthTimeCellWriter>();
         cell_population.AddCellWriter<TortuosityWriter>();
         cell_population.AddCellWriter<AnastomosisWriter>();

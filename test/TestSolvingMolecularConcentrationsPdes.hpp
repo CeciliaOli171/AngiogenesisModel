@@ -64,7 +64,7 @@
 // Writers
 #include "CellMutationStatesCountWriter.hpp"
 #include "ConsecutiveBranchesWriter.hpp"
-#include "BranchesNumberWriter.hpp"
+#include "BranchNumberWriter.hpp"
 #include "CellMutationStatesWriter.hpp"
 #include "BirthTimeCellWriter.hpp"
 #include "TortuosityWriter.hpp"

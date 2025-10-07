@@ -9,18 +9,34 @@
 #include "SmartPointers.hpp"
 #include "SimulationTime.hpp"
 
+/**
+ * A random force class. Describes the interactions of the cell with its micro-environment that induce a random movement.
+ */
+
 template<unsigned DIM>
 class RandomForce  : public AbstractForce<DIM>
 {
 friend class TestForcesModel;
 
 private:
-
+    /* parameters */
     double mSigma;
-    double GetRandomSensitivity(); // sensitivity to random fluctuations
 
-    // allow to archive the force model object in a cell-based simulation 
+    /**
+     * @return the sensitivity to random fluctuations.
+     */
+    double GetRandomSensitivity(); 
+
+    /* serialisation */
     friend class boost::serialization::access;
+
+    /**
+     * Boost Serialization method for archiving/checkpointing.
+     * Archives the object and its member variables.
+     *
+     * @param archive  The boost archive.
+     * @param version  The current version of this class.
+     */
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
     {
@@ -29,17 +45,34 @@ private:
     }
 
 public:
-
-    // constructor 
+    /**
+     * Constructor.
+     *
+     * @param sigma the sensitivity to random fluctuations
+     */
     RandomForce(double sigma=0.1);
 
-    // destructor 
+    /**
+     * Destructor.
+     */ 
     ~RandomForce();
 
-    // overrides AddForceContribution
+    /**
+     * Overridden AddForceContribution() method.
+     *
+     * @param rCellPopulation reference to the cell population
+     *
+     * Fr = sigma xi_c
+     * (xi random unit vector chosen from a uniform distribution)
+     *
+     */
     void AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation);
 
-    // overrides OutputForceParameters
+    /**
+     * Overridden OutputForceParameters() method.
+     *
+     * @param rParamsFile the file stream to which the parameters are output
+     */
     void OutputForceParameters(out_stream& rParamsFile);
 
 };

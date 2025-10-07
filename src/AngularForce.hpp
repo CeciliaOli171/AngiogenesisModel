@@ -11,6 +11,9 @@
 #include "VesselSegmentMutationState.hpp"
 #include "VesselTipMutationState.hpp"
 
+/**
+ * An angular force class. Describes the interactions between the vessel segment and its micro-environment that induce the alignment of the vessel segments in a vascular branch.
+ */
 
 template<unsigned DIM>
 class AngularForce  : public AbstractForce<DIM>
@@ -22,12 +25,24 @@ friend class TestAngiogenesisModelWithVegfConcentrationConstant;
 friend class TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPde;
 
 private:
-
+    /* parameters */
     double mOmegaa;
-    double GetAngularPersistence(); // angular persistence spring constant 
 
-    // allow to archive the force model object in a cell-based simulation 
+    /**
+     * @return the angular persistence spring constant.
+     */
+    double GetAngularPersistence();  
+
+    /* serialisation */
     friend class boost::serialization::access;
+
+    /**
+     * Boost Serialization method for archiving/checkpointing.
+     * Archives the object and its member variables.
+     *
+     * @param archive  The boost archive.
+     * @param version  The current version of this class.
+     */
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
     {
@@ -36,32 +51,88 @@ private:
     }
 
 public:
-
-    // constructor (default value according to Perfhal's parameters)
+    /**
+     * Constructor.
+     *
+     * @param omegaa the angular persistence spring constant
+     */
     AngularForce(double omegaa = 1E-5); 
 
-    // destructor 
+    /**
+     * Destructor.
+     */ 
     ~AngularForce();
 
-    // calculates the nth value of a neighbouring node indices set 
+    /** 
+     * Calculates the nth value of a neighbouring node indices set.
+     * 
+     * @param neighbouring_node_indices a set of the indices of the neighbours of a node in the same branch
+     * @param n an integer
+     *
+     * @return the nth indice of the node's neighbours set
+     */
     unsigned GetNthNeighbourIndice(std::set<unsigned> neighbouring_node_indices, int n);
 
-    // selects all the cells in the same branch
+    /**
+     * Selects all the cells in the same branch.
+     *
+     * @param rCellPopulation reference to the cell population
+     * @param p_node_population reference to the node population 
+     * @param pCell the cell
+     * 
+     * @return a set with the indices of the neighbours of the cell that are in the same branch 
+     */
     std::set<unsigned> GetSameBranchNeighbours(AbstractCellPopulation<DIM, DIM>& rCellPopulation,NodeBasedCellPopulation<DIM>* p_node_population, CellPtr pCell);
 
-    // calculates the angle between two vectors u and v 
+    /**
+     * Calculates the angle between two vectors. 
+     *
+     * @param u a first vector 
+     * @param v a second vector
+     *
+     * @return the angle between vectors u and v 
+     */
     double GetAngleFromVectors(c_vector<double,DIM> u, c_vector<double,DIM> v);
 
-    // calculates the angle and the two closest nodes to a third one (branching point not considered)
+    /**
+     * Calculates the angle made between a cell and its two closest neighbours (branching point not considered).
+     *
+     * @param rCellPopulation reference to the cell population
+     * @param pCell the cell
+     * @param neighbouring_node_indices a set of the indices of the neighbours of a node in the same branch
+     *
+     * @return the angle and vector coordinates of the two closest neighbours
+     */
     std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> ClosestAngleVesselSegment(AbstractCellPopulation<DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices);
 
-    // calculates the smallest angle made by a node with its neighbours 
+    /**
+     * Calculates the smallest angle made between a cell and two of its neighbours (branching point not considered).
+     *
+     * @param rCellPopulation reference to the cell population
+     * @param pCell the cell
+     * @param neighbouring_node_indices a set of the indices of the neighbours of a node in the same branch
+     *
+     * @return the angle and vector coordinates of the two neighbours
+     */
     std::tuple<double, c_vector<double,DIM>, c_vector<double,DIM>> OptimalAngleVesselElement(AbstractCellPopulation<DIM>& rCellPopulation, CellPtr pCell, std::set<unsigned> neighbouring_node_indices); 
 
-    // overrides AddForceContribution
+    /**
+     * Overridden AddForceContribution() method.
+     *
+     * @param rCellPopulation reference to the cell population
+     *
+     * Fa = omegaa (alphaangular - pi) ((x_b - x_s) + (x_c - x_s))/(|(x_b - x_s) + (x_c - x_s)|)
+     * (s a vessel segment, b and c its neighbours that optimise the value of alphaangular)
+     * inspired by Perfhal et al. (2017)
+     *
+     */
     void AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation);
 
-    // overrides OutputForceParameters
+    /**
+     * Overridden OutputForceParameters() method.
+     *
+     * @param rParamsFile the file stream to which the parameters are output
+     */
     void OutputForceParameters(out_stream& rParamsFile);
 
 };

@@ -7,6 +7,22 @@
 #include "AbstractBoxDomainPdeModifier.hpp"
 #include "BoundaryConditionsContainer.hpp"
 
+/**
+ * A modifier class in which the PDE of VEGF concentration coupled to a cell-based simulation
+ * for angiogenesis is solved on a coarse domain.
+ *
+ * The finite element mesh used to solve the PDE numerically is a fixed tessellation of
+ * a cuboid (box), which must be supplied to the constructor. The value of the dependent
+ * variable is interpolated between coarse mesh nodes to obtain a value at each cell,
+ * which is stored and updated in a CellData item.
+ *
+ * At each time step the boundary condition supplied to the constructor may be imposed
+ * either on the boundary of the box domain, or on the boundary of the cell population
+ * (which is assumed to lie within the box domain). This choice can be made using the
+ * AbstractBoxDomainPdeModifier method SetBcsOnBoxBoundary(), which is inherited by this
+ * class.
+ */
+
 
 template<unsigned DIM>
 class MolecularConcentrationsDomainPdeModifier : public AbstractBoxDomainPdeModifier<DIM>
@@ -15,12 +31,21 @@ class MolecularConcentrationsDomainPdeModifier : public AbstractBoxDomainPdeModi
     friend class TestAngiogenesisModelWithVegfConcentrationPde;
 
 private:
+    /* parameters */
     double mBoundaryCuboidMax;
     double mInitialValue;
     double mConstantBackground;
 
+    /* serialisation */
     friend class boost::serialization::access;
 
+    /**
+     * Boost Serialization method for archiving/checkpointing.
+     * Archives the object and its member variables.
+     *
+     * @param archive  The boost archive.
+     * @param version  The current version of this class.
+     */
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
     {
@@ -31,28 +56,73 @@ private:
     }
 
 public:
+    /**
+     * Constructor.
+     *
+     * @param pPde A shared pointer to a linear PDE object (defaults to NULL)
+     * @param pBoundaryCondition A shared pointer to an abstract boundary condition
+     *     (defaults to NULL, corresponding to a constant boundary condition with value zero)
+     * @param isNeumannBoundaryCondition Whether the boundary condition is Neumann (defaults to true)
+     * @param pMeshCuboid A shared pointer to a ChasteCuboid specifying the outer boundary for the FE mesh (defaults to NULL)
+     * @param stepSize step size to be used in the FE mesh (defaults to 1.0, i.e. the default cell size)
+     * @param solution solution vector (defaults to NULL)
+     * @param boundaryCuboidMax boundary max of the cuboid
+     * @param initialValue initial value of vegf concentration
+     * @param constantBackground constant baseline of vegf concentration
+     */
+    MolecularConcentrationsDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(), boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(), bool isNeumannBoundaryCondition=false, boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid=boost::shared_ptr<ChasteCuboid<DIM> >(), double stepSize=1.0, Vec solution=nullptr, double boundaryCuboidMax=0.0, double initialValue=1.0, double constantBackground=0.1);
 
-    // constructor
-    MolecularConcentrationsDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(),
-                                  boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(),
-                                  bool isNeumannBoundaryCondition=false,
-                                  boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid=boost::shared_ptr<ChasteCuboid<DIM> >(),
-                                  double stepSize=1.0,
-                                  Vec solution=nullptr, 
-                                  double boundaryCuboidMax=0.0,
-                                  double initialValue=1.0, double constantBackground=0.1);
-
-    // destructor
+    /**
+     * Destructor.
+     */
     ~MolecularConcentrationsDomainPdeModifier();
 
+    /**
+     * Overridden UpdateAtEndOfTimeStep() method.
+     *
+     * Specifies what to do in the simulation at the end of each time step.
+     *
+     * @param rCellPopulation reference to the cell population
+     */
     void UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
+    /**
+     * Overridden SetupSolve() method.
+     *
+     * Specifies what to do in the simulation before the start of the time loop.
+     *
+     * @param rCellPopulation reference to the cell population
+     * @param outputDirectory the output directory, relative to where Chaste output is stored
+     */
     void SetupSolve(AbstractCellPopulation<DIM,DIM>& rCellPopulation, std::string outputDirectory);
 
+    /**
+     * Overridden ConstructBoundaryConditionsContainer() method.
+     *
+     * Helper method to construct the boundary conditions container for the PDE.
+     *
+     * @param rCellPopulation reference to the cell population
+     *
+     * @return the full boundary conditions container
+     */
     std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > ConstructBoundaryConditionsContainer(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
+    /**
+     * Overriden SetupInitialSolutionVector() method.
+     *
+     * Helper method to initialise the PDE solution using the CellData. Here we assume an initial homogeneous condition for our angiogenesis model.
+     *
+     * @param rCellPopulation reference to the cell population
+     */
     void SetupInitialSolutionVector(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
+    /**
+     * Overridden OutputSimulationModifierParameters() method.
+     *
+     * Outputs any simulation modifier parameters to file.
+     *
+     * @param rParamsFile the file stream to which the parameters are output
+     */
     void OutputSimulationModifierParameters(out_stream& rParamsFile);
 };
 

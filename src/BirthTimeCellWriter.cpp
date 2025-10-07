@@ -34,4 +34,5 @@ template class BirthTimeCellWriter<2,3>;
 template class BirthTimeCellWriter<3,3>;
 
 #include "SerializationExportWrapperForCpp.hpp"
+// Declare identifier for the serializer 
 EXPORT_TEMPLATE_CLASS_ALL_DIMS(BirthTimeCellWriter)

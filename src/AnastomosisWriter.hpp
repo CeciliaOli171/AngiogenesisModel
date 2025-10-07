@@ -5,12 +5,19 @@
 #include <boost/serialization/base_object.hpp>
 #include "AbstractCellWriter.hpp"
 
+/**
+ * A class written using the visitor pattern for writing anastomosis events to file.
+ *
+ * The output file is called results.vizanastomosis by default. If VTK is switched on,
+ * then the writer also specifies the VTK output for each cell, which is stored in
+ * the VTK cell data "Anastomosis" by default.
+ */
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 class AnastomosisWriter : public AbstractCellWriter<ELEMENT_DIM, SPACE_DIM>
 {
 private:
-    // Needed for serialization
+    /* serialization */
     friend class boost::serialization::access;
 
     /**
@@ -27,13 +34,31 @@ private:
 
 public:
 
-    // Constructor
+    /** 
+     * Default constructor 
+     */ 
     AnastomosisWriter();
 
-    // Overridden GetCellDataForVtkOutput() method
+    /** 
+     * Overridden GetCellDataForVtkOutput() method.  
+     *
+     * Get a double equals to the type of anastomosis event associated with a cell.
+     *
+     * @param pCell a cell
+     * @param pCellPopulation a pointer to the cell population owning the cell
+     *
+     * @return data associated with the cell
+     */
     double GetCellDataForVtkOutput(CellPtr pCell, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>* pCellPopulation);
 
-    //Overridden VisitCell() method
+    /** 
+     * Overridden VisitCell() method.  
+     *
+     * Visits a cell and write in a file the anastomosis event associated to it.
+     *
+     * @param pCell a cell
+     * @param pCellPopulation a pointer to the cell population owning the cell
+     */
     void VisitCell(CellPtr pCell, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>* pCellPopulation);
 };
 

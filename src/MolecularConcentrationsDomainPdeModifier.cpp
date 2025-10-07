@@ -1,5 +1,6 @@
 #include "MolecularConcentrationsDomainPdeModifier.hpp"
 #include "SimpleLinearParabolicSolver.hpp"
+#include "VegfEquationPde.hpp"
 #include "VesselTipMutationState.hpp"
 
 #include "Debug.hpp"
@@ -26,11 +27,7 @@ void MolecularConcentrationsDomainPdeModifier<DIM>::UpdateAtEndOfTimeStep(Abstra
     // When using a PDE mesh which doesn't coincide with the cells, we must set up the source terms before solving the PDE.
     // Pass in already updated CellPdeElementMap to speed up finding cells.
     this->SetUpSourceTermsForAveragedSourcePde(this->mpFeMesh, &this->mCellPdeElementMap);
-
-    // Use SimpleLinearParabolicSolver as averaged Source PDE
-    SimpleLinearParabolicSolver<DIM,DIM> solver(this->mpFeMesh,
-                                                boost::static_pointer_cast<AbstractLinearParabolicPde<DIM,DIM> >(this->GetPde()).get(),
-                                                p_bcc.get());
+    SimpleLinearParabolicSolver<DIM,DIM> solver(this->mpFeMesh, boost::static_pointer_cast<AbstractLinearParabolicPde<DIM,DIM> >(this->GetPde()).get(), p_bcc.get());
 
     ///\todo Investigate more than one PDE time step per spatial step
     SimulationTime* p_simulation_time = SimulationTime::Instance();
@@ -76,9 +73,7 @@ std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > MolecularConcentrations
         if (this->IsNeumannBoundaryCondition())
         {
             // Impose any Neumann boundary conditions
-            for (typename TetrahedralMesh<DIM,DIM>::BoundaryElementIterator elem_iter = this->mpFeMesh->GetBoundaryElementIteratorBegin();
-                 elem_iter != this->mpFeMesh->GetBoundaryElementIteratorEnd();
-                 ++elem_iter)
+            for (typename TetrahedralMesh<DIM,DIM>::BoundaryElementIterator elem_iter = this->mpFeMesh->GetBoundaryElementIteratorBegin(); elem_iter != this->mpFeMesh->GetBoundaryElementIteratorEnd(); ++elem_iter)
             {
                 p_bcc->AddNeumannBoundaryCondition(*elem_iter, this->mpBoundaryCondition.get());
             }

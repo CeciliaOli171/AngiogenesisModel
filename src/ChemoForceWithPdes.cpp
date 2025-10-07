@@ -83,7 +83,7 @@ void ChemoForceWithPdes<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>&
 
         unsigned elem_index = mpPdeModifier->GetFeMesh()->GetContainingElementIndex(rCellPopulation.GetLocationOfCellCentre((*cell_iter)));
 
-        mGradientsVegfPdes[node_indice] += gradients_on_elements[elem_index];
+        mGradientsVegfPdes[node_indice] += mChiPdes*gradients_on_elements[elem_index];
     }
 }
 

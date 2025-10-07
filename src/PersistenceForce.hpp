@@ -12,6 +12,9 @@
 
 #include "SmartPointers.hpp"
 
+/**
+ * A persistence force class. Describes the movement of the vessel tip along the ECM fibres in angiogenesis.
+ */
 
 template<unsigned DIM>
 class PersistenceForce  : public AbstractForce<DIM>
@@ -23,12 +26,24 @@ class PersistenceForce  : public AbstractForce<DIM>
     friend class TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPde;
 
 private:
-
+    /* parameters */
     double mOmegap;
-    double GetPersistenceCoefficient(); // directional persistence coefficient 
 
-    // allow to archive the force model object in a cell-based simulation 
+    /**
+     * @return the directional persistence coefficient.
+     */
+    double GetPersistenceCoefficient(); 
+
+    /* serialisation */
     friend class boost::serialization::access;
+
+    /**
+     * Boost Serialization method for archiving/checkpointing.
+     * Archives the object and its member variables.
+     *
+     * @param archive  The boost archive.
+     * @param version  The current version of this class.
+     */
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
     {
@@ -37,17 +52,35 @@ private:
     }
 
 public:
-
-    // constructor 
+    /**
+     * Constructor.
+     *
+     * @param omegaa the directional persistence coefficient
+     */
     PersistenceForce(double omegap = 0.1);
 
-    // destructor 
+    /**
+     * Destructor.
+     */  
     ~PersistenceForce();
 
-    // overrides AddForceContribution
+    /**
+     * Overridden AddForceContribution() method.
+     *
+     * @param rCellPopulation reference to the cell population
+     *
+     * Fp = omegap (x_p(t) - x_p(t-tau))(|x_p(t) - x_p(t-tau)|)
+     * (tau directional persistence time)
+     * inspired by Perfhal et al. (2017)
+     *
+     */
     void AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation);
 
-    // overrides OutputForceParameters
+    /**
+     * Overridden OutputForceParameters() method.
+     *
+     * @param rParamsFile the file stream to which the parameters are output
+     */
     void OutputForceParameters(out_stream& rParamsFile);
 
 };

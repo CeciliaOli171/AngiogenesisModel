@@ -1,23 +1,23 @@
-#ifndef BIRTHTIMECELLWRITER_HPP_
-#define BIRTHTIMECELLWRITER_HPP_
+#ifndef BRANCHNUMBERWRITER_HPP_
+#define BRANCHNUMBERWRITER_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
 #include "AbstractCellWriter.hpp"
 
 /**
- * A class written using the visitor pattern for writing the time of birth for each cell to file.
+ * A class written using the visitor pattern for writing the branch number associated to each cell to file.
  *
- * The output file is called results.vizbirthtimecell by default. If VTK is switched on,
+ * The output file is called results.vizbranchnumber by default. If VTK is switched on,
  * then the writer also specifies the VTK output for each cell, which is stored in
- * the VTK cell data "BirthTimeCell" by default.
+ * the VTK cell data "BranchNumber" by default.
  */
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-class BirthTimeCellWriter : public AbstractCellWriter<ELEMENT_DIM, SPACE_DIM>
+class BranchNumberWriter : public AbstractCellWriter<ELEMENT_DIM, SPACE_DIM>
 {
 private:
-    /* Needed for serialization */ 
+    /* serialization */
     friend class boost::serialization::access;
 
     /**
@@ -37,12 +37,12 @@ public:
     /** 
      * Default constructor 
      */
-    BirthTimeCellWriter();
+    BranchNumberWriter();
 
     /** 
      * Overridden GetCellDataForVtkOutput() method.  
      *
-     * Get a double equals to the birth time associated with a cell.
+     * Get a double equals to the branch number associated with a cell.
      *
      * @param pCell a cell
      * @param pCellPopulation a pointer to the cell population owning the cell
@@ -54,7 +54,7 @@ public:
     /** 
      * Overridden VisitCell() method.  
      *
-     * Visits a cell and write in a file the birth time associated to it.
+     * Visits a cell and write in a file the branch number associated to it.
      *
      * @param pCell a cell
      * @param pCellPopulation a pointer to the cell population owning the cell
@@ -63,6 +63,6 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_ALL_DIMS(BirthTimeCellWriter)
+EXPORT_TEMPLATE_CLASS_ALL_DIMS(BranchNumberWriter)
 
-#endif /* BIRTHTIMECELLWRITER_HPP_ */
+#endif /* BRANCHNUMBERWRITER_HPP_ */

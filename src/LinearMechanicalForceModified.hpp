@@ -3,6 +3,10 @@
 
 #include "GeneralisedLinearSpringForce.hpp"
 
+/**
+ * A linear mechanical force class. Describes the interactions between the cells in a vascular tree in the case of angiogenesis.
+ */
+
 template<unsigned  ELEMENT_DIM, unsigned SPACE_DIM=ELEMENT_DIM>
 class LinearMechanicalForceModified : public GeneralisedLinearSpringForce<ELEMENT_DIM, SPACE_DIM>
 {
@@ -14,27 +18,38 @@ class LinearMechanicalForceModified : public GeneralisedLinearSpringForce<ELEMEN
 
 private:
 
+    /* serialisation */
     friend class boost::serialization::access;
 
+    /**
+     * Boost Serialization method for archiving/checkpointing.
+     * Archives the object and its member variables.
+     *
+     * @param archive  The boost archive.
+     * @param version  The current version of this class.
+     */
     template<class Archive>
     void serialize(Archive & archive, const unsigned int version)
     {
-        archive & boost::serialization::base_object<AbstractTwoBodyInteractionForce<ELEMENT_DIM, SPACE_DIM> >(*this);
+        archive & boost::serialization::base_object<GeneralisedLinearSpringForce<ELEMENT_DIM,SPACE_DIM> >(*this);
     }
 
 public:
-
-    // constructor
+    /**
+     * Constructor.
+     *
+     * @param omegaa the angular persistence spring constant
+     */
     LinearMechanicalForceModified();
 
-    // destructor
+    /**
+     * Destructor.
+     */ 
     ~LinearMechanicalForceModified();
 
     /**
-     * Return a multiplication factor for the spring constant, which
-     * returns a default value of 1.
-     *
-     * This method may be overridden in subclasses.
+     * Return a multiplication factor for the spring constant, which returns a default value of 1.
+     * Applied to angiogenesis: return 0 if two cells are not in the same branch.
      *
      * @param nodeAGlobalIndex index of one neighbouring node
      * @param nodeBGlobalIndex index of the other neighbouring node

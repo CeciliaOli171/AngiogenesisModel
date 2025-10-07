@@ -45,11 +45,6 @@ double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbab
 }
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetVegfConcentrationAtNode(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell){
-    return mConstantBackground;
-}
-
-template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 double SproutingRuleWithConstantVegf<ELEMENT_DIM, SPACE_DIM>::GetSproutingProbability(AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>& rCellPopulation, CellPtr pParentCell)
 {
     return GetSproutingProbabilityWithConstantVegf();

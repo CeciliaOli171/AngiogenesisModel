@@ -87,7 +87,7 @@ class ParametersSensitivityRunner:
 
         return list_consecutivebranches
 
-    def BranchesNumber(file_branchesnumber):
+    def BranchNumber(file_branchesnumber):
         # initialisation of the list
         list_branchesnumber = []
 
@@ -242,7 +242,7 @@ class ParametersSensitivityRunner:
     def TotalNumberBranches(file_branchesnumber, file_anastomosis):
         NumberBranches = 0
 
-        list_branchesnumber = ParametersSensitivityRunner.BranchesNumber(file_branchesnumber)
+        list_branchesnumber = ParametersSensitivityRunner.BranchNumber(file_branchesnumber)
         list_anastomosis = ParametersSensitivityRunner.AnastomosisTypes(file_anastomosis)
 
         NumberBranches = max(list_branchesnumber)

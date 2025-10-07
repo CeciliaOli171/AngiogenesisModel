@@ -14,10 +14,6 @@ VegfEquationPde<DIM>::VegfEquationPde(AbstractCellPopulation<DIM,DIM>& rCellPopu
 {
 }
 
-// template<unsigned DIM>
-// VegfEquationPde<DIM>:: ~VegfEquationPde(){
-// }
-
 template<unsigned DIM>
 double VegfEquationPde<DIM>::GetDuDtCoefficient()
 {
@@ -46,6 +42,12 @@ template<unsigned DIM>
 double VegfEquationPde<DIM>::GetConsumptionCoefficient()
 {
     return mConsumptionCoefficient;
+}
+
+template<unsigned DIM>
+const AbstractCellPopulation<DIM,DIM>& VegfEquationPde<DIM>::rGetCellPopulation() const
+{
+    return mrCellPopulation;
 }
 
 template<unsigned DIM>
