@@ -100,7 +100,7 @@
 #include "AveragedSourceParabolicPde.hpp"
 #include "UniformSourceParabolicPde.hpp"
 #include "AbstractCellBasedWithTimingsTestSuite.hpp"
-#include "MolecularConcentrationsDomainPdeModifier.hpp"
+#include "MolecularConcentrationsBoxDomainPdeModifier.hpp"
 #include "CellwiseSourceParabolicPde.hpp"
 #include "VegfBoundaryCondition.hpp"
 
@@ -329,7 +329,6 @@ public:
 
         // parameters for Psprout 
         double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
-        int input_psproutfunctiontestnb = command_line->GetIntCorrespondingToOption("-psproutfunctiontestnb");
         double input_val_cmax = command_line->GetDoubleCorrespondingToOption("-cmax");
         double input_val_cmin = command_line->GetDoubleCorrespondingToOption("-cmin");
         double input_val_pmax = command_line->GetDoubleCorrespondingToOption("-pmax");

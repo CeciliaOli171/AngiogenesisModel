@@ -20,39 +20,6 @@ ChemoForceWithConstantVegf<DIM>::~ChemoForceWithConstantVegf()
 {
 }
 
-template<unsigned DIM>
-c_vector<double, DIM>& ChemoForceWithConstantVegf<DIM>::GetGradient(unsigned node_index)
-{
-    return mGradientsVegfAnalyticalApproxPde[node_index];
-}
-
-template<unsigned DIM>
-double ChemoForceWithConstantVegf<DIM>::GetMagnitudeGradient(unsigned node_index)
-{
-    return norm_2(GetGradient(node_index));
-}
-
-template<unsigned DIM>
-void ChemoForceWithConstantVegf<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPopulation)
-{
-    // Initialise gradients size
-    unsigned num_nodes = rCellPopulation.GetNumNodes();
-    mGradientsVegfAnalyticalApproxPde.resize(num_nodes, zero_vector<double>(DIM));
-
-    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
-    {
-        // we collect the cell data necessary (node index and cell pointer)
-        if (cell_iter->GetMutationState()->template IsType<VesselTipMutationState>())
-        {
-            unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-
-            c_vector<double, DIM> r_gradient_cell = zero_vector<double>(DIM);
-
-            mGradientsVegfAnalyticalApproxPde[node_index] = r_gradient_cell;
-        }
-    }
-}
-
 // Explicit instantiation
 template class ChemoForceWithConstantVegf<1>;
 template class ChemoForceWithConstantVegf<2>;

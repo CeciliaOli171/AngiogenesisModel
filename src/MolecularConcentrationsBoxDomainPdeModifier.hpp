@@ -1,15 +1,16 @@
-#ifndef MOLECULARCONCENTRATIONSDOMAINPDEMODIFIER_HPP_
-#define MOLECULARCONCENTRATIONSDOMAINPDEMODIFIER_HPP_
+#ifndef MOLECULARCONCENTRATIONSBOXDOMAINPDEMODIFIER_HPP_
+#define MOLECULARCONCENTRATIONSBOXDOMAINPDEMODIFIER_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
 
 #include "AbstractBoxDomainPdeModifier.hpp"
+#include "ParabolicBoxDomainPdeModifier.hpp"
 #include "BoundaryConditionsContainer.hpp"
 
 /**
- * A modifier class in which the PDE of VEGF concentration coupled to a cell-based simulation
- * for angiogenesis is solved on a coarse domain.
+ * Subclass of ParabolicBoxDomainPdeModifier.
+ * A modifier class in which the PDE of VEGF concentration coupled to a cell-based simulation for angiogenesis is solved on a coarse domain.
  *
  * The finite element mesh used to solve the PDE numerically is a fixed tessellation of
  * a cuboid (box), which must be supplied to the constructor. The value of the dependent
@@ -25,13 +26,14 @@
 
 
 template<unsigned DIM>
-class MolecularConcentrationsDomainPdeModifier : public AbstractBoxDomainPdeModifier<DIM>
+class MolecularConcentrationsBoxDomainPdeModifier : public ParabolicBoxDomainPdeModifier<DIM>
 {
     friend class TestForcesModel;
     friend class TestAngiogenesisModelWithVegfConcentrationPde;
 
 private:
     /* parameters */
+    Vec mSolutionVegf;
     double mBoundaryCuboidMax;
     double mInitialValue;
     double mConstantBackground;
@@ -60,8 +62,7 @@ public:
      * Constructor.
      *
      * @param pPde A shared pointer to a linear PDE object (defaults to NULL)
-     * @param pBoundaryCondition A shared pointer to an abstract boundary condition
-     *     (defaults to NULL, corresponding to a constant boundary condition with value zero)
+     * @param pBoundaryCondition A shared pointer to an abstract boundary condition (defaults to NULL, corresponding to a constant boundary condition with value zero)
      * @param isNeumannBoundaryCondition Whether the boundary condition is Neumann (defaults to true)
      * @param pMeshCuboid A shared pointer to a ChasteCuboid specifying the outer boundary for the FE mesh (defaults to NULL)
      * @param stepSize step size to be used in the FE mesh (defaults to 1.0, i.e. the default cell size)
@@ -70,12 +71,12 @@ public:
      * @param initialValue initial value of vegf concentration
      * @param constantBackground constant baseline of vegf concentration
      */
-    MolecularConcentrationsDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(), boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(), bool isNeumannBoundaryCondition=false, boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid=boost::shared_ptr<ChasteCuboid<DIM> >(), double stepSize=1.0, Vec solution=nullptr, double boundaryCuboidMax=0.0, double initialValue=1.0, double constantBackground=0.1);
+    MolecularConcentrationsBoxDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(), boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(), bool isNeumannBoundaryCondition=false, boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid=boost::shared_ptr<ChasteCuboid<DIM> >(), double stepSize=1.0, Vec solution=nullptr, double boundaryCuboidMax=0.0, double initialValue=1.0, double constantBackground=0.1);
 
     /**
      * Destructor.
      */
-    ~MolecularConcentrationsDomainPdeModifier();
+    ~MolecularConcentrationsBoxDomainPdeModifier();
 
     /**
      * Overridden UpdateAtEndOfTimeStep() method.
@@ -110,24 +111,17 @@ public:
     /**
      * Overriden SetupInitialSolutionVector() method.
      *
-     * Helper method to initialise the PDE solution using the CellData. Here we assume an initial homogeneous condition for our angiogenesis model.
+     * Helper method to initialise the PDE solution using the CellData.
+     *
+     * Here we assume a homogeneous initial consition.
      *
      * @param rCellPopulation reference to the cell population
      */
     void SetupInitialSolutionVector(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
-
-    /**
-     * Overridden OutputSimulationModifierParameters() method.
-     *
-     * Outputs any simulation modifier parameters to file.
-     *
-     * @param rParamsFile the file stream to which the parameters are output
-     */
-    void OutputSimulationModifierParameters(out_stream& rParamsFile);
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(MolecularConcentrationsDomainPdeModifier)
+EXPORT_TEMPLATE_CLASS_SAME_DIMS(MolecularConcentrationsBoxDomainPdeModifier)
 
 namespace boost
 {
@@ -135,7 +129,7 @@ namespace serialization
 {
 template<class Archive, unsigned DIM>
 inline void save_construct_data(
-    Archive & ar, const MolecularConcentrationsDomainPdeModifier<DIM> * t, const unsigned int file_version)
+    Archive & ar, const MolecularConcentrationsBoxDomainPdeModifier<DIM> * t, const unsigned int file_version)
 {
     if (t->GetSolution())
     {
@@ -146,7 +140,7 @@ inline void save_construct_data(
 
 template<class Archive, unsigned DIM>
 inline void load_construct_data(
-    Archive & ar, MolecularConcentrationsDomainPdeModifier<DIM> * t, const unsigned int file_version)
+    Archive & ar, MolecularConcentrationsBoxDomainPdeModifier<DIM> * t, const unsigned int file_version)
 {
     Vec solution = nullptr;
 
@@ -158,7 +152,7 @@ inline void load_construct_data(
         PetscTools::ReadPetscObject(solution, archive_filename);
     }
 
-    ::new(t)MolecularConcentrationsDomainPdeModifier<DIM>(boost::shared_ptr<AbstractLinearPde<DIM, DIM> >(),
+    ::new(t)MolecularConcentrationsBoxDomainPdeModifier<DIM>(boost::shared_ptr<AbstractLinearPde<DIM, DIM> >(),
                                                boost::shared_ptr<AbstractBoundaryCondition<DIM> >(),
                                                false,
                                                boost::shared_ptr<ChasteCuboid<DIM> >(),

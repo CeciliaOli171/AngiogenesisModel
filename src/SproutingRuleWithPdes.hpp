@@ -41,7 +41,7 @@ class SproutingRuleWithPdes  : public SproutingRule<ELEMENT_DIM, SPACE_DIM>
 private:
     /* parameters */
     double mMaxSproutingRatePdes;
-    boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > mpPdeModifier; 
+    boost::shared_ptr<AbstractPdeModifier<SPACE_DIM> > mpPdeModifier; 
     double mCMax;
     double mCMin;
     double mPMax;
@@ -81,7 +81,7 @@ public:
      * @param pMax the maximum probability of sprouting 
      * @param pMin the minimum probability of sprouting 
      */
-    SproutingRuleWithPdes(double MaxSproutingRatePdes = 0.08, double thresholdLength=2.0, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> >(), double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4);
+    SproutingRuleWithPdes(double MaxSproutingRatePdes = 0.08, double thresholdLength=2.0, boost::shared_ptr<AbstractPdeModifier<SPACE_DIM> > pPdeModifier=boost::shared_ptr<AbstractPdeModifier<SPACE_DIM> >(), double cMax=1, double cMin=0.3, double pMax=0.98, double pMin=0.4);
 
     /**
      * Destructor.

@@ -85,7 +85,7 @@
 #include "AveragedSourceParabolicPde.hpp"
 #include "UniformSourceParabolicPde.hpp"
 #include "AbstractCellBasedWithTimingsTestSuite.hpp"
-#include "MolecularConcentrationsDomainPdeModifier.hpp"
+#include "MolecularConcentrationsBoxDomainPdeModifier.hpp"
 #include "CellwiseSourceParabolicPde.hpp"
 #include "VegfBoundaryCondition.hpp"
 
@@ -105,6 +105,7 @@ public:
         double input_val_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-consumptioncoeff"); //0.0
         double input_val_initialvalue = command_line->GetDoubleCorrespondingToOption("-initialvalue"); //0.1
         double input_val_boundaryvalue = command_line->GetDoubleCorrespondingToOption("-boundaryvalue"); //0.1
+        double input_val_constantbackground = command_line->GetDoubleCorrespondingToOption("-constantbackground"); //0.1
         unsigned int input_val_endtime = command_line->GetDoubleCorrespondingToOption("-endtime"); 
 
         double boundary_cuboid_min = 0.0;
@@ -156,7 +157,7 @@ public:
         typedef VegfEquationPde<2> VegfEquationPde; 
         typedef VegfBoundaryCondition<2> VegfBoundaryCondition;
         MAKE_PTR_ARGS(VegfEquationPde, p_pde, (cell_population, input_val_dudtcoeff, input_val_diffusioncoeff, input_val_decaycoeff, input_val_creationcoeff, input_val_consumptioncoeff));
-        MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_boundaryvalue, boundary_cuboid_min));
+        MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_boundaryvalue, input_val_constantbackground, boundary_cuboid_min));
 
         // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
         ChastePoint<2> lower(boundary_cuboid_min, boundary_cuboid_min);
@@ -172,8 +173,8 @@ public:
         Vec initial_condition = nullptr;
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        typedef MolecularConcentrationsDomainPdeModifier<2> MolecularConcentrationsDomainPdeModifier;
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_initialvalue));
+        typedef MolecularConcentrationsBoxDomainPdeModifier<2> MolecularConcentrationsBoxDomainPdeModifier;
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_initialvalue));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
 
@@ -202,6 +203,7 @@ public:
         double input_val_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-consumptioncoeff"); //0.0
         double input_val_initialvalue = command_line->GetDoubleCorrespondingToOption("-initialvalue"); //0.1
         double input_val_boundaryvalue = command_line->GetDoubleCorrespondingToOption("-boundaryvalue"); //0.1
+        double input_val_constantbackground = command_line->GetDoubleCorrespondingToOption("-constantbackground"); //0.1
         unsigned int input_val_endtime = command_line->GetDoubleCorrespondingToOption("-endtime"); 
 
         double boundary_cuboid_min = 0.0;
@@ -253,7 +255,7 @@ public:
         typedef VegfEquationPde<3> VegfEquationPde; 
         typedef VegfBoundaryCondition<3> VegfBoundaryCondition;
         MAKE_PTR_ARGS(VegfEquationPde, p_pde, (cell_population, input_val_dudtcoeff, input_val_diffusioncoeff, input_val_decaycoeff, input_val_creationcoeff, input_val_consumptioncoeff));
-        MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_boundaryvalue, boundary_cuboid_min));
+        MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_boundaryvalue, input_val_constantbackground, boundary_cuboid_min));
 
         // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
         ChastePoint<3> lower(boundary_cuboid_min, boundary_cuboid_min, boundary_cuboid_min);
@@ -270,8 +272,8 @@ public:
         Vec initial_condition = nullptr;
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        typedef MolecularConcentrationsDomainPdeModifier<3> MolecularConcentrationsDomainPdeModifier;
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_initialvalue));
+        typedef MolecularConcentrationsBoxDomainPdeModifier<3> MolecularConcentrationsBoxDomainPdeModifier;
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_initialvalue));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
 

@@ -1,6 +1,5 @@
 #include "VegfEquationPde.hpp"
 
-#include "ApoptoticCellProperty.hpp"
 #include "AbstractCellPopulation.hpp"
 #include "TetrahedralMesh.hpp"
 #include "StemCellProliferativeType.hpp"
@@ -45,15 +44,9 @@ double VegfEquationPde<DIM>::GetConsumptionCoefficient()
 }
 
 template<unsigned DIM>
-const AbstractCellPopulation<DIM,DIM>& VegfEquationPde<DIM>::rGetCellPopulation() const
-{
-    return mrCellPopulation;
-}
-
-template<unsigned DIM>
 void VegfEquationPde<DIM>::SetupSourceTerms(TetrahedralMesh<DIM,DIM>& rCoarseMesh, std::map<CellPtr, unsigned>* pCellPdeElementMap) // must be called before solve
 {
-    // Allocate memory
+    // Allocate memory: modify to optimise 
     mCellDensityOnCoarseElements.resize(rCoarseMesh.GetNumElements());
     for (unsigned elem_index=0; elem_index<mCellDensityOnCoarseElements.size(); elem_index++)
     {
@@ -61,16 +54,11 @@ void VegfEquationPde<DIM>::SetupSourceTerms(TetrahedralMesh<DIM,DIM>& rCoarseMes
     }
 
     // Loop over cells, find which coarse element it is in, and add 1 to mSourceTermOnCoarseElements[elem_index]
-    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = mrCellPopulation.Begin();
-         cell_iter != mrCellPopulation.End();
-         ++cell_iter)
+    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = mrCellPopulation.Begin(); cell_iter != mrCellPopulation.End(); ++cell_iter)
     {
         // test for angiogenesis model pde 
         // we only consider tip cells for the vegf concentration PDE 
         // we collect the cell data necessary (node index and cell pointer)
-        unsigned node_index = mrCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-        CellPtr pCell = mrCellPopulation.GetCellUsingLocationIndex(node_index);
-
         unsigned elem_index = 0;
         const ChastePoint<DIM>& r_position_of_cell = mrCellPopulation.GetLocationOfCellCentre(*cell_iter);
 
@@ -83,19 +71,12 @@ void VegfEquationPde<DIM>::SetupSourceTerms(TetrahedralMesh<DIM,DIM>& rCoarseMes
             elem_index = rCoarseMesh.GetContainingElementIndex(r_position_of_cell);
         }
 
-        //test for angiogenesis model pde
-        if (pCell->GetMutationState()->IsType<VesselTipMutationState>()){
-            mCellDensityOnCoarseElements[elem_index] += 1.0;
+        if (cell_iter->GetMutationState()->template IsType<VesselTipMutationState>()){
+            c_matrix<double, DIM, DIM> jacobian;
+            double det;
+            rCoarseMesh.GetElement(elem_index)->CalculateJacobian(jacobian, det);
+            mCellDensityOnCoarseElements[elem_index] += 1.0/rCoarseMesh.GetElement(elem_index)->GetVolume(det);
         }
-    }
-
-    // Then divide each entry of mSourceTermOnCoarseElements by the element's area
-    c_matrix<double, DIM, DIM> jacobian;
-    double det;
-    for (unsigned elem_index=0; elem_index<mCellDensityOnCoarseElements.size(); elem_index++)
-    {
-        rCoarseMesh.GetElement(elem_index)->CalculateJacobian(jacobian, det);
-        mCellDensityOnCoarseElements[elem_index] /= rCoarseMesh.GetElement(elem_index)->GetVolume(det);
     }
 }
 
@@ -108,7 +89,7 @@ double VegfEquationPde<DIM>::ComputeDuDtCoefficientFunction(const ChastePoint<DI
 template<unsigned DIM>
 double VegfEquationPde<DIM>::ComputeSourceTerm(const ChastePoint<DIM>& rX, double u, Element<DIM,DIM>* pElement)
 {
-    assert(!mCellDensityOnCoarseElements.empty());
+    // assert(!mCellDensityOnCoarseElements.empty());
     double coefficient = mCreationCoefficient - mDecayCoefficient - mConsumptionCoefficient * mCellDensityOnCoarseElements[pElement->GetIndex()];
 
     // The source term is C*u

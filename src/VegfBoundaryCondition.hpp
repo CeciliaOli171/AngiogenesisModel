@@ -17,6 +17,7 @@ class VegfBoundaryCondition : public AbstractBoundaryCondition<SPACE_DIM>
 private:
     /* parameters */
     double mSourceTerm;
+    double mConstantBackground;
     double mBoundaryCuboidMax;
 
     /**
@@ -46,7 +47,7 @@ public:
      * @param sourceterm vegf source term
      * @param boundaryCuboidMax boundary max of cuboid
      */
-    VegfBoundaryCondition(const double sourceterm=0.1, double boundaryCuboidMax=10);
+    VegfBoundaryCondition(const double sourceterm=0.5, double constantBackground=0.1, double boundaryCuboidMax=10);
 
     /**
      * Overridden GetValue() method.

@@ -33,6 +33,7 @@ private:
     double mCX;
     double mCY;
     double mCZ;
+    bool mComputationGradient;
     std::vector<c_vector<double, DIM> > mGradients;
 
     /**
@@ -75,6 +76,7 @@ private:
         archive & mCX;
         archive & mCY;
         archive & mCZ;
+        archive & mComputationGradient;
     }
 
 public:
@@ -88,6 +90,7 @@ public:
      * @param cx the chemotactic gradient coefficient in the x axis
      * @param cy the chemotactic gradient coefficient in the y axis
      * @param cz the chemotactic gradient coefficient in the z axis
+     * @param computationGradient a boolean to choose if the gradient needs to be computed (false by default)
      */
     ChemoForce(double chi = 1E-4, double hx = 1E-4, double hy = 0.0, double hz = 0.0, double cx = 0.1, double cy = 0.0, double cz = 0.0);
 
@@ -99,27 +102,22 @@ public:
     /**
      * Get the vegf gradient at a given node.
      *
+     * @param rCellPopulation reference to the cell population
      * @param node_index index of the node
      *
      * @return vegf gradient associates to node
      */
-    virtual c_vector<double, DIM>& GetGradient(unsigned node_index);
+    virtual c_vector<double, DIM>& GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index);
 
     /**
      * Get the magnitude of the gradient at a node position.
      * 
+     * @param rCellPopulation reference to the cell population
      * @param node_index index of the node
      *
      * @return the magnitude of gradient at the node
      */
-    virtual double GetMagnitudeGradient(unsigned node_index);
-
-    /**
-     * Computes the gradient of the vegf concentration at the nodes.
-     *
-     * @param rCellPopulation reference to the cell population
-     */
-    virtual void CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPopulation);
+    virtual double GetMagnitudeGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index);
 
     /**
      * Overridden AddForceContribution() method.

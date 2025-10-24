@@ -27,7 +27,11 @@ class ChemoForceWithPdes  : public ChemoForce<DIM>
 private:
     /* parameters */
     double mChiPdes;
-    boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > mpPdeModifier;
+    double mHX;
+    double mHY;
+    double mHZ;
+    boost::shared_ptr<AbstractPdeModifier<DIM> > mpPdeModifier;
+    std::vector<c_vector<double, DIM> > mGradientsOnElements;
     std::vector<c_vector<double, DIM> > mGradientsVegfPdes;
 
     /* serialisation */
@@ -59,7 +63,7 @@ public:
      * @param hz the chemoattractant gradient factor in the z axis
      * @param pPdeModifier a shared pointer to a PDE modifier
      */
-    ChemoForceWithPdes(double chiPdes = 0.1, double hx=1e-4, double hy=1e-4, double hz=1e-4, boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> > pPdeModifier=boost::shared_ptr<AbstractBoxDomainPdeModifier<DIM> >());
+    ChemoForceWithPdes(double chiPdes = 0.1, double hx=1e-4, double hy=1e-4, double hz=1e-4, boost::shared_ptr<AbstractPdeModifier<DIM> > pPdeModifier=boost::shared_ptr<AbstractPdeModifier<DIM> >());
 
     /**
      * Destructor.
@@ -71,31 +75,12 @@ public:
      *
      * Get the vegf gradient at a given node.
      *
+     * @param rCellPopulation reference to the cell population
      * @param node_index index of the node
      *
      * @return vegf gradient associates to node
      */
-    c_vector<double, DIM>& GetGradient(unsigned node_index);
-
-    /**
-     * Overridden GetMagnitudeGradient() method.
-     *
-     * Get the magnitude of the gradient at a node position.
-     * 
-     * @param node_index index of the node
-     *
-     * @return the magnitude of gradient at the node
-     */
-    double GetMagnitudeGradient(unsigned node_index);
-
-    /**
-     * Overridden CalculateVegfGradient() method.
-     *
-     * Computes the gradient of the vegf concentration at the nodes.
-     *
-     * @param rCellPopulation reference to the cell population
-     */
-    void CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPopulation);
+    c_vector<double, DIM>& GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index);
 };
 
 #include "SerializationExportWrapper.hpp"

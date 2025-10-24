@@ -94,13 +94,15 @@
 #include "FunctionalBoundaryCondition.hpp"
 #include "SimpleNewtonNonlinearSolver.hpp"
 #include "VegfEquationPde.hpp"
+#include "VegfEquationCellPde.hpp"
 #include "EllipticBoxDomainPdeModifier.hpp"
 #include "ParabolicBoxDomainPdeModifier.hpp"
 #include "AveragedSourceEllipticPde.hpp"
 #include "AveragedSourceParabolicPde.hpp"
 #include "UniformSourceParabolicPde.hpp"
 #include "AbstractCellBasedWithTimingsTestSuite.hpp"
-#include "MolecularConcentrationsDomainPdeModifier.hpp"
+#include "MolecularConcentrationsBoxDomainPdeModifier.hpp"
+#include "MolecularConcentrationsGrowingDomainPdeModifier.hpp"
 #include "CellwiseSourceParabolicPde.hpp"
 #include "VegfBoundaryCondition.hpp"
 
@@ -111,7 +113,7 @@ class TestAngiogenesisModelWithVegfConcentrationPde : public AbstractCellBasedTe
 
 public:
 
-    void TestAngiogenesisModelWithVegfConcentrationPdeIn2D() 
+    void TestAngiogenesisModelWithVegfConcentrationPdeIn2D() throw(Exception)
     {
         ///////////
         // INPUT // 
@@ -237,10 +239,12 @@ public:
         // 1) SOLVE PDE 
 
         // Create PDE and boundary condition objects
+        TRACE("test vegf equation pde and boundary condition")
         typedef VegfEquationPde<2> VegfEquationPde; 
         typedef VegfBoundaryCondition<2> VegfBoundaryCondition;
         MAKE_PTR_ARGS(VegfEquationPde, p_vegf_pde, (cell_population, input_val_vegf_dudtcoeff, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff));
-        MAKE_PTR_ARGS(VegfBoundaryCondition, p_vegf_bc, (input_val_vegf_boundaryvalue, boundary_cuboid_min));
+        MAKE_PTR_ARGS(VegfBoundaryCondition, p_vegf_bc, (input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, boundary_cuboid_min));
+        TRACE("test vegf equation pde and boundary condition PASSED")
 
         // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
         ChastePoint<2> lower(boundary_cuboid_min, boundary_cuboid_min);
@@ -251,15 +255,17 @@ public:
         Vec initial_condition = nullptr;
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        typedef MolecularConcentrationsDomainPdeModifier<2> MolecularConcentrationsDomainPdeModifier;
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier, p_pde_modifier, (p_vegf_pde, p_vegf_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_vegf_initialvalue, input_val_vegf_constantbackground));
+        TRACE("Test box domain pde modifier")
+        typedef MolecularConcentrationsBoxDomainPdeModifier<2> MolecularConcentrationsBoxDomainPdeModifier;
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier, p_pde_modifier, (p_vegf_pde, p_vegf_bc, true, p_cuboid, 2.0, initial_condition, boundary_cuboid_min, input_val_vegf_initialvalue, input_val_vegf_constantbackground));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
-        p_pde_modifier->SetOutputGradient(true);
+        p_pde_modifier->SetOutputGradient(false);
 
         simulator.AddSimulationModifier(p_pde_modifier);
-
+        TRACE("Test box domain pde modifier PASSED")
 
         // 2) UPDATING CELL POSITION 
+        TRACE("Test forces")
 
         // Random force (all cells)
         typedef RandomForce<2> RandomForce;
@@ -291,7 +297,10 @@ public:
         MAKE_PTR_ARGS(AngularForce, p_angular_force, (-input_val_omegaa)); 
         simulator.AddForce(p_angular_force);
 
+        TRACE("Test forces PASSED")
+
         // 3) DIVISION OF CELLS 
+        TRACE("Test sprouting rule")
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithPdes<2,2> SproutingRuleWithPdes;
@@ -299,7 +308,9 @@ public:
         
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
+        TRACE("Test sprouting rule PASSED")
 
+        TRACE("Test modifiers")
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<2> DaughterCellModifier;
         MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength, input_val_thresholdlength));
@@ -308,10 +319,15 @@ public:
         typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
         MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
         simulator.AddSimulationModifier(p_persistenceforce_modifier);
+        TRACE("Test modifiers PASSED")
 
+        TRACE("Test update")
         cell_population.Update();
+        TRACE("Test update passed")
 
+        TRACE("Test solve")
         simulator.Solve();
+        TRACE("Test solve PASSED")
 
         // Output run time data
         CellBasedEventHandler::Headings();
@@ -367,7 +383,7 @@ public:
 
         // mesh for pdes 
         double boundary_cuboid_min = 0.0;
-        double boundary_cuboid_max = 50.0;
+        double boundary_cuboid_max = 150.0;
 
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -449,7 +465,7 @@ public:
         typedef VegfEquationPde<3> VegfEquationPde; 
         typedef VegfBoundaryCondition<3> VegfBoundaryCondition;
         MAKE_PTR_ARGS(VegfEquationPde, p_pde, (cell_population, input_val_vegf_dudtcoeff, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff));
-        MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_vegf_boundaryvalue, boundary_cuboid_min));
+        MAKE_PTR_ARGS(VegfBoundaryCondition, p_bc, (input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, boundary_cuboid_min));
 
         // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
         ChastePoint<3> lower(boundary_cuboid_min, boundary_cuboid_min, boundary_cuboid_min);
@@ -460,8 +476,8 @@ public:
         Vec initial_condition = nullptr;
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        typedef MolecularConcentrationsDomainPdeModifier<3> MolecularConcentrationsDomainPdeModifier;
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_vegf_initialvalue, input_val_vegf_constantbackground));
+        typedef MolecularConcentrationsBoxDomainPdeModifier<3> MolecularConcentrationsBoxDomainPdeModifier;
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, initial_condition, boundary_cuboid_min, input_val_vegf_initialvalue, input_val_vegf_constantbackground));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
 
@@ -515,6 +531,215 @@ public:
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
         typedef DirectionalPersistenceCellModifier<3> DirectionalPersistenceCellModifier;
+        MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
+        simulator.AddSimulationModifier(p_persistenceforce_modifier);
+
+        cell_population.Update();
+
+        simulator.Solve();
+
+        // Output run time data
+        CellBasedEventHandler::Headings();
+        CellBasedEventHandler::Report();
+
+        SimulationTime::Destroy();
+    }
+
+    void NoTestAngiogenesisModelWithVegfConcentrationCellPdeIn2D() 
+    {
+        ///////////
+        // INPUT // 
+        ///////////
+
+        // Parameters input 
+        CommandLineArguments* command_line = CommandLineArguments::Instance();
+
+        // parameters for vegf pde 
+        double input_val_vegf_dudtcoeff = command_line->GetDoubleCorrespondingToOption("-vegfdudtcoeff"); //1.0
+        double input_val_vegf_diffusioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfdiffusioncoeff"); //0.2
+        double input_val_vegf_decaycoeff = command_line->GetDoubleCorrespondingToOption("-vegfdecaycoeff"); //1.0
+        double input_val_vegf_creationcoeff = command_line->GetDoubleCorrespondingToOption("-vegfcreationcoeff"); //0.0
+        double input_val_vegf_consumptioncoeff = command_line->GetDoubleCorrespondingToOption("-vegfconsumptioncoeff"); //0.0
+        double input_val_vegf_initialvalue = command_line->GetDoubleCorrespondingToOption("-vegfinitialvalue"); //0.1
+        double input_val_vegf_boundaryvalue = command_line->GetDoubleCorrespondingToOption("-vegfboundaryvalue"); //0.1
+        double input_val_vegf_constantbackground = command_line->GetDoubleCorrespondingToOption("-vegfconstantbackground"); //0.1
+
+        // parameters for forces 
+        double input_val_S = command_line->GetDoubleCorrespondingToOption("-S"); //1E-5
+        double input_val_sigma = command_line->GetDoubleCorrespondingToOption("-sigma"); //1E-4
+        double input_val_chi = command_line->GetDoubleCorrespondingToOption("-chi"); //1E-1
+        double input_val_omegap = command_line->GetDoubleCorrespondingToOption("-omegap"); //1E-4
+        double input_val_omegaa = command_line->GetDoubleCorrespondingToOption("-omegaa"); //1.0
+
+        // parameters for Psprout 
+        double input_val_maxsproutingrate = command_line->GetDoubleCorrespondingToOption("-maxsproutingrate"); 
+        double input_val_cmax = command_line->GetDoubleCorrespondingToOption("-cmax");
+        double input_val_cmin = command_line->GetDoubleCorrespondingToOption("-cmin");
+        double input_val_pmax = command_line->GetDoubleCorrespondingToOption("-pmax");
+        double input_val_pmin = command_line->GetDoubleCorrespondingToOption("-pmin");
+
+        // parameters for anastomosis 
+        double input_val_anastomosislength = command_line->GetDoubleCorrespondingToOption("-anastomosislength");
+        double input_val_thresholdlength = command_line->GetDoubleCorrespondingToOption("-thresholdlength");;
+
+        // general parameters (time, random seed, output directory)
+        double input_val_time = command_line->GetDoubleCorrespondingToOption("-time"); 
+        double input_val_seed = command_line->GetIntCorrespondingToOption("-seed"); 
+        std::string output_directory = command_line->GetStringCorrespondingToOption("-output_directory");
+
+        ////////////
+        // MESHES // 
+        ////////////
+
+        // mesh for pdes 
+        double boundary_cuboid_min = 0.0;
+        double boundary_cuboid_max = 150.0;
+
+        // creation of the mesh for ABM
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, boundary_cuboid_max-0, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(1u, false, boundary_cuboid_max-1, boundary_cuboid_max/2));
+        nodes.push_back(new Node<2>(2u, false, boundary_cuboid_max-2, boundary_cuboid_max/2));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        ///////////
+        // CELLS // 
+        ///////////
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide, fully constrained 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        cell_population.Update(); // addition of this line compared to the sprouting test
+
+        // Writers 
+        cell_population.AddCellPopulationCountWriter<CellMutationStatesCountWriter>();
+        cell_population.AddCellWriter<CellMutationStatesWriter>();
+        cell_population.AddCellWriter<ConsecutiveBranchesWriter>();
+        cell_population.AddCellWriter<BranchNumberWriter>();
+        cell_population.AddCellWriter<BirthTimeCellWriter>();
+        cell_population.AddCellWriter<TortuosityWriter>();
+        cell_population.AddCellWriter<AnastomosisWriter>();
+
+        // fully constrain the first cell using the boundary condition 
+        unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
+        std::vector<unsigned> pinned_node_indices;
+        pinned_node_indices.push_back(node_index_tip_cell);
+        typedef PinnedCellsBoundaryCondition<2,2> PinnedCellsBoundaryCondition;
+        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
+
+        //////////////
+        // SETTINGS // 
+        //////////////
+
+        // set seed 
+        RandomNumberGenerator::Instance()->Reseed(input_val_seed);
+
+        // Set up simulation time for file output
+        OffLatticeSimulation<2> simulator(cell_population);
+        simulator.SetOutputDirectory(output_directory);
+        simulator.SetSamplingTimestepMultiple(120*13);
+        simulator.SetEndTime(input_val_time);
+        simulator.AddCellPopulationBoundaryCondition(p_boundary_condition);
+
+        /////////////////
+        // SIMULATION // 
+        ////////////////
+
+        // 1) SOLVE PDE 
+
+        // Create PDE and boundary condition objects
+        typedef VegfEquationCellPde<2> VegfEquationCellPde; 
+        typedef VegfBoundaryCondition<2> VegfBoundaryCondition;
+        MAKE_PTR_ARGS(VegfEquationCellPde, p_vegf_pde, (cell_population, input_val_vegf_dudtcoeff, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff));
+        MAKE_PTR_ARGS(VegfBoundaryCondition, p_vegf_bc, (input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, boundary_cuboid_min));
+
+        // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
+        ChastePoint<2> lower(boundary_cuboid_min, boundary_cuboid_min);
+        ChastePoint<2> upper(boundary_cuboid_max, boundary_cuboid_max);
+        MAKE_PTR_ARGS(ChasteCuboid<2>, p_cuboid, (lower, upper));
+
+        // Initial conditions
+        Vec initial_condition = nullptr;
+
+        // Create a PDE modifier and set the name of the dependent variable in the PDE
+        typedef MolecularConcentrationsGrowingDomainPdeModifier<2> MolecularConcentrationsGrowingDomainPdeModifier;
+        MAKE_PTR_ARGS(MolecularConcentrationsGrowingDomainPdeModifier, p_pde_modifier, (p_vegf_pde, p_vegf_bc, true, initial_condition, input_val_vegf_initialvalue, input_val_vegf_constantbackground));
+        p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
+        p_pde_modifier->SetOutputGradient(true);
+
+        simulator.AddSimulationModifier(p_pde_modifier);
+
+
+        // 2) UPDATING CELL POSITION 
+
+        // Random force (all cells)
+        typedef RandomForce<2> RandomForce;
+        MAKE_PTR_ARGS(RandomForce, p_random_force, (input_val_sigma));
+        simulator.AddForce(p_random_force);
+
+        // Chemotactic force (tip cells only) 
+        typedef ChemoForceWithPdes<2> ChemoForceWithPdes;
+        MAKE_PTR_ARGS(ChemoForceWithPdes, p_chemo_force, (input_val_chi, 1e-4, 1e-4, 1e-4, p_pde_modifier));
+        simulator.AddForce(p_chemo_force);
+
+        //Persistence force (tip cells only)
+        typedef PersistenceForce<2> PersistenceForce;
+        MAKE_PTR_ARGS(PersistenceForce, p_persistence_force, (input_val_omegap));
+        simulator.AddForce(p_persistence_force);
+
+        // Mechanical force (all cells)
+        typedef LinearMechanicalForceModified<2> LinearMechanicalForceModified;
+        MAKE_PTR(LinearMechanicalForceModified, p_mechanical_force);
+        cell_population.SetMeinekeDivisionSeparation(1.0);
+        p_mechanical_force->SetMeinekeSpringStiffness(15.0*input_val_S);
+        p_mechanical_force->SetMeinekeDivisionRestingSpringLength(1.0);
+        p_mechanical_force->SetMeinekeSpringGrowthDuration(1.0);
+        p_mechanical_force->SetCutOffLength(1.5);
+        simulator.AddForce(p_mechanical_force);
+
+        // Angular force (vessel segment only)
+        typedef AngularForce<2> AngularForce;
+        MAKE_PTR_ARGS(AngularForce, p_angular_force, (-input_val_omegaa)); 
+        simulator.AddForce(p_angular_force);
+
+        // 3) DIVISION OF CELLS 
+
+        // Set the division rule for our population to be the random direction division rule
+        typedef SproutingRuleWithPdes<2,2> SproutingRuleWithPdes;
+        MAKE_PTR_ARGS(SproutingRuleWithPdes, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, p_pde_modifier, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin));
+        
+        // Set the division rule for our population to be the new division rule implemented earlier 
+        cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
+
+        // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
+        typedef DaughterCellModifier<2> DaughterCellModifier;
+        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength, input_val_thresholdlength));
+        simulator.AddSimulationModifier(p_daughtercell_modifier);
+
+        typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
         MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
         simulator.AddSimulationModifier(p_persistenceforce_modifier);
 

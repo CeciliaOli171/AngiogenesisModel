@@ -18,7 +18,7 @@
 
 
 template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRatePdes, double thresholdLength, boost::shared_ptr<AbstractBoxDomainPdeModifier<SPACE_DIM> > pPdeModifier, double cMax, double cMin, double pMax, double pMin)
+SproutingRuleWithPdes<ELEMENT_DIM, SPACE_DIM>::SproutingRuleWithPdes(double MaxSproutingRatePdes, double thresholdLength, boost::shared_ptr<AbstractPdeModifier<SPACE_DIM> > pPdeModifier, double cMax, double cMin, double pMax, double pMin)
     : SproutingRule<ELEMENT_DIM, SPACE_DIM>(MaxSproutingRatePdes, thresholdLength), mMaxSproutingRatePdes(MaxSproutingRatePdes), mpPdeModifier(pPdeModifier), mCMax(cMax), mCMin(cMin), mPMax(pMax), mPMin(pMin)
 {
 }

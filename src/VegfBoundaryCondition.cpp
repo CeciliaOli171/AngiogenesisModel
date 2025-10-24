@@ -3,8 +3,8 @@
 #include "Debug.hpp"
 
 template<unsigned SPACE_DIM>
-VegfBoundaryCondition<SPACE_DIM>::VegfBoundaryCondition(const double sourceterm, double boundaryCuboidMax)
-    : mSourceTerm(sourceterm), mBoundaryCuboidMax(boundaryCuboidMax)
+VegfBoundaryCondition<SPACE_DIM>::VegfBoundaryCondition(const double sourceterm, double constantBackground, double boundaryCuboidMax)
+    : mSourceTerm(sourceterm), mConstantBackground(constantBackground), mBoundaryCuboidMax(boundaryCuboidMax)
 {
 }
 
@@ -16,15 +16,12 @@ double VegfBoundaryCondition<SPACE_DIM>::GetSourceTerm(){
 template<unsigned SPACE_DIM>
 double VegfBoundaryCondition<SPACE_DIM>::GetValue(const ChastePoint<SPACE_DIM>& rX) const
 {
-    // for each point, we check if it is located at the boundary of the domain (where the endometriotic lesion is) 
+    // for each point, we check if it is located inside the 
     // at this boundary, the vegf concentration is constant and equal to c0=mValue
     if(rX[0] == mBoundaryCuboidMax){
-        // periodic boundary condition:
-        // obtain time of simulation t
-        // mValue*sin(t) ? 
-        return mSourceTerm;
+        return -mSourceTerm;
     } else {
-        return 0.0;
+        return mConstantBackground;
     }
 }
 

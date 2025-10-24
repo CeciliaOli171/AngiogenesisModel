@@ -58,11 +58,11 @@
 //     double SetDynamicResistance();
 //     double CalculateResistance(Element<ELEMENT_DIM,SPACE_DIM>& rElement, bool usePedley, double flux); // to modify variables and name
 
-//     // calculates flux and pressure at boundary nodes (inlet, outlet and vessel tips)
+//     // calculates flux and pressure at boundary nodes (i.e. inlet, outlet and vessel tips)
 //     virtual void SetFluxAtBoundaryNode(const Node<SPACE_DIM>& rNode, double flux)=0;
 //     virtual void SetPressureAtBoundaryNode(const Node<SPACE_DIM>& rNode, double pressure)=0;
 
-//     // calculates flux and pressure at vessel tip
+//     // calculates flux and pressure at vessel tip (important for vessel recession or growth)
 //     void SetFluxAtVesselTipNode(const Node<SPACE_DIM>& rNode, double flux);
 //     void SetPressureAtVesselTipNode(const Node<SPACE_DIM>& rNode, double pressure);
 
@@ -80,6 +80,12 @@
 
 //     // function inspired by GetSolutionAsFluxesAndPressures to get fluxes and pressures ordered by edge index (virtual)
 //     virtual void GetSolutionAsFluxesAndPressures(std::vector<double>& rFluxesOnEdges, std::vector<double>& rPressuresOnNodes)=0;
+
+//     // calculates wall shear stresses and stores the results in a vector (virtual)
+//     virtual std::vector<double> GetSolutionAsWSS(std::vector<double>& rFluxesOnEdges, std::vector<double>& rPressuresOnNodes)=0;
+
+//     // access wall shear stress at a specific node? (from vector mSolution) + use pCell? (virtual)
+//     virtual double GetWSSAtNode(const Node<SPACE_DIM>& rNode)=0;
 
 //     // function solving the linear system inspired by SolveOverTime (check what flux balance at nodes and Poiseuille flow in the edges mean)
 //     // may need to change names 

@@ -77,54 +77,33 @@ double ChemoForce<DIM>::GetChemotacticGradientCoefficientZAxis()
 }
 
 template<unsigned DIM>
-c_vector<double, DIM>& ChemoForce<DIM>::GetGradient(unsigned node_index)
+c_vector<double, DIM>& ChemoForce<DIM>::GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index)
 {
-    return mGradients[node_index];
-}
+    c_vector<double, DIM> r_gradient_cell = zero_vector<double>(DIM);
 
-template<unsigned DIM>
-double ChemoForce<DIM>::GetMagnitudeGradient(unsigned node_index)
-{
-    return norm_2(GetGradient(node_index));
-}
-
-template<unsigned DIM>
-void ChemoForce<DIM>::CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPopulation)
-{
-    // Initialise gradients size
-    unsigned num_nodes = rCellPopulation.GetNumNodes();
-    mGradients.resize(num_nodes, zero_vector<double>(DIM));
-
-    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
-    {
-        if ((*cell_iter)->GetMutationState()->template IsType<VesselTipMutationState>())
-        {
-            unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
-
-            c_vector<double, DIM> r_gradient_cell = zero_vector<double>(DIM);
-
-            if(DIM == 3){
-                r_gradient_cell(0) = -mCX; 
-                r_gradient_cell(1) = -mCY; 
-                r_gradient_cell(2) = -mCZ; 
-            } else if (DIM == 2){
-                r_gradient_cell(0) = -mCX; 
-                r_gradient_cell(1) = -mCY; 
-            } else {
-                r_gradient_cell(0) = -mCX; 
-            }
-
-            mGradients[node_index] = r_gradient_cell;
-        }
+    if(DIM == 3){
+        r_gradient_cell(0) = -mCX-mHX; 
+        r_gradient_cell(1) = -mCY-mHY; 
+        r_gradient_cell(2) = -mCZ-mHZ; 
+    } else if (DIM == 2){
+        r_gradient_cell(0) = -mCX-mHX; 
+        r_gradient_cell(1) = -mCY-mHY; 
+    } else {
+        r_gradient_cell(0) = -mCX-mHX; 
     }
+
+    return r_gradient_cell;
+}
+
+template<unsigned DIM>
+double ChemoForce<DIM>::GetMagnitudeGradient(AbstractCellPopulation<DIM>& rCellPopulation,unsigned node_index)
+{
+    return norm_2(GetGradient(rCellPopulation, node_index));
 }
 
 template<unsigned DIM>
 void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPopulation)
-{
-    // we calculate the gradient of the solution of the vegf pde 
-    CalculateVegfGradient(rCellPopulation);
-    
+{    
     for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin();
          cell_iter != rCellPopulation.End();
          ++cell_iter)
@@ -137,19 +116,8 @@ void ChemoForce<DIM>::AddForceContribution(AbstractCellPopulation<DIM>& rCellPop
             unsigned node_index = rCellPopulation.GetLocationIndexUsingCell(*cell_iter);
 
             // we collect the gradient at the cell position 
-            c_vector<double, DIM> r_gradient_cell = GetGradient(node_index);
-            double magnitude_gradient_cell = GetMagnitudeGradient(node_index);
-
-            if(DIM == 3){
-                r_gradient_cell(0) = r_gradient_cell(0)-mHX; 
-                r_gradient_cell(1) = r_gradient_cell(1)-mHY; 
-                r_gradient_cell(2) = r_gradient_cell(2)-mHZ; 
-            } else if (DIM == 2){
-                r_gradient_cell(0) = r_gradient_cell(0)-mHX; 
-                r_gradient_cell(1) = r_gradient_cell(1)-mHY; 
-            } else {
-                r_gradient_cell(0) = r_gradient_cell(0)-mHX; 
-            }
+            c_vector<double, DIM> r_gradient_cell = GetGradient(rCellPopulation, node_index);
+            double magnitude_gradient_cell = GetMagnitudeGradient(rCellPopulation, node_index);
 
             // force += chi * gradC
             if(magnitude_gradient_cell != 0.0){

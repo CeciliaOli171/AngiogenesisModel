@@ -73,7 +73,7 @@
 
 #include "VegfEquationPde.hpp"
 #include "VegfBoundaryCondition.hpp"
-#include "MolecularConcentrationsDomainPdeModifier.hpp"
+#include "MolecularConcentrationsBoxDomainPdeModifier.hpp"
 
 class TestForcesModel : public AbstractCellBasedTestSuite //, AbstractCellBasedWithTimingsTestSuite
 {
@@ -270,7 +270,7 @@ public:
         TS_ASSERT_DELTA(diffusion_lower(0,0), 1.0, 1e-12);
         TS_ASSERT_DELTA(diffusion_vesseltip(0,0), 1.0, 1e-12);
 
-        VegfBoundaryCondition<1> vegfboundarycondition(0.1, 8);
+        VegfBoundaryCondition<1> vegfboundarycondition(0.1, 0.1, 8);
         TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.0, 1e-3);
         TS_ASSERT_DELTA(vegfboundarycondition.GetValue(vessel_tip), 0.1, 1e-3);
 
@@ -391,7 +391,7 @@ public:
         TS_ASSERT_DELTA(diffusion_vesseltip(0,1), 0, 1e-12);
         TS_ASSERT_DELTA(diffusion_vesseltip(1,0), 0, 1e-12);
 
-        VegfBoundaryCondition<2> vegfboundarycondition(0.1, 8);
+        VegfBoundaryCondition<2> vegfboundarycondition(0.1, 0.1, 8);
         TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.0, 1e-3);
         TS_ASSERT_DELTA(vegfboundarycondition.GetValue(vessel_tip), 0.1, 1e-3);
 
@@ -522,7 +522,7 @@ public:
         TS_ASSERT_DELTA(diffusion_vesseltip(2,0), 0, 1e-12);
         TS_ASSERT_DELTA(diffusion_vesseltip(2,1), 0, 1e-12);
 
-        VegfBoundaryCondition<3> vegfboundarycondition(0.1, 8);
+        VegfBoundaryCondition<3> vegfboundarycondition(0.1, 0.1, 8);
         TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.0, 1e-3);
         TS_ASSERT_DELTA(vegfboundarycondition.GetValue(vessel_tip), 0.1, 1e-3);
 
@@ -561,7 +561,7 @@ public:
         }
     }
 
-    void NoTestMolecularConcentrationsDomainPdeModifierIn1D() throw(Exception)
+    void NoTestMolecularConcentrationsBoxDomainPdeModifierIn1D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -612,10 +612,10 @@ public:
 
         // Create PDE and boundary condition objects
         MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.0));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 0.0));
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0, 1.0, 0.1));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0, 1.0, 0.1));
 
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumNodes(),11u);
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumBoundaryNodes(),2u);
@@ -652,7 +652,7 @@ public:
         {
             // Create PDE and boundary condition objects
             MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 8));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 8));
 
             // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
             ChastePoint<1> lower(0.0);
@@ -660,7 +660,7 @@ public:
             MAKE_PTR_ARGS(ChasteCuboid<1>, p_cuboid, (lower, upper));
 
             // Create a PDE modifier and set the name of the dependent variable in the PDE
-            MolecularConcentrationsDomainPdeModifier<1> modifier(p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0, 1.0, 0.1);
+            MolecularConcentrationsBoxDomainPdeModifier<1> modifier(p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0, 1.0, 0.1);
             modifier.SetDependentVariableName("vegf_femesh_variable");
             modifier.SetupInitialSolutionVector(cell_population);
             modifier.SetOutputGradient(true);
@@ -679,17 +679,17 @@ public:
             boost::archive::text_iarchive input_arch(ifs);
             input_arch >> p_modifier;
 
-            TS_ASSERT_EQUALS((static_cast<MolecularConcentrationsDomainPdeModifier<1>*>(p_modifier))->rGetDependentVariableName(), "vegf_femesh_variable");
-            TS_ASSERT_DELTA((static_cast<MolecularConcentrationsDomainPdeModifier<1>*>(p_modifier))->GetStepSize(), 1.0, 1e-5);
-            TS_ASSERT_EQUALS((static_cast<MolecularConcentrationsDomainPdeModifier<1>*>(p_modifier))->AreBcsSetOnBoxBoundary(), true);
+            TS_ASSERT_EQUALS((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->rGetDependentVariableName(), "vegf_femesh_variable");
+            TS_ASSERT_DELTA((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->GetStepSize(), 1.0, 1e-5);
+            TS_ASSERT_EQUALS((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->AreBcsSetOnBoxBoundary(), true);
 
             // comparison solution vector 
-            Vec solution = (static_cast<MolecularConcentrationsDomainPdeModifier<1>*>(p_modifier))->GetSolution();
+            Vec solution = (static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->GetSolution();
             ReplicatableVector solution_repl(solution);
             TS_ASSERT_EQUALS(solution_repl.GetSize(), 11u);
             for (unsigned i=0; i<11; i++)
             {
-                if((static_cast<MolecularConcentrationsDomainPdeModifier<1>*>(p_modifier))->mpFeMesh->GetNode(i)->rGetLocation()[0] == 0.0){
+                if((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->mpFeMesh->GetNode(i)->rGetLocation()[0] == 0.0){
                     TS_ASSERT_DELTA(solution_repl[i], 1.0, 1e-6); // source term
                 } else {
                     TS_ASSERT_DELTA(solution_repl[i], 0.1, 1e-6); // background
@@ -700,7 +700,7 @@ public:
         }
     }
 
-    void NoTestMolecularConcentrationsDomainPdeModifierIn2D() throw(Exception)
+    void NoTestMolecularConcentrationsBoxDomainPdeModifierIn2D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -753,10 +753,10 @@ public:
 
         // Create PDE and boundary condition objects
         MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 0.0));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 0.1, 0.0));
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr, 0.0, 1.0, 0.1));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr, 0.0, 1.0, 0.1));
 
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumNodes(),121u);
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumBoundaryNodes(),40u);
@@ -793,7 +793,7 @@ public:
         // {
         //     // Create PDE and boundary condition objects
         //     MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-        //     MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 8));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 0.1, 8));
 
         //     // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
         //     ChastePoint<2> lower(0.0, 0.0);
@@ -801,7 +801,7 @@ public:
         //     MAKE_PTR_ARGS(ChasteCuboid<2>, p_cuboid, (lower, upper));
 
         //     // Create a PDE modifier and set the name of the dependent variable in the PDE
-        //     MolecularConcentrationsDomainPdeModifier<2> modifier(p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0,0.1, 0.1);
+        //     MolecularConcentrationsBoxDomainPdeModifier<2> modifier(p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0,0.1, 0.1);
         //     modifier.SetDependentVariableName("vegf_femesh_variable");
 
         //     ArchiveOpener<boost::archive::text_oarchive, std::ofstream> arch_opener(archive_dir, archive_file);
@@ -824,7 +824,7 @@ public:
         // }
     }
 
-    void NoTestMolecularConcentrationsDomainPdeModifierIn3D() throw(Exception)
+    void NoTestMolecularConcentrationsBoxDomainPdeModifierIn3D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -879,10 +879,10 @@ public:
 
         // Create PDE and boundary condition objects
         MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 0.0));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 0.1, 0.0));
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr, 0.0, 1.0, 0.1));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr, 0.0, 1.0, 0.1));
 
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumNodes(),1331u);
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumBoundaryNodes(),602u);
@@ -919,7 +919,7 @@ public:
         // {
         //     // Create PDE and boundary condition objects
         //     MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-        //     MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 8));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 0.1, 8));
 
         //     // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
         //     ChastePoint<3> lower(0.0, 0.0, 0.0);
@@ -927,7 +927,7 @@ public:
         //     MAKE_PTR_ARGS(ChasteCuboid<3>, p_cuboid, (lower, upper));
 
         //     // Create a PDE modifier and set the name of the dependent variable in the PDE
-        //     MolecularConcentrationsDomainPdeModifier<3> modifier(p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0,0.1, 0.1);
+        //     MolecularConcentrationsBoxDomainPdeModifier<3> modifier(p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0,0.1, 0.1);
         //     modifier.SetDependentVariableName("vegf_femesh_variable");
 
         //     ArchiveOpener<boost::archive::text_oarchive, std::ofstream> arch_opener(archive_dir, archive_file);
@@ -1472,7 +1472,7 @@ public:
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force.arch";
         {
-            AbstractForce<1>* const p_force = new ChemoForce<1>(1e-4);
+            AbstractForce<1>* const p_force = new ChemoForce<1>(1e-4, 1e-4, 1e-4, 1e-4, 0.1, -0.1, 0.0);
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
 
@@ -1557,7 +1557,7 @@ public:
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force.arch";
         {
-            AbstractForce<2>* const p_force = new ChemoForce<2>(1e-4);
+            AbstractForce<2>* const p_force = new ChemoForce<2>(1e-4, 1e-4, 1e-4, 1e-4, 0.1, -0.1, 0.0);
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
 
@@ -1644,7 +1644,7 @@ public:
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force.arch";
         {
-            AbstractForce<3>* const p_force = new ChemoForce<3>(1e-4);
+            AbstractForce<3>* const p_force = new ChemoForce<3>(1e-4, 1e-4, 1e-4, 1e-4, 0.1, -0.1, 0.0);
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
 
@@ -1965,8 +1965,8 @@ public:
         }
 
         MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
         p_pde_modifier->SetupInitialSolutionVector(cell_population);
@@ -1992,8 +1992,8 @@ public:
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
         {
             MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0.1, 8));
+            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
 
             AbstractForce<1>* const p_force = new ChemoForceWithPdes<1>(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
             std::ofstream ofs(archive_filename.c_str());
@@ -2061,8 +2061,8 @@ public:
         }
 
         MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
         p_pde_modifier->SetupInitialSolutionVector(cell_population);
@@ -2088,8 +2088,8 @@ public:
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
         {
             MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 8));
+            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
 
             AbstractForce<2>* const p_force = new ChemoForceWithPdes<2>(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
             std::ofstream ofs(archive_filename.c_str());
@@ -2157,8 +2157,8 @@ public:
         }
 
         MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
         p_pde_modifier->SetupInitialSolutionVector(cell_population);
@@ -2184,8 +2184,8 @@ public:
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
         {
             MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 8));
+            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
 
             AbstractForce<3>* const p_force = new ChemoForceWithPdes<3>(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
             std::ofstream ofs(archive_filename.c_str());
@@ -4840,8 +4840,8 @@ public:
         MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
 
         // for sourceterm = 0.1
-        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc_vessel_segment, (0.1, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<1>, p_pde_modifier_vessel_segment, (p_pde, p_bc_vessel_segment, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc_vessel_segment, (0.1, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier_vessel_segment, (p_pde, p_bc_vessel_segment, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_vessel_segment->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_vessel_segment->SetOutputGradient(true);
         p_pde_modifier_vessel_segment->SetupInitialSolutionVector(cell_population);
@@ -4872,8 +4872,8 @@ public:
         {
             // Create PDE and boundary condition objects
             MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 8));
+            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
             SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.08, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
             std::ofstream ofs(archive_filename.c_str());
@@ -4985,8 +4985,8 @@ public:
         MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
 
         // for sourceterm = 1.0
-        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc_tip_cell, (1.0, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<1>, p_pde_modifier_tip_cell, (p_pde, p_bc_tip_cell, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc_tip_cell, (1.0, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier_tip_cell, (p_pde, p_bc_tip_cell, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_tip_cell->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_tip_cell->SetOutputGradient(true);
         p_pde_modifier_tip_cell->SetupInitialSolutionVector(cell_population);
@@ -5016,8 +5016,8 @@ public:
         {
             // Create PDE and boundary condition objects
             MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0.1, 8));
+            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
             SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
             std::ofstream ofs(archive_filename.c_str());
@@ -5129,8 +5129,8 @@ public:
         MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
 
         // for sourceterm = 0.1
-        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc_vessel_segment, (0.1, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<2>, p_pde_modifier_vessel_segment, (p_pde, p_bc_vessel_segment, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc_vessel_segment, (0.1, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier_vessel_segment, (p_pde, p_bc_vessel_segment, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_vessel_segment->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_vessel_segment->SetOutputGradient(true);
         p_pde_modifier_vessel_segment->SetupInitialSolutionVector(cell_population);
@@ -5163,8 +5163,8 @@ public:
         {
             // Create PDE and boundary condition objects
             MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 0.1, 8));
+            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
             SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.08, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
             std::ofstream ofs(archive_filename.c_str());
@@ -5278,8 +5278,8 @@ public:
         MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
 
         // for sourceterm = 1.0
-        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc_tip_cell, (1.0, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<2>, p_pde_modifier_tip_cell, (p_pde, p_bc_tip_cell, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc_tip_cell, (1.0, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier_tip_cell, (p_pde, p_bc_tip_cell, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_tip_cell->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_tip_cell->SetOutputGradient(true);
         p_pde_modifier_tip_cell->SetupInitialSolutionVector(cell_population);
@@ -5309,8 +5309,8 @@ public:
         {
             // Create PDE and boundary condition objects
             MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 8));
+            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
             SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1.0, 0.3, 0.98, 0.4);
 
             std::ofstream ofs(archive_filename.c_str());
@@ -5423,8 +5423,8 @@ public:
         MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
 
         // for sourceterm = 0.1
-        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc_vessel_segment, (0.1, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<3>, p_pde_modifier_vessel_segment, (p_pde, p_bc_vessel_segment, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc_vessel_segment, (0.1, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier_vessel_segment, (p_pde, p_bc_vessel_segment, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_vessel_segment->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_vessel_segment->SetOutputGradient(true);
         p_pde_modifier_vessel_segment->SetupInitialSolutionVector(cell_population);
@@ -5459,8 +5459,8 @@ public:
         {
             // Create PDE and boundary condition objects
             MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 0.1, 8));
+            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
             SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.08, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
             std::ofstream ofs(archive_filename.c_str());
@@ -5576,8 +5576,8 @@ public:
         MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
 
         // for sourceterm = 1.0
-        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc_tip_cell, (1.0, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<3>, p_pde_modifier_tip_cell, (p_pde, p_bc_tip_cell, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc_tip_cell, (1.0, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier_tip_cell, (p_pde, p_bc_tip_cell, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_tip_cell->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_tip_cell->SetOutputGradient(true);
         p_pde_modifier_tip_cell->SetupInitialSolutionVector(cell_population);
@@ -5607,8 +5607,8 @@ public:
         {
             // Create PDE and boundary condition objects
             MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+            MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 8));
+            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
             SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
             std::ofstream ofs(archive_filename.c_str());

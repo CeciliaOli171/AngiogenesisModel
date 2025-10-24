@@ -63,37 +63,6 @@ public:
      * Destructor.
      */
     ~ChemoForceWithConstantVegf();
-
-    /**
-     * Overridden GetGradient() method.
-     *
-     * Get the vegf gradient at a given node.
-     *
-     * @param node_index index of the node
-     *
-     * @return vegf gradient associates to node
-     */
-    c_vector<double, DIM>& GetGradient(unsigned node_index);
-
-    /**
-     * Overridden GetMagnitudeGradient() method.
-     *
-     * Get the magnitude of the gradient at a node position.
-     * 
-     * @param node_index index of the node
-     *
-     * @return the magnitude of gradient at the node
-     */
-    double GetMagnitudeGradient(unsigned node_index);
-
-    /**
-     * Overridden CalculateVegfGradient() method.
-     *
-     * Computes the gradient of the vegf concentration at the nodes.
-     *
-     * @param rCellPopulation reference to the cell population
-     */
-    void CalculateVegfGradient(AbstractCellPopulation<DIM>& rCellPopulation);
 };
 
 #include "SerializationExportWrapper.hpp"

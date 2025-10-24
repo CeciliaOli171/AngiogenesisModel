@@ -1,11 +1,12 @@
-#ifndef VEGFEQUATIONPDE_HPP_
-#define VEGFEQUATIONPDE_HPP_
+#ifndef VEGFEQUATIONCELLPDE_HPP_
+#define VEGFEQUATIONCELLPDE_HPP_
 
 #include "ChasteSerialization.hpp"
 #include <boost/serialization/base_object.hpp>
 
+#include "AbstractCellPopulation.hpp"
 #include "AbstractLinearParabolicPde.hpp"
-#include "AveragedSourceParabolicPde.hpp"
+#include "CellwiseSourceParabolicPde.hpp"
 
 /**
  * A parabolic reaction-diffusion PDE of vegf concentration to be solved numerically using the finite element method, 
@@ -18,15 +19,12 @@
  * mDiffusionCoefficient, mCreationCoefficient, mDecayCoefficient and mConsumptionCoefficient, respectively. 
  * Their values must be set in the constructor. The function n(x) denotes the local density of non-apoptotic cells. 
  *
- * This quantity is computed for each element of a 'coarse' finite element mesh that is
- * passed to the method SetupSourceTerms() and stored in the member mCellDensityOnCoarseElements.
- * For a point x, rho(x) is defined to be the number of non-apoptotic cells whose
- * centres lie in each finite element containing that point, scaled by the area of
- * that element.
+ * For a node of the finite element mesh with location x, the function rho(x)
+ * equals one if there is a vessel tip associated with x, and zero otherwise. 
  */
 
 template<unsigned DIM>
-class VegfEquationPde : public AveragedSourceParabolicPde<DIM>
+class VegfEquationCellPde : public CellwiseSourceParabolicPde<DIM>
 {
     friend class TestForcesModel;
 
@@ -38,7 +36,6 @@ private:
     double mDecayCoefficient;
     double mCreationCoefficient;
     double mConsumptionCoefficient;
-    std::vector<double> mCellDensityOnCoarseElements;
 
     /**
      * @return vegf rate of change term coefficient.
@@ -69,7 +66,7 @@ private:
     friend class boost::serialization::access;
 
     /**
-     * Serialize the object.
+     * Serialize the PDE and its member variables.
      *
      * @param archive the archive
      * @param version the current version of this class
@@ -83,10 +80,10 @@ private:
        archive & mDecayCoefficient;
        archive & mCreationCoefficient;
        archive & mConsumptionCoefficient;
-       archive & mCellDensityOnCoarseElements;
     }
 
 public:
+
     /**
      * Constructor.
      *
@@ -97,17 +94,7 @@ public:
      * @param creactionCoefficient rate of creation 
      * @param consumptionCoefficient rate of consumption by vessel tips
      */
-    VegfEquationPde(AbstractCellPopulation<DIM, DIM>& rCellPopulation, double duDtCoefficient=1.0, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01);
-
-    /**
-     * Overridden SetupSourceTerms() method. 
-     *
-     * Set up the source terms.
-     *
-     * @param rCoarseMesh reference to the coarse mesh
-     * @param pCellPdeElementMap optional pointer to the map from cells to coarse elements
-     */
-    void SetupSourceTerms(TetrahedralMesh<DIM,DIM>& rCoarseMesh, std::map<CellPtr, unsigned>* pCellPdeElementMap=nullptr);
+    VegfEquationCellPde(AbstractCellPopulation<DIM, DIM>& rCellPopulation, double duDtCoefficient=1.0, double diffusionCoefficient=1.0, double decayCoefficient=1.0, double creationCoefficient=0.1, double consumptionCoefficient=0.01);
 
     /**
      * Overridden ComputeDuDtCoefficientFunction() method.
@@ -121,9 +108,9 @@ public:
     double ComputeDuDtCoefficientFunction(const ChastePoint<DIM>& rX);
 
     /**
-     * Overridden ComputeSourceTerm() method.
+     * Overridden ComputeSourceTerm() method. 
      *
-     * Computes the creation, decay and consumption by vessel tips terms.
+     * Never called.
      *
      * @param rX the point in space at which the nonlinear source term is computed
      * @param u the value of the dependent variable at the point
@@ -134,9 +121,9 @@ public:
     double ComputeSourceTerm(const ChastePoint<DIM>& rX, double u, Element<DIM,DIM>* pElement=NULL);
 
     /**
-     * Overridden ComputeSourceTermAtNode() method. 
+     * Overridden ComputeSourceTermAtNode() method.
      *
-     * Never called.
+     * Computes the creation, decay and consumption by vessel tips terms.
      *
      * @param rNode the node at which the nonlinear source term is computed
      * @param u the value of the dependent variable at the node
@@ -159,33 +146,39 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(VegfEquationPde)
+EXPORT_TEMPLATE_CLASS_SAME_DIMS(VegfEquationCellPde)
 
 namespace boost
 {
 namespace serialization
 {
+/**
+ * Serialize information required to construct a VegfEquationCellPde.
+ */
 template<class Archive, unsigned DIM>
 inline void save_construct_data(
-    Archive & ar, const VegfEquationPde<DIM>* t, const unsigned int file_version)
+    Archive & ar, const VegfEquationCellPde<DIM>* t, const unsigned int file_version)
 {
     // Save data required to construct instance
     const AbstractCellPopulation<DIM, DIM>* p_cell_population = &(t->rGetCellPopulation());
     ar & p_cell_population;
 }
 
+/**
+ * De-serialize constructor parameters and initialise a VegfEquationCellPde.
+ */
 template<class Archive, unsigned DIM>
 inline void load_construct_data(
-    Archive & ar, VegfEquationPde<DIM>* t, const unsigned int file_version)
+    Archive & ar, VegfEquationCellPde<DIM>* t, const unsigned int file_version)
 {
     // Retrieve data from archive required to construct new instance
     AbstractCellPopulation<DIM, DIM>* p_cell_population;
     ar >> p_cell_population;
 
     // Invoke inplace constructor to initialise instance
-    ::new(t)AveragedSourceParabolicPde<DIM>(*p_cell_population);
+    ::new(t)VegfEquationCellPde<DIM>(*p_cell_population);
 }
 }
-} 
+} // namespace ...
 
-#endif /*VEGFEQUATIONPDE_HPP_*/
+#endif /*VEGFEQUATIONCELLPDE_HPP_*/
