@@ -107,7 +107,7 @@ public:
      *
      * @return vegf gradient associates to node
      */
-    virtual c_vector<double, DIM>& GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index);
+    virtual c_vector<double, DIM> GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index);
 
     /**
      * Get the magnitude of the gradient at a node position.

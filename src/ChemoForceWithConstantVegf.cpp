@@ -9,8 +9,8 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-ChemoForceWithConstantVegf<DIM>::ChemoForceWithConstantVegf(double chiConstantVegf, double hx, double constantBackground)
-    : ChemoForce<DIM>(chiConstantVegf, hx, 0.0, 0.0, 0.0, 0.0, 0.0), mChiConstantVegf(chiConstantVegf), mConstantBackground(constantBackground)
+ChemoForceWithConstantVegf<DIM>::ChemoForceWithConstantVegf(double chiConstantVegf, double hx)
+    : ChemoForce<DIM>(chiConstantVegf, hx, 0.0, 0.0, 0.0, 0.0, 0.0), mChiConstantVegf(chiConstantVegf)
 {
     assert(chiConstantVegf>0);
 }

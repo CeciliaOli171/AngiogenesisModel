@@ -89,8 +89,9 @@ double VegfEquationPde<DIM>::ComputeDuDtCoefficientFunction(const ChastePoint<DI
 template<unsigned DIM>
 double VegfEquationPde<DIM>::ComputeSourceTerm(const ChastePoint<DIM>& rX, double u, Element<DIM,DIM>* pElement)
 {
-    // assert(!mCellDensityOnCoarseElements.empty());
-    double coefficient = mCreationCoefficient - mDecayCoefficient - mConsumptionCoefficient * mCellDensityOnCoarseElements[pElement->GetIndex()];
+    assert(!mCellDensityOnCoarseElements.empty());
+    double coefficient = mCreationCoefficient - mDecayCoefficient;
+    //double coefficient = mCreationCoefficient - mDecayCoefficient - mConsumptionCoefficient * mCellDensityOnCoarseElements[pElement->GetIndex()];
 
     // The source term is C*u
     return coefficient*u;

@@ -27,8 +27,6 @@ class ChemoForceWithConstantVegf : public ChemoForce<DIM>
 private:
     /* parameters */
     double mChiConstantVegf;
-    double mConstantBackground;
-    std::vector<c_vector<double, DIM> > mGradientsVegfAnalyticalApproxPde;
 
     /* serialisation */
     friend class boost::serialization::access;
@@ -45,8 +43,6 @@ private:
     {
         archive & boost::serialization::base_object<AbstractForce<DIM> >(*this);
         archive & mChiConstantVegf;
-        archive & mConstantBackground;
-        archive & mGradientsVegfAnalyticalApproxPde;
     }
 
 public:
@@ -55,9 +51,8 @@ public:
      *
      * @param chiConstantVegf the chemotactic sensitivity in the case of a constant vegf concentration
      * @param hx the chemoattractant gradient factor in the x axis
-     * @param constantBackground the constant vegf concentration value present in the ECM
      */
-    ChemoForceWithConstantVegf(double chiConstantVegf = 1e-4, double hx=1e-4, double constantBackground = 0.1);
+    ChemoForceWithConstantVegf(double chiConstantVegf = 1e-4, double hx=1e-4);
 
     /**
      * Destructor.

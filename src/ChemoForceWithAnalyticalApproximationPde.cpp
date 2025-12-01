@@ -21,7 +21,7 @@ ChemoForceWithAnalyticalApproximationPde<DIM>::~ChemoForceWithAnalyticalApproxim
 }
 
 template<unsigned DIM>
-c_vector<double, DIM>& ChemoForceWithAnalyticalApproximationPde<DIM>::GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index)
+c_vector<double, DIM> ChemoForceWithAnalyticalApproximationPde<DIM>::GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index)
 {
     CellPtr pCell = rCellPopulation.GetCellUsingLocationIndex(node_index);
     c_vector<double, DIM> x_parent = rCellPopulation.GetLocationOfCellCentre(pCell);

@@ -77,7 +77,7 @@ double ChemoForce<DIM>::GetChemotacticGradientCoefficientZAxis()
 }
 
 template<unsigned DIM>
-c_vector<double, DIM>& ChemoForce<DIM>::GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index)
+c_vector<double, DIM> ChemoForce<DIM>::GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index)
 {
     c_vector<double, DIM> r_gradient_cell = zero_vector<double>(DIM);
 

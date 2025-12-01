@@ -33,9 +33,8 @@ class MolecularConcentrationsBoxDomainPdeModifier : public ParabolicBoxDomainPde
 
 private:
     /* parameters */
-    Vec mSolutionVegf;
-    double mBoundaryCuboidMax;
-    double mInitialValue;
+    double mSourceLocation;
+    double mSourceValue;
     double mConstantBackground;
 
     /* serialisation */
@@ -52,8 +51,8 @@ private:
     void serialize(Archive & archive, const unsigned int version)
     {
         archive & boost::serialization::base_object<AbstractBoxDomainPdeModifier<DIM> >(*this);
-        archive & mBoundaryCuboidMax;
-        archive & mInitialValue;
+        archive & mSourceLocation;
+        archive & mSourceValue;
         archive & mConstantBackground;
     }
 
@@ -67,25 +66,16 @@ public:
      * @param pMeshCuboid A shared pointer to a ChasteCuboid specifying the outer boundary for the FE mesh (defaults to NULL)
      * @param stepSize step size to be used in the FE mesh (defaults to 1.0, i.e. the default cell size)
      * @param solution solution vector (defaults to NULL)
-     * @param boundaryCuboidMax boundary max of the cuboid
-     * @param initialValue initial value of vegf concentration
+     * @param sourceLocation location of source inside lesion
+     * @param sourceValue value of vegf concentration at lesion source
      * @param constantBackground constant baseline of vegf concentration
      */
-    MolecularConcentrationsBoxDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(), boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(), bool isNeumannBoundaryCondition=false, boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid=boost::shared_ptr<ChasteCuboid<DIM> >(), double stepSize=1.0, Vec solution=nullptr, double boundaryCuboidMax=0.0, double initialValue=1.0, double constantBackground=0.1);
+    MolecularConcentrationsBoxDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(),boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(), bool isNeumannBoundaryCondition=true, boost::shared_ptr<ChasteCuboid<DIM> > pMeshCuboid=boost::shared_ptr<ChasteCuboid<DIM> >(), double stepSize=1.0, Vec solution=nullptr, double sourceLocation=0.0, double sourceValue=1.0, double constantBackground=0.1);
 
     /**
      * Destructor.
      */
     ~MolecularConcentrationsBoxDomainPdeModifier();
-
-    /**
-     * Overridden UpdateAtEndOfTimeStep() method.
-     *
-     * Specifies what to do in the simulation at the end of each time step.
-     *
-     * @param rCellPopulation reference to the cell population
-     */
-    void UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
     /**
      * Overridden SetupSolve() method.
@@ -109,15 +99,13 @@ public:
     std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > ConstructBoundaryConditionsContainer(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 
     /**
-     * Overriden SetupInitialSolutionVector() method.
-     *
      * Helper method to initialise the PDE solution using the CellData.
      *
-     * Here we assume a homogeneous initial consition.
+     * Here we assume for the initial condition that the 
      *
      * @param rCellPopulation reference to the cell population
      */
-    void SetupInitialSolutionVector(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
+    void SetupInitialSolutionVectorVEGF(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 };
 
 #include "SerializationExportWrapper.hpp"
@@ -152,12 +140,7 @@ inline void load_construct_data(
         PetscTools::ReadPetscObject(solution, archive_filename);
     }
 
-    ::new(t)MolecularConcentrationsBoxDomainPdeModifier<DIM>(boost::shared_ptr<AbstractLinearPde<DIM, DIM> >(),
-                                               boost::shared_ptr<AbstractBoundaryCondition<DIM> >(),
-                                               false,
-                                               boost::shared_ptr<ChasteCuboid<DIM> >(),
-                                               1.0,
-                                               solution, 0.0, 1.0, 0.1);
+    ::new(t)MolecularConcentrationsBoxDomainPdeModifier<DIM>(boost::shared_ptr<AbstractLinearPde<DIM, DIM> >(),boost::shared_ptr<AbstractBoundaryCondition<DIM> >(), true, boost::shared_ptr<ChasteCuboid<DIM> >(), 1.0, solution, 0.0, 1.0, 0.1);
 }
 }
 } 

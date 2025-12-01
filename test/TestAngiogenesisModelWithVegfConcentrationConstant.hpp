@@ -242,7 +242,7 @@ public:
 
         // Chemotactic force (tip cells only) 
         typedef ChemoForceWithConstantVegf<2> ChemoForceWithConstantVegf;
-        MAKE_PTR_ARGS(ChemoForceWithConstantVegf, p_chemo_force, (input_val_chi, 1e-4,  input_val_vegf_constantbackground)); 
+        MAKE_PTR_ARGS(ChemoForceWithConstantVegf, p_chemo_force, (input_val_chi, 1e-4)); 
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
@@ -425,7 +425,7 @@ public:
 
         // Chemotactic force (tip cells only) 
         typedef ChemoForceWithConstantVegf<3> ChemoForceWithConstantVegf;
-        MAKE_PTR_ARGS(ChemoForceWithConstantVegf, p_chemo_force, (input_val_chi, 1e-4,  input_val_vegf_constantbackground));
+        MAKE_PTR_ARGS(ChemoForceWithConstantVegf, p_chemo_force, (input_val_chi, 1e-4));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)

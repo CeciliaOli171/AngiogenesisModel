@@ -9,7 +9,7 @@
 #include "Debug.hpp"
 
 template<unsigned DIM>
-MolecularConcentrationsGrowingDomainPdeModifier<DIM>::MolecularConcentrationsGrowingDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde, boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition, bool isNeumannBoundaryCondition, Vec solution, double initialValue, double constantBackground): ParabolicGrowingDomainPdeModifier<DIM>(pPde, pBoundaryCondition, isNeumannBoundaryCondition, solution), mInitialValue(initialValue), mConstantBackground(constantBackground)
+MolecularConcentrationsGrowingDomainPdeModifier<DIM>::MolecularConcentrationsGrowingDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde, boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition, bool isNeumannBoundaryCondition, Vec solution, double constantBackground): ParabolicGrowingDomainPdeModifier<DIM>(pPde, pBoundaryCondition, isNeumannBoundaryCondition, solution), mConstantBackground(constantBackground)
 {
 }
 
@@ -28,7 +28,7 @@ void MolecularConcentrationsGrowingDomainPdeModifier<DIM>::UpdateAtEndOfTimeStep
     std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > p_bcc = ConstructBoundaryConditionsContainer();
 
     // Construct the solution vector from cell data (takes care of cells dividing);
-    ParabolicGrowingDomainPdeModifier<DIM>::UpdateSolutionVector(rCellPopulation);
+    UpdateSolutionVectorVEGF(rCellPopulation);
 
     // Use CellBasedParabolicPdeSolver as cell wise PDE
     CellBasedParabolicPdeSolver<DIM> solver(this->mpFeMesh, boost::static_pointer_cast<AbstractLinearParabolicPde<DIM,DIM> >(this->mpPde).get(), p_bcc.get());
@@ -65,7 +65,7 @@ void MolecularConcentrationsGrowingDomainPdeModifier<DIM>::SetupSolve(AbstractCe
     this->GenerateFeMesh(rCellPopulation);
 
     // Copy the cell data to mSolution (this is the initial condition)
-    ParabolicGrowingDomainPdeModifier<DIM>::UpdateSolutionVector(rCellPopulation);
+    UpdateSolutionVectorVEGF(rCellPopulation);
 
     // Output the initial conditions on FeMesh
     this->UpdateAtEndOfOutputTimeStep(rCellPopulation);
@@ -84,6 +84,58 @@ std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > MolecularConcentrations
 
     return p_bcc;
 }
+
+template<unsigned DIM>
+void MolecularConcentrationsGrowingDomainPdeModifier<DIM>::UpdateSolutionVectorVEGF(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
+{
+    // Clear (if it's not the first time) and resize the solution vector
+    if (this->mSolution)
+    {
+        PetscTools::Destroy(this->mSolution);
+    }
+    this->mSolution = PetscTools::CreateAndSetVec(this->mpFeMesh->GetNumNodes(), mConstantBackground);
+
+    std::string& variable_name = this->mDependentVariableName;
+
+    for (typename TetrahedralMesh<DIM,DIM>::NodeIterator node_iter = this->mpFeMesh->GetNodeIteratorBegin();
+         node_iter != this->mpFeMesh->GetNodeIteratorEnd();
+         ++node_iter)
+    {
+        // Loop over nodes of the finite element mesh and get appropriate solution values from CellData
+        for (typename TetrahedralMesh<DIM,DIM>::NodeIterator node_iter = this->mpFeMesh->GetNodeIteratorBegin();
+             node_iter != this->mpFeMesh->GetNodeIteratorEnd();
+             ++node_iter)
+        {
+            unsigned node_index = node_iter->GetIndex();
+            bool dirichlet_bc_applies = (node_iter->IsBoundaryNode()) && (!(this->IsNeumannBoundaryCondition()));
+            double boundary_value = this->GetBoundaryCondition()->GetValue(node_iter->rGetLocation());
+
+            double solution_at_node = rCellPopulation.GetCellDataItemAtPdeNode(node_index, variable_name, dirichlet_bc_applies, boundary_value);
+
+            PetscVecTools::SetElement(this->mSolution, node_index, solution_at_node);
+        }
+    }
+}
+
+template<unsigned DIM>
+void MolecularConcentrationsGrowingDomainPdeModifier<DIM>::SetInitialCellDataVEGF(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
+{
+    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin(); cell_iter != rCellPopulation.End(); ++cell_iter)
+    {
+        cell_iter->GetCellData()->SetItem(this->mDependentVariableName, mConstantBackground);
+    }
+}
+
+// template<unsigned DIM>
+// void MolecularConcentrationsGrowingDomainPdeModifier<DIM>::GenerateFeMeshAngiogenesis(AbstractCellPopulation<DIM,DIM>& rCellPopulation){
+//     // initialisation of new cell population 
+//     AbstractCellPopulation<DIM,DIM>& rCellPopulationAngiogenesis;
+
+//     // finding the nodes with min and max coordinates : only considerate the new cells and store the old mesh
+
+
+//     this->GenerateFeMesh(rCellPopulationAngiogenesis);
+// }
 
 // Explicit instantiation
 template class MolecularConcentrationsGrowingDomainPdeModifier<1>;

@@ -30,7 +30,6 @@ class MolecularConcentrationsGrowingDomainPdeModifier : public ParabolicGrowingD
 
 private:
     /* parameters */
-    double mInitialValue;
     double mConstantBackground;
 
     /* serialisation */
@@ -47,7 +46,6 @@ private:
     void serialize(Archive & archive, const unsigned int version)
     {
         archive & boost::serialization::base_object<AbstractGrowingDomainPdeModifier<DIM> >(*this);
-        archive & mInitialValue;
         archive & mConstantBackground;
     }
 
@@ -63,7 +61,7 @@ public:
      * @param initialValue initial value of vegf concentration
      * @param constantBackground constant baseline of vegf concentration
      */
-    MolecularConcentrationsGrowingDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(), boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(), bool isNeumannBoundaryCondition=true, Vec solution=nullptr, double initialValue=1.0, double constantBackground=0.1);
+    MolecularConcentrationsGrowingDomainPdeModifier(boost::shared_ptr<AbstractLinearPde<DIM,DIM> > pPde=boost::shared_ptr<AbstractLinearPde<DIM,DIM> >(), boost::shared_ptr<AbstractBoundaryCondition<DIM> > pBoundaryCondition=boost::shared_ptr<AbstractBoundaryCondition<DIM> >(), bool isNeumannBoundaryCondition=true, Vec solution=nullptr, double constantBackground=0.1);
 
     /**
      * Destructor.
@@ -95,6 +93,22 @@ public:
      * @return the full boundary conditions container
      */ 
     std::shared_ptr<BoundaryConditionsContainer<DIM,DIM,1> > ConstructBoundaryConditionsContainer();
+
+    /**
+     * Helper method to copy the CellData to the PDE solution.
+     *
+     * @param rCellPopulation reference to the cell population
+     */
+    void UpdateSolutionVectorVEGF(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
+
+    /**
+     * Helper method to initialise the CellData for VEGF concentration.
+     *
+     * @param rCellPopulation reference to the cell population
+     */
+    void SetInitialCellDataVEGF(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
+
+    // void GenerateFeMeshAngiogenesis(AbstractCellPopulation<DIM,DIM>& rCellPopulation);
 };
 
 #include "SerializationExportWrapper.hpp"

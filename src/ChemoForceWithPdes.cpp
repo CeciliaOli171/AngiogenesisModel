@@ -21,7 +21,7 @@ ChemoForceWithPdes<DIM>::~ChemoForceWithPdes()
 }
 
 template<unsigned DIM>
-c_vector<double, DIM>& ChemoForceWithPdes<DIM>::GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index)
+c_vector<double, DIM> ChemoForceWithPdes<DIM>::GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index)
 {
     TetrahedralMesh<DIM,DIM>* r_mesh = mpPdeModifier->GetFeMesh();
     ReplicatableVector previous_solution(mpPdeModifier->GetSolution());

@@ -239,12 +239,10 @@ public:
         // 1) SOLVE PDE 
 
         // Create PDE and boundary condition objects
-        TRACE("test vegf equation pde and boundary condition")
         typedef VegfEquationPde<2> VegfEquationPde; 
         typedef VegfBoundaryCondition<2> VegfBoundaryCondition;
         MAKE_PTR_ARGS(VegfEquationPde, p_vegf_pde, (cell_population, input_val_vegf_dudtcoeff, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff));
         MAKE_PTR_ARGS(VegfBoundaryCondition, p_vegf_bc, (input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, boundary_cuboid_min));
-        TRACE("test vegf equation pde and boundary condition PASSED")
 
         // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
         ChastePoint<2> lower(boundary_cuboid_min, boundary_cuboid_min);
@@ -255,17 +253,14 @@ public:
         Vec initial_condition = nullptr;
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        TRACE("Test box domain pde modifier")
         typedef MolecularConcentrationsBoxDomainPdeModifier<2> MolecularConcentrationsBoxDomainPdeModifier;
-        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier, p_pde_modifier, (p_vegf_pde, p_vegf_bc, true, p_cuboid, 2.0, initial_condition, boundary_cuboid_min, input_val_vegf_initialvalue, input_val_vegf_constantbackground));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier, p_pde_modifier, (p_vegf_pde, p_vegf_bc, true, p_cuboid, 2.0, initial_condition, boundary_cuboid_min, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(false);
 
         simulator.AddSimulationModifier(p_pde_modifier);
-        TRACE("Test box domain pde modifier PASSED")
 
         // 2) UPDATING CELL POSITION 
-        TRACE("Test forces")
 
         // Random force (all cells)
         typedef RandomForce<2> RandomForce;
@@ -297,10 +292,7 @@ public:
         MAKE_PTR_ARGS(AngularForce, p_angular_force, (-input_val_omegaa)); 
         simulator.AddForce(p_angular_force);
 
-        TRACE("Test forces PASSED")
-
         // 3) DIVISION OF CELLS 
-        TRACE("Test sprouting rule")
 
         // Set the division rule for our population to be the random direction division rule
         typedef SproutingRuleWithPdes<2,2> SproutingRuleWithPdes;
@@ -308,9 +300,7 @@ public:
         
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
-        TRACE("Test sprouting rule PASSED")
 
-        TRACE("Test modifiers")
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
         typedef DaughterCellModifier<2> DaughterCellModifier;
         MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength, input_val_thresholdlength));
@@ -319,15 +309,10 @@ public:
         typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
         MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
         simulator.AddSimulationModifier(p_persistenceforce_modifier);
-        TRACE("Test modifiers PASSED")
 
-        TRACE("Test update")
         cell_population.Update();
-        TRACE("Test update passed")
 
-        TRACE("Test solve")
         simulator.Solve();
-        TRACE("Test solve PASSED")
 
         // Output run time data
         CellBasedEventHandler::Headings();
@@ -686,7 +671,7 @@ public:
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
         typedef MolecularConcentrationsGrowingDomainPdeModifier<2> MolecularConcentrationsGrowingDomainPdeModifier;
-        MAKE_PTR_ARGS(MolecularConcentrationsGrowingDomainPdeModifier, p_pde_modifier, (p_vegf_pde, p_vegf_bc, true, initial_condition, input_val_vegf_initialvalue, input_val_vegf_constantbackground));
+        MAKE_PTR_ARGS(MolecularConcentrationsGrowingDomainPdeModifier, p_pde_modifier, (p_vegf_pde, p_vegf_bc, true, initial_condition, input_val_vegf_constantbackground));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
 

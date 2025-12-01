@@ -3,8 +3,8 @@
 #include "Debug.hpp"
 
 template<unsigned SPACE_DIM>
-VegfBoundaryCondition<SPACE_DIM>::VegfBoundaryCondition(const double sourceterm, double constantBackground, double boundaryCuboidMax)
-    : mSourceTerm(sourceterm), mConstantBackground(constantBackground), mBoundaryCuboidMax(boundaryCuboidMax)
+VegfBoundaryCondition<SPACE_DIM>::VegfBoundaryCondition(const double sourceterm, double constantBackground, double boundaryCuboidMin)
+    : mSourceTerm(sourceterm), mConstantBackground(constantBackground), mBoundaryCuboidMin(boundaryCuboidMin)
 {
 }
 
@@ -18,8 +18,8 @@ double VegfBoundaryCondition<SPACE_DIM>::GetValue(const ChastePoint<SPACE_DIM>& 
 {
     // for each point, we check if it is located inside the 
     // at this boundary, the vegf concentration is constant and equal to c0=mValue
-    if(rX[0] == mBoundaryCuboidMax){
-        return -mSourceTerm;
+    if(rX[0] == mBoundaryCuboidMin){
+        return mSourceTerm;
     } else {
         return mConstantBackground;
     }

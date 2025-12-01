@@ -91,7 +91,7 @@ public:
      *
      * @return vegf gradient associates to node
      */
-    c_vector<double, DIM>& GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index);
+    c_vector<double, DIM> GetGradient(AbstractCellPopulation<DIM>& rCellPopulation, unsigned node_index);
 };
 
 #include "SerializationExportWrapper.hpp"

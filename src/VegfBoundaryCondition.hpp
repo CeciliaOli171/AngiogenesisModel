@@ -18,7 +18,7 @@ private:
     /* parameters */
     double mSourceTerm;
     double mConstantBackground;
-    double mBoundaryCuboidMax;
+    double mBoundaryCuboidMin;
 
     /**
      * @return source term.
@@ -44,10 +44,10 @@ public:
     /**
      * Constructor.
      *
-     * @param sourceterm vegf source term
-     * @param boundaryCuboidMax boundary max of cuboid
+     * @param sourceterm vegf source term 
+     * @param boundaryCuboidMin boundary min of cuboid (location of vegf source inside lesion)
      */
-    VegfBoundaryCondition(const double sourceterm=0.5, double constantBackground=0.1, double boundaryCuboidMax=10);
+    VegfBoundaryCondition(const double sourceterm=0.5, double constantBackground=0.1, double boundaryCuboidMin=10);
 
     /**
      * Overridden GetValue() method.

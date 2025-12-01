@@ -44,6 +44,8 @@
 //     // destructor: destroy linear system (important to not forget)
 //     ~BloodFlowAngiogenesis();
 
+//     // (in angiogenesis subclass constant resistance, add new subclass for varying resistance): based on radius, length and viscosity
+
 //     // calculates flux and pressure at boundary nodes: use pCell instead of Node?
 //     void SetFluxAtBoundaryNode(const Node<SPACE_DIM>& rNode, double flux);
 //     void SetPressureAtBoundaryNode(const Node<SPACE_DIM>& rNode, double pressure);

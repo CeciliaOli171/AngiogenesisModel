@@ -26,6 +26,7 @@
 #include "AbstractBoxDomainPdeModifier.hpp"
 #include "AnastomosisWriter.hpp"
 #include "AveragedSourceParabolicPde.hpp"
+#include "Node.hpp"
 #include "Cell.hpp"
 #include "CellBasedEventHandler.hpp"
 #include "CellData.hpp"
@@ -72,8 +73,10 @@
 #include "VesselSegmentMutationState.hpp"
 
 #include "VegfEquationPde.hpp"
+#include "VegfEquationCellPde.hpp"
 #include "VegfBoundaryCondition.hpp"
 #include "MolecularConcentrationsBoxDomainPdeModifier.hpp"
+#include "MolecularConcentrationsGrowingDomainPdeModifier.hpp"
 
 class TestForcesModel : public AbstractCellBasedTestSuite //, AbstractCellBasedWithTimingsTestSuite
 {
@@ -194,7 +197,7 @@ public:
         }
     }
 
-    void NoTestVegfEquationPdeIn1D()
+    void TestVegfEquationPdeIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -271,7 +274,7 @@ public:
         TS_ASSERT_DELTA(diffusion_vesseltip(0,0), 1.0, 1e-12);
 
         VegfBoundaryCondition<1> vegfboundarycondition(0.1, 0.1, 8);
-        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.0, 1e-3);
+        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.1, 1e-3);
         TS_ASSERT_DELTA(vegfboundarycondition.GetValue(vessel_tip), 0.1, 1e-3);
 
         // archive test
@@ -309,7 +312,7 @@ public:
         }
     }
 
-    void NoTestVegfEquationPdeIn2D()
+    void TestVegfEquationPdeIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -392,7 +395,7 @@ public:
         TS_ASSERT_DELTA(diffusion_vesseltip(1,0), 0, 1e-12);
 
         VegfBoundaryCondition<2> vegfboundarycondition(0.1, 0.1, 8);
-        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.0, 1e-3);
+        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.1, 1e-3);
         TS_ASSERT_DELTA(vegfboundarycondition.GetValue(vessel_tip), 0.1, 1e-3);
 
         // archive test
@@ -430,7 +433,7 @@ public:
         }
     }
 
-    void NoTestVegfEquationPdeIn3D()
+    void TestVegfEquationPdeIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -523,7 +526,7 @@ public:
         TS_ASSERT_DELTA(diffusion_vesseltip(2,1), 0, 1e-12);
 
         VegfBoundaryCondition<3> vegfboundarycondition(0.1, 0.1, 8);
-        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.0, 1e-3);
+        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.1, 1e-3);
         TS_ASSERT_DELTA(vegfboundarycondition.GetValue(vessel_tip), 0.1, 1e-3);
 
         // archive test
@@ -561,7 +564,326 @@ public:
         }
     }
 
-    void NoTestMolecularConcentrationsBoxDomainPdeModifierIn1D() throw(Exception)
+    void TestVegfEquationCellPdeIn1D()
+    {
+        // creation of the mesh
+        std::vector<Node<1>*> nodes;
+        nodes.push_back(new Node<1>(0u, false, 10));
+        nodes.push_back(new Node<1>(1u, false, 9));
+        nodes.push_back(new Node<1>(2u, false, 8));
+
+        NodesOnlyMesh<1> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 1> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<1> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // Chaste points corresponding to the vessel tip and a random point 
+        ChastePoint<1> lower(0.0);
+        ChastePoint<1> vessel_tip(8.0);
+        double u = 1.0;
+
+        VegfEquationCellPde<1> vegfpde(cell_population, 1.0, 1.0, 1.0, 0.1, 0.01);
+
+        TS_ASSERT_DELTA(vegfpde.ComputeSourceTermAtNode(*nodes[0], u), -0.9, 1e-4);
+        TS_ASSERT_DELTA(vegfpde.ComputeSourceTermAtNode(*nodes[2], u), -0.91, 1e-12);
+
+        TS_ASSERT_DELTA(vegfpde.ComputeDuDtCoefficientFunction(lower), 1.0, 1e-12);
+        TS_ASSERT_DELTA(vegfpde.ComputeDuDtCoefficientFunction(vessel_tip), 1.0, 1e-12);
+
+        c_matrix<double, 1, 1> diffusion_lower = vegfpde.ComputeDiffusionTerm(lower);
+        c_matrix<double, 1, 1> diffusion_vesseltip = vegfpde.ComputeDiffusionTerm(vessel_tip);
+
+        TS_ASSERT_DELTA(diffusion_lower(0,0), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(0,0), 1.0, 1e-12);
+
+        VegfBoundaryCondition<1> vegfboundarycondition(0.1, 0.1, 8);
+        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.1, 1e-3);
+        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(vessel_tip), 0.1, 1e-3);
+
+        // archive test
+        FileFinder archive_dir("archive", RelativeTo::ChasteTestOutput);
+        std::string archive_file = "vegfequationcellpde.arch";
+        {
+            // Create a PDE object and the boundary condition 
+            AbstractLinearParabolicPde<1,1>* const p_vegfpde = new VegfEquationCellPde<1>(cell_population, 1.0, 1.0, 1.0, 0.1, 0.01);
+
+            ArchiveOpener<boost::archive::text_oarchive, std::ofstream> arch_opener(archive_dir, archive_file);
+            boost::archive::text_oarchive* output_arch = arch_opener.GetCommonArchive();
+            (*output_arch) << p_vegfpde;
+
+            delete p_vegfpde;
+        }
+        {
+            AbstractLinearParabolicPde<1,1>* p_vegfpde;
+
+            ArchiveOpener<boost::archive::text_iarchive, std::ifstream> arch_opener(archive_dir, archive_file);
+            boost::archive::text_iarchive* input_arch = arch_opener.GetCommonArchive();
+            (*input_arch) >> p_vegfpde;
+
+            // Test that the PDE and its member variables were archived correctly
+            TS_ASSERT(static_cast<VegfEquationCellPde<1>*>(p_vegfpde) != NULL);
+
+            VegfEquationCellPde<1>* p_static_cast_vegfpde = static_cast<VegfEquationCellPde<1>*>(p_vegfpde);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetDuDtCoefficient(),1.0);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetDiffusionCoefficient(),1.0);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetDecayCoefficient(),1.0);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetCreationCoefficient(),0.1);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetConsumptionCoefficient(),0.01);
+
+            // Avoid memory leaks
+            delete p_vegfpde;
+        }
+    }
+
+    void TestVegfEquationCellPdeIn2D()
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 5));
+        nodes.push_back(new Node<2>(1u, false, 9, 5));
+        nodes.push_back(new Node<2>(2u, false, 8, 5));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // Chaste points corresponding to the vessel tip and a random point 
+        ChastePoint<2> lower(0.0, 0.0);
+        ChastePoint<2> vessel_tip(8.0, 1.0);
+        double u = 1.0;
+
+        VegfEquationCellPde<2> vegfpde(cell_population, 1.0, 1.0, 1.0, 0.1, 0.01);
+
+        TS_ASSERT_DELTA(vegfpde.ComputeSourceTermAtNode(*nodes[0], u), -0.9, 1e-3);
+        TS_ASSERT_DELTA(vegfpde.ComputeSourceTermAtNode(*nodes[2], u), -0.91, 1e-3);
+
+        TS_ASSERT_DELTA(vegfpde.ComputeDuDtCoefficientFunction(lower), 1.0, 1e-12);
+        TS_ASSERT_DELTA(vegfpde.ComputeDuDtCoefficientFunction(vessel_tip), 1.0, 1e-12);
+
+        c_matrix<double, 2, 2> diffusion_lower = vegfpde.ComputeDiffusionTerm(lower);
+        c_matrix<double, 2, 2> diffusion_vesseltip = vegfpde.ComputeDiffusionTerm(vessel_tip);
+
+        TS_ASSERT_DELTA(diffusion_lower(0,0), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(1,1), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(0,1), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(1,0), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(0,0), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(1,1), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(0,1), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(1,0), 0, 1e-12);
+
+        VegfBoundaryCondition<2> vegfboundarycondition(0.1, 0.1, 8);
+        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.1, 1e-3);
+        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(vessel_tip), 0.1, 1e-3);
+
+        // archive test
+        FileFinder archive_dir("archive", RelativeTo::ChasteTestOutput);
+        std::string archive_file = "vegfequationcellpde.arch";
+        {
+            // Create a PDE object and the boundary condition 
+            AbstractLinearParabolicPde<2,2>* const p_vegfpde = new VegfEquationCellPde<2>(cell_population, 1.0, 1.0, 1.0, 0.1, 0.01);
+
+            ArchiveOpener<boost::archive::text_oarchive, std::ofstream> arch_opener(archive_dir, archive_file);
+            boost::archive::text_oarchive* output_arch = arch_opener.GetCommonArchive();
+            (*output_arch) << p_vegfpde;
+
+            delete p_vegfpde;
+        }
+        {
+            AbstractLinearParabolicPde<2,2>* p_vegfpde;
+
+            ArchiveOpener<boost::archive::text_iarchive, std::ifstream> arch_opener(archive_dir, archive_file);
+            boost::archive::text_iarchive* input_arch = arch_opener.GetCommonArchive();
+            (*input_arch) >> p_vegfpde;
+
+            // Test that the PDE and its member variables were archived correctly
+            TS_ASSERT(static_cast<VegfEquationCellPde<2>*>(p_vegfpde) != NULL);
+
+            VegfEquationCellPde<2>* p_static_cast_vegfpde = static_cast<VegfEquationCellPde<2>*>(p_vegfpde);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetDuDtCoefficient(),1.0);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetDiffusionCoefficient(),1.0);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetDecayCoefficient(),1.0);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetCreationCoefficient(),0.1);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetConsumptionCoefficient(),0.01);
+
+            // Avoid memory leaks
+            delete p_vegfpde;
+        }
+    }
+
+    void TestVegfEquationCellPdeIn3D()
+    {
+        // creation of the mesh
+        std::vector<Node<3>*> nodes;
+        nodes.push_back(new Node<3>(0u, false, 10, 5, 5));
+        nodes.push_back(new Node<3>(1u, false, 9, 5, 5));
+        nodes.push_back(new Node<3>(2u, false, 8, 5, 5));
+
+        NodesOnlyMesh<3> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 3> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<3> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // Chaste points corresponding to the vessel tip and a random point 
+        ChastePoint<3> lower(0.0, 0.0, 0.0);
+        ChastePoint<3> vessel_tip(8.0, 0.0, 0.0);
+        double u = 1.0;
+
+        VegfEquationCellPde<3> vegfpde(cell_population, 1.0, 1.0, 1.0, 0.1, 0.01);
+
+        TS_ASSERT_DELTA(vegfpde.ComputeSourceTermAtNode(*nodes[0], u), -0.9, 1e-4);
+        TS_ASSERT_DELTA(vegfpde.ComputeSourceTermAtNode(*nodes[2], u), -0.91, 1e-2);
+
+        TS_ASSERT_DELTA(vegfpde.ComputeDuDtCoefficientFunction(lower), 1.0, 1e-12);
+        TS_ASSERT_DELTA(vegfpde.ComputeDuDtCoefficientFunction(vessel_tip), 1.0, 1e-12);
+
+        c_matrix<double, 3, 3> diffusion_lower = vegfpde.ComputeDiffusionTerm(lower);
+        c_matrix<double, 3, 3> diffusion_vesseltip = vegfpde.ComputeDiffusionTerm(vessel_tip);
+
+        TS_ASSERT_DELTA(diffusion_lower(0,0), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(1,1), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(2,2), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(0,1), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(0,2), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(1,0), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(1,2), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(2,0), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_lower(2,1), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(0,0), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(1,1), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(2,2), 1.0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(0,1), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(0,2), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(1,0), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(1,2), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(2,0), 0, 1e-12);
+        TS_ASSERT_DELTA(diffusion_vesseltip(2,1), 0, 1e-12);
+
+        VegfBoundaryCondition<3> vegfboundarycondition(0.1, 0.1, 8);
+        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(lower), 0.1, 1e-3);
+        TS_ASSERT_DELTA(vegfboundarycondition.GetValue(vessel_tip), 0.1, 1e-3);
+
+        // archive test
+        FileFinder archive_dir("archive", RelativeTo::ChasteTestOutput);
+        std::string archive_file = "vegfequationcellpde.arch";
+        {
+            // Create a PDE object and the boundary condition 
+            AbstractLinearParabolicPde<3,3>* const p_vegfpde = new VegfEquationCellPde<3>(cell_population, 1.0, 1.0, 1.0, 0.1, 0.01);
+
+            ArchiveOpener<boost::archive::text_oarchive, std::ofstream> arch_opener(archive_dir, archive_file);
+            boost::archive::text_oarchive* output_arch = arch_opener.GetCommonArchive();
+            (*output_arch) << p_vegfpde;
+
+            delete p_vegfpde;
+        }
+        {
+            AbstractLinearParabolicPde<3,3>* p_vegfpde;
+
+            ArchiveOpener<boost::archive::text_iarchive, std::ifstream> arch_opener(archive_dir, archive_file);
+            boost::archive::text_iarchive* input_arch = arch_opener.GetCommonArchive();
+            (*input_arch) >> p_vegfpde;
+
+            // Test that the PDE and its member variables were archived correctly
+            TS_ASSERT(static_cast<VegfEquationCellPde<3>*>(p_vegfpde) != NULL);
+
+            VegfEquationCellPde<3>* p_static_cast_vegfpde = static_cast<VegfEquationCellPde<3>*>(p_vegfpde);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetDuDtCoefficient(),1.0);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetDiffusionCoefficient(),1.0);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetDecayCoefficient(),1.0);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetCreationCoefficient(),0.1);
+            TS_ASSERT_EQUALS(p_static_cast_vegfpde->GetConsumptionCoefficient(),0.01);
+
+            // Avoid memory leaks
+            delete p_vegfpde;
+        }
+    }
+
+    void TestMolecularConcentrationsBoxDomainPdeModifierIn1D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -615,7 +937,7 @@ public:
         MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 0.0));
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0, 1.0, 0.1));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, true, p_cuboid, 1.0, nullptr, 0.0, 1.0, 0.1));
 
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumNodes(),11u);
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumBoundaryNodes(),2u);
@@ -632,7 +954,7 @@ public:
         TS_ASSERT_EQUALS(p_pde_modifier->GetOutputGradient(),true);
 
         // setup initial vector
-        p_pde_modifier->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier->SetupInitialSolutionVectorVEGF(cell_population);
         Vec solution = p_pde_modifier->GetSolution();
         ReplicatableVector solution_repl(solution);
         TS_ASSERT_EQUALS(solution_repl.GetSize(), 11u);
@@ -645,62 +967,67 @@ public:
             }
         }
 
-        std::string archive_file = "molecularconcentrationsdomainpdemodifier.arch";
-        OutputFileHandler handler("archive", false);
-        handler.SetArchiveDirectory();
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + archive_file;
-        {
-            // Create PDE and boundary condition objects
-            MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 8));
+        // OutputFileHandler handler("archive", false);
+        // handler.SetArchiveDirectory();
+        // std::string archive_file = "molecularconcentrationsdomainpdemodifier.arch";
+        // std::string archive_path = ArchiveLocationInfo::GetProcessUniqueFilePath(archive_file);
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 8));
 
-            // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
-            ChastePoint<1> lower(0.0);
-            ChastePoint<1> upper(10.0);
-            MAKE_PTR_ARGS(ChasteCuboid<1>, p_cuboid, (lower, upper));
+        //     // Create a ChasteCuboid on which to base the finite element mesh used to solve the PDE
+        //     ChastePoint<1> lower(0.0);
+        //     ChastePoint<1> upper(10.0);
+        //     MAKE_PTR_ARGS(ChasteCuboid<1>, p_cuboid, (lower, upper));
 
-            // Create a PDE modifier and set the name of the dependent variable in the PDE
-            MolecularConcentrationsBoxDomainPdeModifier<1> modifier(p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0, 1.0, 0.1);
-            modifier.SetDependentVariableName("vegf_femesh_variable");
-            modifier.SetupInitialSolutionVector(cell_population);
-            modifier.SetOutputGradient(true);
+        //     // Create a PDE modifier and set the name of the dependent variable in the PDE
+        //     MolecularConcentrationsBoxDomainPdeModifier<1> modifier(p_pde, p_bc, false, p_cuboid, 1.0, nullptr, 0.0, 1.0, 0.1);
+        //     modifier.SetDependentVariableName("vegf_femesh_variable");
+        //     modifier.SetupInitialSolutionVectorVEGF(cell_population);
+        //     modifier.SetOutputGradient(true);
 
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     std::ofstream ofs(archive_path.c_str());
+        //     boost::archive::text_oarchive* output_arch = new boost::archive::text_oarchive(ofs);
+        //     ProcessSpecificArchive<boost::archive::text_oarchive>::Set(output_arch);
 
-            // Serialize via pointer
-            AbstractBoxDomainPdeModifier<1>* const p_modifier = &modifier;
-            output_arch << p_modifier;
-        }
-        {
-            AbstractBoxDomainPdeModifier<1>* p_modifier;
+        //     // Serialize via pointer
+        //     AbstractBoxDomainPdeModifier<1>* const p_modifier = &modifier;
+        //     (*output_arch) & p_modifier;
+        //     delete output_arch;
+        // }
+        // {
+        //     AbstractBoxDomainPdeModifier<1>* p_modifier;
 
-            std::ifstream ifs(archive_filename.c_str());
-            boost::archive::text_iarchive input_arch(ifs);
-            input_arch >> p_modifier;
+        //     boost::archive::text_iarchive* input_arch = ProcessSpecificArchive<boost::archive::text_iarchive>::Get();
 
-            TS_ASSERT_EQUALS((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->rGetDependentVariableName(), "vegf_femesh_variable");
-            TS_ASSERT_DELTA((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->GetStepSize(), 1.0, 1e-5);
-            TS_ASSERT_EQUALS((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->AreBcsSetOnBoxBoundary(), true);
+        //     (*input_arch) & p_modifier;
 
-            // comparison solution vector 
-            Vec solution = (static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->GetSolution();
-            ReplicatableVector solution_repl(solution);
-            TS_ASSERT_EQUALS(solution_repl.GetSize(), 11u);
-            for (unsigned i=0; i<11; i++)
-            {
-                if((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->mpFeMesh->GetNode(i)->rGetLocation()[0] == 0.0){
-                    TS_ASSERT_DELTA(solution_repl[i], 1.0, 1e-6); // source term
-                } else {
-                    TS_ASSERT_DELTA(solution_repl[i], 0.1, 1e-6); // background
-                }
-            }
+        //     TS_ASSERT_EQUALS((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->rGetDependentVariableName(), "vegf_femesh_variable");
+        //     TS_ASSERT_DELTA((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->GetStepSize(), 1.0, 1e-5);
+        //     TS_ASSERT_EQUALS((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->AreBcsSetOnBoxBoundary(), true);
 
-            delete p_modifier;
-        }
+        //     // comparison solution vector 
+        //     Vec solution = (static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->GetSolution();
+        //     ReplicatableVector solution_repl(solution);
+        //     TS_ASSERT_EQUALS(solution_repl.GetSize(), 11u);
+        //     for (unsigned i=0; i<11; i++)
+        //     {
+        //         if((static_cast<MolecularConcentrationsBoxDomainPdeModifier<1>*>(p_modifier))->mpFeMesh->GetNode(i)->rGetLocation()[0] == 0.0){
+        //             TS_ASSERT_DELTA(solution_repl[i], 1.0, 1e-6); // source term
+        //         } else {
+        //             TS_ASSERT_DELTA(solution_repl[i], 0.1, 1e-6); // background
+        //         }
+        //     }
+
+        //     // Clean up
+        //     delete p_modifier;
+        //     ProcessSpecificArchive<boost::archive::text_iarchive>::Set(NULL);
+        //     ProcessSpecificArchive<boost::archive::text_oarchive>::Set(NULL);
+        // }
     }
 
-    void NoTestMolecularConcentrationsBoxDomainPdeModifierIn2D() throw(Exception)
+    void TestMolecularConcentrationsBoxDomainPdeModifierIn2D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -756,7 +1083,7 @@ public:
         MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 0.1, 0.0));
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr, 0.0, 1.0, 0.1));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, true, p_cuboid, 1.0,nullptr, 0.0, 1.0, 0.1));
 
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumNodes(),121u);
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumBoundaryNodes(),40u);
@@ -773,7 +1100,7 @@ public:
         TS_ASSERT_EQUALS(p_pde_modifier->GetOutputGradient(),true);
 
         // setup initial vector
-        p_pde_modifier->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier->SetupInitialSolutionVectorVEGF(cell_population);
         Vec solution = p_pde_modifier->GetSolution();
         ReplicatableVector solution_repl(solution);
         TS_ASSERT_EQUALS(solution_repl.GetSize(), 121u);
@@ -786,10 +1113,10 @@ public:
             }
         }
 
-        std::string archive_file = "molecularconcentrationsdomainpdemodifier.arch";
-        OutputFileHandler handler("archive", false);
-        handler.SetArchiveDirectory();
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + archive_file;
+        // std::string archive_file = "molecularconcentrationsdomainpdemodifier.arch";
+        // OutputFileHandler handler("archive", false);
+        // handler.SetArchiveDirectory();
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + archive_file;
         // {
         //     // Create PDE and boundary condition objects
         //     MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
@@ -824,7 +1151,7 @@ public:
         // }
     }
 
-    void NoTestMolecularConcentrationsBoxDomainPdeModifierIn3D() throw(Exception)
+    void TestMolecularConcentrationsBoxDomainPdeModifierIn3D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -882,7 +1209,7 @@ public:
         MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 0.1, 0.0));
 
         // Create a PDE modifier and set the name of the dependent variable in the PDE
-        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr, 0.0, 1.0, 0.1));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, true, p_cuboid, 1.0,nullptr, 0.0, 1.0, 0.1));
 
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumNodes(),1331u);
         TS_ASSERT_EQUALS(p_pde_modifier->mpFeMesh->GetNumBoundaryNodes(),602u);
@@ -899,7 +1226,7 @@ public:
         TS_ASSERT_EQUALS(p_pde_modifier->GetOutputGradient(),true);
 
         // setup initial vector
-        p_pde_modifier->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier->SetupInitialSolutionVectorVEGF(cell_population);
         Vec solution = p_pde_modifier->GetSolution();
         ReplicatableVector solution_repl(solution);
         TS_ASSERT_EQUALS(solution_repl.GetSize(), 1331u);
@@ -912,10 +1239,10 @@ public:
             }
         }
 
-        std::string archive_file = "molecularconcentrationsdomainpdemodifier.arch";
-        OutputFileHandler handler("archive", false);
-        handler.SetArchiveDirectory();
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + archive_file;
+        // std::string archive_file = "molecularconcentrationsdomainpdemodifier.arch";
+        // OutputFileHandler handler("archive", false);
+        // handler.SetArchiveDirectory();
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + archive_file;
         // {
         //     // Create PDE and boundary condition objects
         //     MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
@@ -950,7 +1277,334 @@ public:
         // }
     }
 
-    void NoTestRandomForceIn1D()
+    void TestMolecularConcentrationsGrowingDomainPdeModifierIn1D() throw(Exception)
+    {
+        // creation of the mesh
+        std::vector<Node<1>*> nodes;
+        nodes.push_back(new Node<1>(0u, false, 10));
+        nodes.push_back(new Node<1>(1u, false, 9));
+        nodes.push_back(new Node<1>(2u, false, 8));
+
+        NodesOnlyMesh<1> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 1> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<1> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // Create PDE and boundary condition objects
+        MAKE_PTR_ARGS(VegfEquationCellPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 0.0));
+
+        // Create a PDE modifier and set the name of the dependent variable in the PDE
+        MAKE_PTR_ARGS(MolecularConcentrationsGrowingDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, true, nullptr, 0.1));
+
+        // Test that member variables are initialised correctly
+        p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
+        TS_ASSERT_EQUALS(p_pde_modifier->rGetDependentVariableName(), "vegf_femesh_variable");
+        p_pde_modifier->SetInitialCellDataVEGF(cell_population);
+
+        // Coverage
+        TS_ASSERT_EQUALS(p_pde_modifier->GetOutputGradient(),false); // Defaults to false
+        p_pde_modifier->SetOutputGradient(true);
+        TS_ASSERT_EQUALS(p_pde_modifier->GetOutputGradient(),true);
+
+        // setup initial vector
+        p_pde_modifier->GenerateFeMesh(cell_population);
+        p_pde_modifier->UpdateSolutionVectorVEGF(cell_population);
+        Vec solution = p_pde_modifier->GetSolution();
+        ReplicatableVector solution_repl(solution);
+        for(unsigned i=0; i<p_pde_modifier->mpFeMesh->GetNumNodes(); i++){
+            TS_ASSERT_DELTA(solution_repl[i], 0.1, 1e-2);
+        }
+
+        // OutputFileHandler handler("archive", false);
+        // handler.SetArchiveDirectory();
+        // std::string archive_file = "molecularconcentrationsdomainpdemodifier.arch";
+        // std::string archive_path = ArchiveLocationInfo::GetProcessUniqueFilePath(archive_file);
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationCellPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 8));
+
+        //     // Create a PDE modifier and set the name of the dependent variable in the PDE
+        //     MolecularConcentrationsGrowingDomainPdeModifier<1> modifier(p_pde, p_bc, false, nullptr, 0.1);
+        //     modifier.SetDependentVariableName("vegf_femesh_variable");
+        //     modifier.SetupInitialSolutionVectorVEGF(cell_population);
+        //     modifier.SetOutputGradient(true);
+
+        //     std::ofstream ofs(archive_path.c_str());
+        //     boost::archive::text_oarchive* output_arch = new boost::archive::text_oarchive(ofs);
+        //     ProcessSpecificArchive<boost::archive::text_oarchive>::Set(output_arch);
+
+        //     // Serialize via pointer
+        //     AbstractGrowingDomainPdeModifier<1>* const p_modifier = &modifier;
+        //     (*output_arch) & p_modifier;
+        //     delete output_arch;
+        // }
+        // {
+        //     AbstractBoxDomainPdeModifier<1>* p_modifier;
+
+        //     boost::archive::text_iarchive* input_arch = ProcessSpecificArchive<boost::archive::text_iarchive>::Get();
+
+        //     (*input_arch) & p_modifier;
+
+        //     TS_ASSERT_EQUALS((static_cast<MolecularConcentrationsGrowingDomainPdeModifier<1>*>(p_modifier))->rGetDependentVariableName(), "vegf_femesh_variable");
+        //     TS_ASSERT_DELTA((static_cast<MolecularConcentrationsGrowingDomainPdeModifier<1>*>(p_modifier))->GetStepSize(), 1.0, 1e-5);
+
+        //     // comparison solution vector 
+        //     Vec solution = (static_cast<MolecularConcentrationsGrowingDomainPdeModifier<1>*>(p_modifier))->GetSolution();
+        //     ReplicatableVector solution_repl(solution);
+        //     TS_ASSERT_EQUALS(solution_repl.GetSize(), 11u);
+        //     for (unsigned i=0; i<11; i++)
+        //     {
+        //         if((static_cast<MolecularConcentrationsGrowingDomainPdeModifier<1>*>(p_modifier))->mpFeMesh->GetNode(i)->rGetLocation()[0] == 0.0){
+        //             TS_ASSERT_DELTA(solution_repl[i], 1.0, 1e-6); // source term
+        //         } else {
+        //             TS_ASSERT_DELTA(solution_repl[i], 0.1, 1e-6); // background
+        //         }
+        //     }
+
+        //     // Clean up
+        //     delete p_modifier;
+        //     ProcessSpecificArchive<boost::archive::text_iarchive>::Set(NULL);
+        //     ProcessSpecificArchive<boost::archive::text_oarchive>::Set(NULL);
+        // }
+    }
+
+    void TestMolecularConcentrationsGrowingDomainPdeModifierIn2D() throw(Exception)
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 0));
+        nodes.push_back(new Node<2>(1u, false, 9, 0));
+        nodes.push_back(new Node<2>(2u, false, 8, 0));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // Create PDE and boundary condition objects
+        MAKE_PTR_ARGS(VegfEquationCellPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 0.1, 0.0));
+
+        // Create a PDE modifier and set the name of the dependent variable in the PDE
+        MAKE_PTR_ARGS(MolecularConcentrationsGrowingDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, true,nullptr, 0.1));
+
+        // Test that member variables are initialised correctly
+        p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
+        TS_ASSERT_EQUALS(p_pde_modifier->rGetDependentVariableName(), "vegf_femesh_variable");
+        p_pde_modifier->SetInitialCellDataVEGF(cell_population);
+
+        // Coverage
+        TS_ASSERT_EQUALS(p_pde_modifier->GetOutputGradient(),false); // Defaults to false
+        p_pde_modifier->SetOutputGradient(true);
+        TS_ASSERT_EQUALS(p_pde_modifier->GetOutputGradient(),true);
+
+        // setup initial vector
+        p_pde_modifier->GenerateFeMesh(cell_population);
+        p_pde_modifier->UpdateSolutionVectorVEGF(cell_population);
+        Vec solution = p_pde_modifier->GetSolution();
+        ReplicatableVector solution_repl(solution);
+        for(unsigned i=0; i<p_pde_modifier->mpFeMesh->GetNumNodes(); i++){
+            TS_ASSERT_DELTA(solution_repl[i], 0.1, 1e-2);
+        }
+
+        // std::string archive_file = "molecularconcentrationsdomainpdemodifier.arch";
+        // OutputFileHandler handler("archive", false);
+        // handler.SetArchiveDirectory();
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + archive_file;
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationCellPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 0.1, 8));
+
+        //     // Create a PDE modifier and set the name of the dependent variable in the PDE
+        //     MolecularConcentrationsGrowingDomainPdeModifier<2> modifier(p_pde, p_bc, false, nullptr, 0.1);
+        //     modifier.SetDependentVariableName("vegf_femesh_variable");
+
+        //     ArchiveOpener<boost::archive::text_oarchive, std::ofstream> arch_opener(archive_dir, archive_file);
+        //     boost::archive::text_oarchive* output_arch = arch_opener.GetCommonArchive();
+
+        //     // Serialize via pointer
+        //     AbstractCellBasedSimulationModifier<2,2>* const p_modifier = &modifier;
+        //     (*output_arch) << p_modifier;
+        // }
+        // {
+        //     AbstractCellBasedSimulationModifier<2,2>* p_modifier2;
+
+        //     ArchiveOpener<boost::archive::text_iarchive, std::ifstream> arch_opener(archive_dir, archive_file);
+        //     boost::archive::text_iarchive* input_arch = arch_opener.GetCommonArchive();
+
+        //     (*input_arch) >> p_modifier2;
+        //     TRACE("Test if we can access archive")
+
+        //     delete p_modifier2;
+        // }
+    }
+
+    void TestMolecularConcentrationsGrowingDomainPdeModifierIn3D() throw(Exception)
+    {
+        // creation of the mesh
+        std::vector<Node<3>*> nodes;
+        nodes.push_back(new Node<3>(0u, false, 10, 0, 0));
+        nodes.push_back(new Node<3>(1u, false, 9, 0, 0));
+        nodes.push_back(new Node<3>(2u, false, 8, 0, 0));
+        nodes.push_back(new Node<3>(3u, false, 7, 0, 0)); // need to add a 4th node to have more than the spatial dimension (3) for MutableMesh
+        TRACE("nodes")
+
+        NodesOnlyMesh<3> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+        TRACE("mesh")
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 3> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 4, p_differentiated_type);
+
+        cells[3]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_vessel_state);
+        cells[3]->SetMutationState(p_tip_state);
+        TRACE("cells")
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<3> cell_population(mesh, cells);
+        TRACE("cell population")
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        // Create PDE and boundary condition objects
+        MAKE_PTR_ARGS(VegfEquationCellPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 0.1, 0.0));
+
+        // Create a PDE modifier and set the name of the dependent variable in the PDE
+        MAKE_PTR_ARGS(MolecularConcentrationsGrowingDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, true,nullptr, 0.1));
+
+        // Test that member variables are initialised correctly
+        p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
+        TS_ASSERT_EQUALS(p_pde_modifier->rGetDependentVariableName(), "vegf_femesh_variable");
+        p_pde_modifier->SetInitialCellDataVEGF(cell_population);
+
+        // Coverage
+        TS_ASSERT_EQUALS(p_pde_modifier->GetOutputGradient(),false); // Defaults to false
+        p_pde_modifier->SetOutputGradient(true);
+        TS_ASSERT_EQUALS(p_pde_modifier->GetOutputGradient(),true);
+
+        // setup initial vector
+        p_pde_modifier->GenerateFeMesh(cell_population);
+        p_pde_modifier->UpdateSolutionVectorVEGF(cell_population);
+        Vec solution = p_pde_modifier->GetSolution();
+        ReplicatableVector solution_repl(solution);
+        for(unsigned i=0; i<p_pde_modifier->mpFeMesh->GetNumNodes(); i++){
+            TS_ASSERT_DELTA(solution_repl[i], 0.1, 1e-2);
+        }
+
+        // std::string archive_file = "molecularconcentrationsdomainpdemodifier.arch";
+        // OutputFileHandler handler("archive", false);
+        // handler.SetArchiveDirectory();
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + archive_file;
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationCellPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 0.1, 8));
+
+        //     // Create a PDE modifier and set the name of the dependent variable in the PDE
+        //     MolecularConcentrationsGrowingDomainPdeModifier<3> modifier(p_pde, p_bc, false, nullptr, 0.1);
+        //     modifier.SetDependentVariableName("vegf_femesh_variable");
+
+        //     ArchiveOpener<boost::archive::text_oarchive, std::ofstream> arch_opener(archive_dir, archive_file);
+        //     boost::archive::text_oarchive* output_arch = arch_opener.GetCommonArchive();
+
+        //     // Serialize via pointer
+        //     AbstractCellBasedSimulationModifier<3,3>* const p_modifier = &modifier;
+        //     (*output_arch) << p_modifier;
+        // }
+        // {
+        //     AbstractCellBasedSimulationModifier<3,3>* p_modifier2;
+
+        //     ArchiveOpener<boost::archive::text_iarchive, std::ifstream> arch_opener(archive_dir, archive_file);
+        //     boost::archive::text_iarchive* input_arch = arch_opener.GetCommonArchive();
+
+        //     (*input_arch) >> p_modifier2;
+        //     TRACE("Test if we can access archive")
+
+        //     delete p_modifier2;
+        // }
+    }
+
+    void TestRandomForceIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -1028,7 +1682,7 @@ public:
         }
     }
 
-    void NoTestRandomForceIn2D()
+    void TestRandomForceIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -1107,7 +1761,7 @@ public:
         }
     }
 
-    void NoTestRandomForceIn3D()
+    void TestRandomForceIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -1187,7 +1841,7 @@ public:
         }
     }
 
-    void NoTestMechanicalForceIn1D()
+    void TestMechanicalForceIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -1261,7 +1915,7 @@ public:
         }
     }
 
-    void NoTestMechanicalForceIn2D()
+    void TestMechanicalForceIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -1335,7 +1989,7 @@ public:
         }
     }
 
-    void NoTestMechanicalForceIn3D()
+    void TestMechanicalForceIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -1409,7 +2063,7 @@ public:
         }
     }
 
-    void NoTestChemotacticForceIn1D()
+    void TestChemotacticForceIn1D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -1486,13 +2140,13 @@ public:
             AbstractForce<1>* p_force;
             input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForce<1>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForce<1>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
             delete p_force;
         }
     }
 
-    void NoTestChemotacticForceIn2D()
+    void TestChemotacticForceIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -1571,13 +2225,13 @@ public:
             AbstractForce<2>* p_force;
             input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForce<2>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForce<2>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
             delete p_force;
         }
     }
 
-    void NoTestChemotacticForceIn3D()
+    void TestChemotacticForceIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -1658,13 +2312,13 @@ public:
             AbstractForce<3>* p_force;
             input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForce<3>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForce<3>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
             delete p_force;
         }
     }
 
-    void NoTestChemotacticForceWithConstantVegfIn1D()
+    void TestChemotacticForceWithConstantVegfIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -1706,7 +2360,7 @@ public:
         }
 
         // we create the random force object 
-        ChemoForceWithConstantVegf<1> chemo_force_withconstantvegf(1e-4, 1e-4, 0.1);
+        ChemoForceWithConstantVegf<1> chemo_force_withconstantvegf(1e-4, 1e-4);
 
         chemo_force_withconstantvegf.AddForceContribution(cell_population);
 
@@ -1727,7 +2381,7 @@ public:
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withconstantvegf.arch";
         {
-            AbstractForce<1>* const p_force = new ChemoForceWithConstantVegf<1>(1e-4);
+            AbstractForce<1>* const p_force = new ChemoForceWithConstantVegf<1>(1e-4, 1e-4);
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
 
@@ -1741,13 +2395,13 @@ public:
             AbstractForce<1>* p_force;
             input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithConstantVegf<1>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithConstantVegf<1>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
             delete p_force;
         }
     }
 
-    void NoTestChemotacticForceWithConstantVegfIn2D()
+    void TestChemotacticForceWithConstantVegfIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -1789,7 +2443,7 @@ public:
         }
 
         // we create the random force object 
-        ChemoForceWithConstantVegf<2> chemo_force_withconstantvegf(1e-4, 1e-4, 0.1);
+        ChemoForceWithConstantVegf<2> chemo_force_withconstantvegf(1e-4, 1e-4);
 
         chemo_force_withconstantvegf.AddForceContribution(cell_population);
 
@@ -1812,7 +2466,7 @@ public:
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withconstantvegf.arch";
         {
-            AbstractForce<2>* const p_force = new ChemoForceWithConstantVegf<2>(1e-4);
+            AbstractForce<2>* const p_force = new ChemoForceWithConstantVegf<2>(1e-4, 1e-4);
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
 
@@ -1826,13 +2480,13 @@ public:
             AbstractForce<2>* p_force;
             input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithConstantVegf<2>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithConstantVegf<2>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
             delete p_force;
         }
     }
 
-    void NoTestChemotacticForceWithConstantVegfIn3D()
+    void TestChemotacticForceWithConstantVegfIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -1874,7 +2528,7 @@ public:
         }
 
         // we create the random force object 
-        ChemoForceWithConstantVegf<3> chemo_force_withconstantvegf(1e-4, 1e-4, 0.1);
+        ChemoForceWithConstantVegf<3> chemo_force_withconstantvegf(1e-4, 1e-4);
 
         chemo_force_withconstantvegf.AddForceContribution(cell_population);
 
@@ -1899,7 +2553,7 @@ public:
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withconstantvegf.arch";
         {
-            AbstractForce<3>* const p_force = new ChemoForceWithConstantVegf<3>(1e-4);
+            AbstractForce<3>* const p_force = new ChemoForceWithConstantVegf<3>(1e-4, 1e-4);
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
 
@@ -1913,13 +2567,13 @@ public:
             AbstractForce<3>* p_force;
             input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithConstantVegf<3>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithConstantVegf<3>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
             delete p_force;
         }
     }
 
-    void NoTestChemotacticForceWithPdeIn1D() 
+    void TestChemotacticForceWithPdeBoxIn1D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -1966,13 +2620,13 @@ public:
 
         MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
         MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0.1, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, true, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
-        p_pde_modifier->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier->SetupInitialSolutionVectorVEGF(cell_population);
 
         // we create the random force object 
-        ChemoForceWithPdes<1> chemo_force_withpdes(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+        ChemoForceWithPdes<1> chemo_force_withpdes(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
 
         chemo_force_withpdes.AddForceContribution(cell_population);
 
@@ -1981,41 +2635,41 @@ public:
         {
             CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
             if(p_cell->GetMutationState()->IsType<VesselTipMutationState>()){
-                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-2, 1e-3);
+                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-8, 1e-9);
             } else {
                 TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 0.0, 1e-5); 
             }
         }
 
         // test archiving class 
-        OutputFileHandler handler("archive", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
-        {
-            MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
+        // {
+        //     MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
 
-            AbstractForce<1>* const p_force = new ChemoForceWithPdes<1>(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     AbstractForce<1>* const p_force = new ChemoForceWithPdes<1>(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
 
-            output_arch << p_force;
-            delete p_force;
-        }
-        {
-            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-            boost::archive::text_iarchive input_arch(ifs);
+        //     output_arch << p_force;
+        //     delete p_force;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
 
-            AbstractForce<1>* p_force;
-            input_arch >> p_force;
+        //     AbstractForce<1>* p_force;
+        //     input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithPdes<1>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+        //     TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithPdes<1>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
-            delete p_force;
-        }
+        //     delete p_force;
+        // }
     }
 
-    void NoTestChemotacticForceWithPdeIn2D() 
+    void TestChemotacticForceWithPdeBoxIn2D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -2062,13 +2716,13 @@ public:
 
         MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
         MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, true, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
-        p_pde_modifier->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier->SetupInitialSolutionVectorVEGF(cell_population);
 
         // we create the random force object 
-        ChemoForceWithPdes<2> chemo_force_withpdes(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+        ChemoForceWithPdes<2> chemo_force_withpdes(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
 
         chemo_force_withpdes.AddForceContribution(cell_population);
 
@@ -2077,41 +2731,41 @@ public:
         {
             CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
             if(p_cell->GetMutationState()->IsType<VesselTipMutationState>()){
-                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-2, 1e-3);
+                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-8, 1e-9);
             } else {
                 TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 0.0, 1e-5); 
             }
         }
 
         // test archiving class 
-        OutputFileHandler handler("archive", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
-        {
-            MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
+        // {
+        //     MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
 
-            AbstractForce<2>* const p_force = new ChemoForceWithPdes<2>(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     AbstractForce<2>* const p_force = new ChemoForceWithPdes<2>(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
 
-            output_arch << p_force;
-            delete p_force;
-        }
-        {
-            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-            boost::archive::text_iarchive input_arch(ifs);
+        //     output_arch << p_force;
+        //     delete p_force;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
 
-            AbstractForce<2>* p_force;
-            input_arch >> p_force;
+        //     AbstractForce<2>* p_force;
+        //     input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithPdes<2>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+        //     TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithPdes<2>*>(p_force)->GetChemotacticSensitivity(), 0.1);
 
-            delete p_force;
-        }
+        //     delete p_force;
+        // }
     }
 
-    void NoTestChemotacticForceWithPdeIn3D() 
+    void TestChemotacticForceWithPdeBoxIn3D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -2158,13 +2812,15 @@ public:
 
         MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
         MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 0));
-        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, true, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier->SetOutputGradient(true);
-        p_pde_modifier->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier->SetupInitialSolutionVectorVEGF(cell_population);
+
+        cell_population.Update();
 
         // we create the random force object 
-        ChemoForceWithPdes<3> chemo_force_withpdes(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+        ChemoForceWithPdes<3> chemo_force_withpdes(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
 
         chemo_force_withpdes.AddForceContribution(cell_population);
 
@@ -2173,41 +2829,327 @@ public:
         {
             CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
             if(p_cell->GetMutationState()->IsType<VesselTipMutationState>()){
-                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-2, 1e-3);
+                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-8, 1e-8);
             } else {
                 TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 0.0, 1e-5); 
             }
         }
 
         // test archiving class 
-        OutputFileHandler handler("archive", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
-        {
-            MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
+        // {
+        //     MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
 
-            AbstractForce<3>* const p_force = new ChemoForceWithPdes<3>(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     AbstractForce<3>* const p_force = new ChemoForceWithPdes<3>(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
 
-            output_arch << p_force;
-            delete p_force;
-        }
-        {
-            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-            boost::archive::text_iarchive input_arch(ifs);
+        //     output_arch << p_force;
+        //     delete p_force;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
 
-            AbstractForce<3>* p_force;
-            input_arch >> p_force;
+        //     AbstractForce<3>* p_force;
+        //     input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithPdes<3>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+        //     TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithPdes<3>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
-            delete p_force;
-        }
+        //     delete p_force;
+        // }
     }
 
-    void NoTestChemotacticForceWithApproximationOfPdeIn1D()
+    void NoTestChemotacticForceWithPdeGrowingIn1D() throw(Exception)
+    {
+        // creation of the mesh
+        std::vector<Node<1>*> nodes;
+        nodes.push_back(new Node<1>(0u, false, 2, 5));
+        nodes.push_back(new Node<1>(1u, false, 1, 5));
+        nodes.push_back(new Node<1>(2u, false, 0, 5));
+
+        NodesOnlyMesh<1> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 1> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<1> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        MAKE_PTR_ARGS(VegfEquationCellPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsGrowingDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, true, nullptr, 0.1));
+        p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
+        p_pde_modifier->SetOutputGradient(true);
+        p_pde_modifier->SetInitialCellDataVEGF(cell_population);
+        p_pde_modifier->GenerateFeMesh(cell_population);
+        p_pde_modifier->UpdateSolutionVectorVEGF(cell_population);
+
+        // we create the random force object 
+        ChemoForceWithPdes<1> chemo_force_withpdes(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+
+        chemo_force_withpdes.AddForceContribution(cell_population);
+
+        // test object 
+        for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
+        {
+            CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
+            if(p_cell->GetMutationState()->IsType<VesselTipMutationState>()){
+                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-8, 1e-8);
+            } else {
+                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 0.0, 1e-5); 
+            }
+        }
+
+        // test archiving class 
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
+        // {
+        //     MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, nullptr, 0.1));
+
+        //     AbstractForce<1>* const p_force = new ChemoForceWithPdes<1>(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
+
+        //     output_arch << p_force;
+        //     delete p_force;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
+
+        //     AbstractForce<1>* p_force;
+        //     input_arch >> p_force;
+
+        //     TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithPdes<1>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
+
+        //     delete p_force;
+        // }
+    }
+
+    void NoTestChemotacticForceWithPdeGrowingIn2D() throw(Exception)
+    {
+        // creation of the mesh
+        std::vector<Node<2>*> nodes;
+        nodes.push_back(new Node<2>(0u, false, 10, 0));
+        nodes.push_back(new Node<2>(1u, false, 9, 0));
+        nodes.push_back(new Node<2>(2u, false, 8, 0));
+
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 3, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<2> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        MAKE_PTR_ARGS(VegfEquationCellPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsGrowingDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, true,  nullptr, 0.1));
+        p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
+        p_pde_modifier->SetOutputGradient(true);
+        p_pde_modifier->SetInitialCellDataVEGF(cell_population);
+        p_pde_modifier->GenerateFeMesh(cell_population);
+        p_pde_modifier->UpdateSolutionVectorVEGF(cell_population);
+
+        // we create the random force object 
+        ChemoForceWithPdes<2> chemo_force_withpdes(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+
+        chemo_force_withpdes.AddForceContribution(cell_population);
+
+        // test object 
+        for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
+        {
+            CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
+            if(p_cell->GetMutationState()->IsType<VesselTipMutationState>()){
+                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-8, 1e-9);
+            } else {
+                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 0.0, 1e-5); 
+            }
+        }
+
+        // test archiving class 
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
+        // {
+        //     MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, nullptr, 0.1));
+
+        //     AbstractForce<2>* const p_force = new ChemoForceWithPdes<2>(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
+
+        //     output_arch << p_force;
+        //     delete p_force;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
+
+        //     AbstractForce<2>* p_force;
+        //     input_arch >> p_force;
+
+        //     TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithPdes<2>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+
+        //     delete p_force;
+        // }
+    }
+
+    void NoTestChemotacticForceWithPdeGrowingIn3D() throw(Exception)
+    {
+        // creation of the mesh
+        std::vector<Node<3>*> nodes;
+        nodes.push_back(new Node<3>(0u, false, 3, 5, 5));
+        nodes.push_back(new Node<3>(1u, false, 2, 5, 5));
+        nodes.push_back(new Node<3>(2u, false, 1, 5, 5));
+        nodes.push_back(new Node<3>(3u, false, 0, 5, 5));
+
+        NodesOnlyMesh<3> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+
+        // creation of the cells
+        std::vector<CellPtr> cells;
+
+        // mutation states
+        MAKE_PTR(BranchingSegmentMutationState, p_branching_state); 
+        MAKE_PTR(VesselTipMutationState, p_tip_state);
+        MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
+
+        // proliferative states
+        MAKE_PTR(StemCellProliferativeType, p_stem_type); // all cells 
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type); // first cell cannot divide 
+
+        CellsGenerator<UniformCellCycleModel, 3> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, 4, p_differentiated_type);
+
+        cells[2]->SetCellProliferativeType(p_stem_type);
+
+        cells[0]->SetMutationState(p_vessel_state);
+        cells[1]->SetMutationState(p_vessel_state);
+        cells[2]->SetMutationState(p_vessel_state);
+        cells[3]->SetMutationState(p_tip_state);
+        
+        // creation of a population of cells 
+        NodeBasedCellPopulation<3> cell_population(mesh, cells);
+
+        // Initialise all node forces to zero 
+        for (unsigned i=0; i<cell_population.GetNumNodes(); i++)
+        {
+             cell_population.GetNode(i)->ClearAppliedForce();
+        }
+
+        MAKE_PTR_ARGS(VegfEquationCellPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 0));
+        MAKE_PTR_ARGS(MolecularConcentrationsGrowingDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, true,  nullptr, 0.1));
+        p_pde_modifier->SetDependentVariableName("vegf_femesh_variable");
+        p_pde_modifier->SetOutputGradient(true);
+        p_pde_modifier->SetInitialCellDataVEGF(cell_population);
+        p_pde_modifier->GenerateFeMesh(cell_population);
+        p_pde_modifier->UpdateSolutionVectorVEGF(cell_population);
+
+        cell_population.Update();
+
+        // we create the random force object 
+        ChemoForceWithPdes<3> chemo_force_withpdes(1e-4, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+
+        chemo_force_withpdes.AddForceContribution(cell_population);
+
+        // test object 
+        for (unsigned node_index=0; node_index<cell_population.GetNumNodes(); node_index++)
+        {
+            CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
+            if(p_cell->GetMutationState()->IsType<VesselTipMutationState>()){
+                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 1e-8, 1e-8);
+            } else {
+                TS_ASSERT_DELTA(norm_2(cell_population.GetNode(node_index)->rGetAppliedForce()), 0.0, 1e-5); 
+            }
+        }
+
+        // test archiving class 
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withpdes.arch";
+        // {
+        //     MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, nullptr, 0.1));
+
+        //     AbstractForce<3>* const p_force = new ChemoForceWithPdes<3>(0.1, 1e-4, 1e-4, 1e-4, p_pde_modifier);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
+
+        //     output_arch << p_force;
+        //     delete p_force;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
+
+        //     AbstractForce<3>* p_force;
+        //     input_arch >> p_force;
+
+        //     TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithPdes<3>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
+
+        //     delete p_force;
+        // }
+    }
+
+    void TestChemotacticForceWithApproximationOfPdeIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -2270,7 +3212,7 @@ public:
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withanalyticalapproximationpde.arch";
         {
-            AbstractForce<1>* const p_force = new ChemoForceWithAnalyticalApproximationPde<1>(1e-4);
+            AbstractForce<1>* const p_force = new ChemoForceWithAnalyticalApproximationPde<1>(1e-4, 1e-6, 1e4, 1.0, 0.0, 0.0, 0.5, 0.1);
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
 
@@ -2284,13 +3226,13 @@ public:
             AbstractForce<1>* p_force;
             input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithAnalyticalApproximationPde<1>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithAnalyticalApproximationPde<1>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
             delete p_force;
         }
     }
 
-    void NoTestChemotacticForceWithApproximationOfPdeIn2D()
+    void TestChemotacticForceWithApproximationOfPdeIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -2355,7 +3297,7 @@ public:
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withanalyticalapproximationpde.arch";
         {
-            AbstractForce<2>* const p_force = new ChemoForceWithAnalyticalApproximationPde<2>(1e-4);
+            AbstractForce<2>* const p_force = new ChemoForceWithAnalyticalApproximationPde<2>(1e-4, 1e-6, 1e4, 1.0, 0.0, 0.0, 0.5, 0.1);
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
 
@@ -2369,13 +3311,13 @@ public:
             AbstractForce<2>* p_force;
             input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithAnalyticalApproximationPde<2>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithAnalyticalApproximationPde<2>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
             delete p_force;
         }
     }
 
-    void NoTestChemotacticForceWithApproximationOfPdeIn3D()
+    void TestChemotacticForceWithApproximationOfPdeIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -2442,7 +3384,7 @@ public:
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "chemo_force_withanalyticalapproximationpde.arch";
         {
-            AbstractForce<3>* const p_force = new ChemoForceWithAnalyticalApproximationPde<3>(1e-4);
+            AbstractForce<3>* const p_force = new ChemoForceWithAnalyticalApproximationPde<3>(1e-4, 1e-6, 1e4, 1.0, 0.0, 0.0, 0.5, 0.1);
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
 
@@ -2456,13 +3398,13 @@ public:
             AbstractForce<3>* p_force;
             input_arch >> p_force;
 
-            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithAnalyticalApproximationPde<3>*>(p_force)->GetChemotacticSensitivity(), 0.1);
+            TS_ASSERT_EQUALS(dynamic_cast<ChemoForceWithAnalyticalApproximationPde<3>*>(p_force)->GetChemotacticSensitivity(), 1e-4);
 
             delete p_force;
         }
     }
 
-    void NoTestPersistenceForceIn1D()
+    void TestPersistenceForceIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -2556,7 +3498,7 @@ public:
         }
     }
 
-    void NoTestPersistenceForceIn2D()
+    void TestPersistenceForceIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -2600,8 +3542,7 @@ public:
         cell_population.Update();
 
         std::vector<std::string> mDataLabels = std::vector<std::string>{ "fx", "fy", "fz" };
-        for ( typename NodeBasedCellPopulation<2>::Iterator cell_it = cell_population.Begin(); 
-                                                cell_it != cell_population.End(); ++cell_it )
+        for ( typename NodeBasedCellPopulation<2>::Iterator cell_it = cell_population.Begin(); cell_it != cell_population.End(); ++cell_it )
         {
             for (unsigned i = 0; i < 2; i++)
             {
@@ -2652,7 +3593,7 @@ public:
         }
     }
 
-    void NoTestPersistenceForceIn3D()
+    void TestPersistenceForceIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -2750,7 +3691,7 @@ public:
         }
     }
 
-    void NoTestAngularForceIn1D()
+    void TestAngularForceIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -2868,7 +3809,7 @@ public:
         }
     }
 
-    void NoTestAngularForceIn2D()
+    void TestAngularForceIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -2989,7 +3930,7 @@ public:
         }
     }
 
-    void NoTestAngularForceIn3D()
+    void TestAngularForceIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -3112,7 +4053,7 @@ public:
         }
     }
 
-    void NoTestPinnedCellBoundaryConditionIn1D()
+    void TestPinnedCellBoundaryConditionIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -3184,7 +4125,7 @@ public:
         TS_ASSERT_EQUALS(population_satisfies_bc, false);
     }
 
-    void NoTestPinnedCellBoundaryConditionIn2D()
+    void TestPinnedCellBoundaryConditionIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -3257,7 +4198,7 @@ public:
         TS_ASSERT_EQUALS(population_satisfies_bc, false);
     }
 
-    void NoTestPinnedCellBoundaryConditionIn3D()
+    void TestPinnedCellBoundaryConditionIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -3331,7 +4272,7 @@ public:
         TS_ASSERT_EQUALS(population_satisfies_bc, false);
     }
 
-    void NoTestSproutingRuleIn1D() 
+    void TestSproutingRuleIn1D() 
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -3375,8 +4316,7 @@ public:
         cell_population.Update();
 
         // Set up cell data on the cell population : initialisation for the division 
-        for (typename NodeBasedCellPopulation<1>::Iterator cell_it = cell_population.Begin(); 
-                                                cell_it != cell_population.End(); ++cell_it )
+        for (typename NodeBasedCellPopulation<1>::Iterator cell_it = cell_population.Begin(); cell_it != cell_population.End(); ++cell_it )
         {
             unsigned node_index = cell_population.GetLocationIndexUsingCell(*cell_it);
             CellPtr p_cell = cell_population.GetCellUsingLocationIndex(node_index);
@@ -3481,7 +4421,7 @@ public:
         }
     }
 
-    void NoTestSproutingRuleIn2D() 
+    void TestSproutingRuleIn2D() 
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -3640,7 +4580,7 @@ public:
         }
     }
 
-    void NoTestSproutingRuleIn3D() 
+    void TestSproutingRuleIn3D() 
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -3804,7 +4744,7 @@ public:
         }
     }
 
-    void NoTestSproutingRuleWithConstantVegfIn1D()
+    void TestSproutingRuleWithConstantVegfIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -3957,7 +4897,7 @@ public:
         }
     }
 
-    void NoTestSproutingRuleWithConstantVegfIn2D()
+    void TestSproutingRuleWithConstantVegfIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -4117,7 +5057,7 @@ public:
         }
     }
 
-    void NoTestSproutingRuleWithConstantVegfIn3D()
+    void TestSproutingRuleWithConstantVegfIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -4280,7 +5220,7 @@ public:
         }
     }
 
-    void NoTestSproutingRuleWithAnalyticalApproximationPdeIn1D()
+    void TestSproutingRuleWithAnalyticalApproximationPdeIn1D()
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -4431,7 +5371,7 @@ public:
         }
     }
 
-    void NoTestSproutingRuleWithAnalyticalApproximationPdeIn2D()
+    void TestSproutingRuleWithAnalyticalApproximationPdeIn2D()
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -4589,7 +5529,7 @@ public:
         }
     }
 
-    void NoTestSproutingRuleWithAnalyticalApproximationPdeIn3D()
+    void TestSproutingRuleWithAnalyticalApproximationPdeIn3D()
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -4750,7 +5690,7 @@ public:
         }
     }
 
-    void NoTestSproutingRule1WithPdesIn1D() 
+    void TestSproutingRule1WithPdesBoxIn1D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -4844,7 +5784,7 @@ public:
         MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier_vessel_segment, (p_pde, p_bc_vessel_segment, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_vessel_segment->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_vessel_segment->SetOutputGradient(true);
-        p_pde_modifier_vessel_segment->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier_vessel_segment->SetupInitialSolutionVectorVEGF(cell_population);
 
         MAKE_PTR_ARGS(SproutingRuleWithPdes, p_sprouting_rule_vessel_segment, (0.08, 2.0, p_pde_modifier_vessel_segment, 1.0, 0.3, 0.98, 0.4));
 
@@ -4867,34 +5807,34 @@ public:
         TS_ASSERT_DELTA(daughter_location_vessel_segment[0], expected_daughter_location_vessel_segment[0], 1e-6);
 
         // archiving
-        OutputFileHandler handler("archive", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
-        {
-            // Create PDE and boundary condition objects
-            MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
-            SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.08, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (0.1, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
+        //     SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.08, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
 
-            output_arch << p_sprouting_rule;
+        //     output_arch << p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
-        {
-            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-            boost::archive::text_iarchive input_arch(ifs);
+        //     delete p_sprouting_rule;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
 
-            SproutingRuleWithPdes* p_sprouting_rule;
-            input_arch >> p_sprouting_rule;
+        //     SproutingRuleWithPdes* p_sprouting_rule;
+        //     input_arch >> p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
+        //     delete p_sprouting_rule;
+        // }
     }
 
-    void NoTestSproutingRule2WithPdesIn1D() 
+    void TestSproutingRule2WithPdesBoxIn1D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<1>*> nodes;
@@ -4989,7 +5929,8 @@ public:
         MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier_tip_cell, (p_pde, p_bc_tip_cell, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_tip_cell->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_tip_cell->SetOutputGradient(true);
-        p_pde_modifier_tip_cell->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier_tip_cell->SetupInitialSolutionVectorVEGF(cell_population);
+
         MAKE_PTR_ARGS(SproutingRuleWithPdes, p_sprouting_rule_tip_cell, (0.98, 2.0, p_pde_modifier_tip_cell, 1, 0.3, 0.98, 0.4));
 
         TS_ASSERT_DELTA(p_sprouting_rule_tip_cell->GetSproutingProbability(cell_population, p_cell_forvesseltip), 0.97, 1e-2);
@@ -5011,34 +5952,34 @@ public:
         TS_ASSERT_DELTA(norm_2(daughter_location_tip_cell), norm_2(expected_daughter_location_tip_cell), 1e-0);
 
         // archiving
-        OutputFileHandler handler("archive", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
-        {
-            // Create PDE and boundary condition objects
-            MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
-            SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationPde<1>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<1>, p_bc, (1.0, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<1>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        //     SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
 
-            output_arch << p_sprouting_rule;
+        //     output_arch << p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
-        {
-            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-            boost::archive::text_iarchive input_arch(ifs);
+        //     delete p_sprouting_rule;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
 
-            SproutingRuleWithPdes* p_sprouting_rule;
-            input_arch >> p_sprouting_rule;
+        //     SproutingRuleWithPdes* p_sprouting_rule;
+        //     input_arch >> p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
+        //     delete p_sprouting_rule;
+        // }
     }
 
-    void NoTestSproutingRule1WithPdesIn2D() 
+    void TestSproutingRule1WithPdesBoxIn2D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -5133,7 +6074,7 @@ public:
         MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier_vessel_segment, (p_pde, p_bc_vessel_segment, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_vessel_segment->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_vessel_segment->SetOutputGradient(true);
-        p_pde_modifier_vessel_segment->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier_vessel_segment->SetupInitialSolutionVectorVEGF(cell_population);
 
         MAKE_PTR_ARGS(SproutingRuleWithPdes, p_sprouting_rule_vessel_segment, (0.08, 2.0, p_pde_modifier_vessel_segment, 1.0, 0.3, 0.98, 0.4));
 
@@ -5158,34 +6099,34 @@ public:
         TS_ASSERT_DELTA(daughter_location_vessel_segment[1], expected_daughter_location_vessel_segment[1], 1e-6);
 
         // archiving
-        OutputFileHandler handler("archive", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
-        {
-            // Create PDE and boundary condition objects
-            MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
-            SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.08, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (0.1, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
+        //     SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.08, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
 
-            output_arch << p_sprouting_rule;
+        //     output_arch << p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
-        {
-            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-            boost::archive::text_iarchive input_arch(ifs);
+        //     delete p_sprouting_rule;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
 
-            SproutingRuleWithPdes* p_sprouting_rule;
-            input_arch >> p_sprouting_rule;
+        //     SproutingRuleWithPdes* p_sprouting_rule;
+        //     input_arch >> p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
+        //     delete p_sprouting_rule;
+        // }
     }
 
-    void NoTestSproutingRule2WithPdesIn2D() 
+    void TestSproutingRule2WithPdesBoxIn2D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<2>*> nodes;
@@ -5282,7 +6223,8 @@ public:
         MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier_tip_cell, (p_pde, p_bc_tip_cell, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_tip_cell->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_tip_cell->SetOutputGradient(true);
-        p_pde_modifier_tip_cell->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier_tip_cell->SetupInitialSolutionVectorVEGF(cell_population);
+
         MAKE_PTR_ARGS(SproutingRuleWithPdes, p_sprouting_rule_tip_cell, (0.98, 2.0, p_pde_modifier_tip_cell, 1, 0.3, 0.98, 0.4));
 
         TS_ASSERT_DELTA(p_sprouting_rule_tip_cell->GetSproutingProbability(cell_population, p_cell_forvesseltip), 0.97, 1e-2);
@@ -5304,34 +6246,34 @@ public:
         TS_ASSERT_DELTA(norm_2(daughter_location_tip_cell), norm_2(expected_daughter_location_tip_cell), 1e-0);
 
         // archiving
-        OutputFileHandler handler("archive", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
-        {
-            // Create PDE and boundary condition objects
-            MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
-            SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1.0, 0.3, 0.98, 0.4);
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationPde<2>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<2>, p_bc, (1.0, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<2>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        //     SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1.0, 0.3, 0.98, 0.4);
 
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
 
-            output_arch << p_sprouting_rule;
+        //     output_arch << p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
-        {
-            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-            boost::archive::text_iarchive input_arch(ifs);
+        //     delete p_sprouting_rule;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
 
-            SproutingRuleWithPdes* p_sprouting_rule;
-            input_arch >> p_sprouting_rule;
+        //     SproutingRuleWithPdes* p_sprouting_rule;
+        //     input_arch >> p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
+        //     delete p_sprouting_rule;
+        // }
     }
 
-    void NoTestSproutingRule1WithPdesIn3D() 
+    void TestSproutingRule1WithPdesBoxIn3D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -5427,7 +6369,7 @@ public:
         MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier_vessel_segment, (p_pde, p_bc_vessel_segment, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_vessel_segment->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_vessel_segment->SetOutputGradient(true);
-        p_pde_modifier_vessel_segment->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier_vessel_segment->SetupInitialSolutionVectorVEGF(cell_population);
 
         MAKE_PTR_ARGS(SproutingRuleWithPdes, p_sprouting_rule_vessel_segment, (0.08, 2.0, p_pde_modifier_vessel_segment, 1.0, 0.3, 0.98, 0.4));
 
@@ -5454,34 +6396,34 @@ public:
         TS_ASSERT_DELTA(daughter_location_vessel_segment[2], expected_daughter_location_vessel_segment[2], 1e-6);
 
         // archiving
-        OutputFileHandler handler("archive", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
-        {
-            // Create PDE and boundary condition objects
-            MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
-            SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.08, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (0.1, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,0.1, 0.1));
+        //     SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.08, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
 
-            output_arch << p_sprouting_rule;
+        //     output_arch << p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
-        {
-            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-            boost::archive::text_iarchive input_arch(ifs);
+        //     delete p_sprouting_rule;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
 
-            SproutingRuleWithPdes* p_sprouting_rule;
-            input_arch >> p_sprouting_rule;
+        //     SproutingRuleWithPdes* p_sprouting_rule;
+        //     input_arch >> p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
+        //     delete p_sprouting_rule;
+        // }
     }
 
-    void NoTestSproutingRule2WithPdesIn3D() 
+    void TestSproutingRule2WithPdesBoxIn3D() throw(Exception)
     {
         // creation of the mesh
         std::vector<Node<3>*> nodes;
@@ -5580,7 +6522,8 @@ public:
         MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier_tip_cell, (p_pde, p_bc_tip_cell, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
         p_pde_modifier_tip_cell->SetDependentVariableName("vegf_femesh_variable");
         p_pde_modifier_tip_cell->SetOutputGradient(true);
-        p_pde_modifier_tip_cell->SetupInitialSolutionVector(cell_population);
+        p_pde_modifier_tip_cell->SetupInitialSolutionVectorVEGF(cell_population);
+
         MAKE_PTR_ARGS(SproutingRuleWithPdes, p_sprouting_rule_tip_cell, (0.98, 2.0, p_pde_modifier_tip_cell, 1, 0.3, 0.98, 0.4));
 
         TS_ASSERT_DELTA(p_sprouting_rule_tip_cell->GetSproutingProbability(cell_population, p_cell_forvesseltip), 0.97, 1e-2);
@@ -5602,31 +6545,31 @@ public:
         TS_ASSERT_DELTA(norm_2(daughter_location_tip_cell), norm_2(expected_daughter_location_tip_cell), 1e-0);
 
         // archiving
-        OutputFileHandler handler("archive", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
-        {
-            // Create PDE and boundary condition objects
-            MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
-            MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 8));
-            MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
-            SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
+        // OutputFileHandler handler("archive", false);
+        // std::string archive_filename = handler.GetOutputDirectoryFullPath() + "sprouting_rule.arch";
+        // {
+        //     // Create PDE and boundary condition objects
+        //     MAKE_PTR_ARGS(VegfEquationPde<3>, p_pde, (cell_population, 1.0, 1.0, 1.0, 0.1, 0.01));
+        //     MAKE_PTR_ARGS(VegfBoundaryCondition<3>, p_bc, (1.0, 0.1, 8));
+        //     MAKE_PTR_ARGS(MolecularConcentrationsBoxDomainPdeModifier<3>, p_pde_modifier, (p_pde, p_bc, false, p_cuboid, 1.0,nullptr,0.0,1.0, 0.1));
+        //     SproutingRuleWithPdes* const p_sprouting_rule = new SproutingRuleWithPdes(0.98, 2.0, p_pde_modifier, 1, 0.3, 0.98, 0.4);
 
-            std::ofstream ofs(archive_filename.c_str());
-            boost::archive::text_oarchive output_arch(ofs);
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
 
-            output_arch << p_sprouting_rule;
+        //     output_arch << p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
-        {
-            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-            boost::archive::text_iarchive input_arch(ifs);
+        //     delete p_sprouting_rule;
+        // }
+        // {
+        //     std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        //     boost::archive::text_iarchive input_arch(ifs);
 
-            SproutingRuleWithPdes* p_sprouting_rule;
-            input_arch >> p_sprouting_rule;
+        //     SproutingRuleWithPdes* p_sprouting_rule;
+        //     input_arch >> p_sprouting_rule;
 
-            delete p_sprouting_rule;
-        }
+        //     delete p_sprouting_rule;
+        // }
     }
 
     void NoTestForcesTimeIn2D()
@@ -5855,7 +6798,7 @@ public:
 
         // Chemotactic force (tip cells only) 
         typedef ChemoForceWithConstantVegf<2> ChemoForceWithConstantVegf;
-        MAKE_PTR_ARGS(ChemoForceWithConstantVegf, p_chemo_force, (input_val_chi, input_val_vegf_constantbackground)); 
+        MAKE_PTR_ARGS(ChemoForceWithConstantVegf, p_chemo_force, (input_val_chi, 1e-4)); 
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
