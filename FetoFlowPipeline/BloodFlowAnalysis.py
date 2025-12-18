@@ -14,21 +14,24 @@ import matplotlib.pyplot as plt
 from DataExtractionFetoFlow import DataExtractionFetoFlow
 runner = DataExtractionFetoFlow
 
-main_pathway = "/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(20) + "Source" + str(5) + "/results_from_time_0/"
+#main_pathway = "/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(20) + "Source" + str(5) + "/results_from_time_0/"
+main_pathway = "/Users/coli171/Desktop/test/"
 file_nodes = main_pathway + "results.viznodes"
 file_connectivity = main_pathway + "results.vizconnectivity"
 dim = 2
 
 
 # Placentagen visualisation: check that the data is well organised for fetoflow
-nodes = runner.read_csv_to_numpy("/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/Figures/NodesCoordinatesAngiogenesisModel.csv")
+#nodes = runner.read_csv_to_numpy("/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/Figures/NodesCoordinatesAngiogenesisModel.csv")
+nodes = runner.read_csv_to_numpy(main_pathway + "NodesCoordinatesAngiogenesisModel.csv")
 zeros_column = np.zeros((nodes.shape[0], 1))
 nodes_3d = np.hstack((nodes, zeros_column))
 indices = np.arange(len(nodes_3d)).reshape(-1, 1)
 indices = indices.astype(int)
 nodes_indexed = np.concatenate((indices, nodes_3d), axis=1)
 
-elems = runner.read_csv_to_numpy("/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/Figures/CellConnectivityAngiogenesisModel.csv")
+#elems = runner.read_csv_to_numpy("/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/Figures/CellConnectivityAngiogenesisModel.csv")
+elems = runner.read_csv_to_numpy(main_pathway + "CellConnectivityAngiogenesisModel.csv")
 elems = elems.astype(int)
 elems = elems[1:]
 indices = np.arange(len(elems)).reshape(-1, 1)
@@ -266,7 +269,9 @@ edges = extract_global_numbers(main_pathway + "E_ipelem.ipelem")
 # === PREP DATA ===
 # Prepare terminal units info
 coordinates = np.array(units_dict[('coordinates',3)])
-flow = np.array(flows['Flow'])
+flow = np.array([flow for flow in q.items()])
+print(len(coordinates))
+print(flow)
 
 # Prepare tree info
 edges = edges - 1 # IMPORTANT: python is zero-indexing, so adjust connections accordingly
@@ -276,21 +281,12 @@ ps.init()
 ps.set_verbosity(0)
 ps.set_use_prefs_file(False)
 
-
-# Define a 3D volume using the Bounding Box of the 3D image in [X,Y,Z] format
-img_block = ps.register_volume_grid("image block", (shape[2],shape[1],shape[0]),bound_low=(0,0,0),
-                bound_high=(shape[2]*spacing[0],shape[1]*spacing[1],-shape[0]*spacing[2]),enabled=False)
-# Add image intensity values to the 3D volume in [X,Y,Z] format
-img_block.add_scalar_quantity("intensity",swap_arr,defined_on='nodes',enabled=True)
-
 # Register acinus tissue units
 terminal = ps.register_point_cloud("terminal",coordinates,radius=0.002,enabled=False)
 terminal.add_scalar_quantity("flow",flow,cmap='jet',enabled=True)
 
 # Register tree
 tree = ps.register_curve_network("tree",nodes,edges,color=[155/255,155/255,155/255])
-tree.add_scalar_quantity("radius",radius,defined_on='edges',enabled=False) # uncomment this if you want to visualise nodes too
-tree.set_edge_radius_quantity("radius") # uncomment this if you want to visualise nodes too
 
 # Set up planes
 cor_plane_pos = ps.add_scene_slice_plane()
@@ -319,5 +315,4 @@ ps.set_navigation_style("free")
 ps.set_up_dir("z_up")
 ps.set_front_dir("neg_y_front")
 ps.set_background_color([0,0,0])
-#ps.show()
-ps.screenshot(main_pathway + "output.png")
+ps.show()
