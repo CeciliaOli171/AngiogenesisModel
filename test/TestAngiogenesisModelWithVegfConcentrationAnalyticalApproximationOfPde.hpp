@@ -86,6 +86,7 @@
 #include "PottsMeshWriter.hpp"
 #include "VtkMeshWriter.hpp"
 #include "AnastomosisWriter.hpp"
+#include "ConnectivityWriter.hpp"
 
 // PDE solvers
 #include "BoundaryConditionsContainer.hpp"
@@ -111,7 +112,7 @@ class TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPde : p
 
 public:
 
-    void NoTestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn2D() throw(Exception)
+    void TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn2D() throw(Exception)
     {
         ///////////
         // INPUT // 
@@ -168,7 +169,7 @@ public:
         nodes.push_back(new Node<2>(2u, false, boundary_cuboid_max-2, boundary_cuboid_max/2));
 
         NodesOnlyMesh<2> mesh;
-        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+        mesh.ConstructNodesWithoutMesh(nodes, 50.0); // box domain of the model: estimation
 
         ///////////
         // CELLS // 
@@ -194,6 +195,10 @@ public:
         cells[0]->SetMutationState(p_vessel_state);
         cells[1]->SetMutationState(p_vessel_state);
         cells[2]->SetMutationState(p_tip_state);
+
+        cells[0]->GetCellData()->SetItem("Connectivity", 0);
+        cells[1]->GetCellData()->SetItem("Connectivity", 0);
+        cells[2]->GetCellData()->SetItem("Connectivity", 1);
         
         // creation of a population of cells 
         NodeBasedCellPopulation<2> cell_population(mesh, cells);
@@ -208,13 +213,13 @@ public:
         cell_population.AddCellWriter<BirthTimeCellWriter>();
         cell_population.AddCellWriter<TortuosityWriter>();
         cell_population.AddCellWriter<AnastomosisWriter>();
+        cell_population.AddCellWriter<ConnectivityWriter>();
 
         // fully constrain the first cell using the boundary condition 
         unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
         std::vector<unsigned> pinned_node_indices;
         pinned_node_indices.push_back(node_index_tip_cell);
-        typedef PinnedCellsBoundaryCondition<2,2> PinnedCellsBoundaryCondition;
-        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
+        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition<2>, p_boundary_condition, (&cell_population, pinned_node_indices));
 
         //////////////
         // SETTINGS // 
@@ -242,24 +247,20 @@ public:
         // 2) UPDATING CELL POSITION 
 
         // Random force (all cells)
-        typedef RandomForce<2> RandomForce;
-        MAKE_PTR_ARGS(RandomForce, p_random_force, (input_val_sigma));
+        MAKE_PTR_ARGS(RandomForce<2>, p_random_force, (input_val_sigma));
         simulator.AddForce(p_random_force);
 
         // Chemotactic force (tip cells only) 
-        typedef ChemoForceWithAnalyticalApproximationPde<2> ChemoForceWithAnalyticalApproximationPde;
-        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, 1e-4,  input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, 
+        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde<2>, p_chemo_force, (input_val_chi, 1e-4,  input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, 
         input_val_vegf_constantbackground));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
-        typedef PersistenceForce<2> PersistenceForce;
-        MAKE_PTR_ARGS(PersistenceForce, p_persistence_force, (input_val_omegap));
+        MAKE_PTR_ARGS(PersistenceForce<2>, p_persistence_force, (input_val_omegap));
         simulator.AddForce(p_persistence_force);
 
         // Mechanical force (all cells)
-        typedef LinearMechanicalForceModified<2> LinearMechanicalForceModified;
-        MAKE_PTR(LinearMechanicalForceModified, p_mechanical_force);
+        MAKE_PTR(LinearMechanicalForceModified<2>, p_mechanical_force);
         cell_population.SetMeinekeDivisionSeparation(1.0);
         p_mechanical_force->SetMeinekeSpringStiffness(15.0*input_val_S);
         p_mechanical_force->SetMeinekeDivisionRestingSpringLength(1.0);
@@ -268,26 +269,22 @@ public:
         simulator.AddForce(p_mechanical_force);
 
         // Angular force (vessel segment only)
-        typedef AngularForce<2> AngularForce;
-        MAKE_PTR_ARGS(AngularForce, p_angular_force, (-input_val_omegaa)); 
+        MAKE_PTR_ARGS(AngularForce<2>, p_angular_force, (-input_val_omegaa)); 
         simulator.AddForce(p_angular_force);
 
         // 3) DIVISION OF CELLS 
 
         // Set the division rule for our population to be the random direction division rule
-        typedef SproutingRuleWithAnalyticalApproximationPde<2,2> SproutingRuleWithAnalyticalApproximationPde;
-        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin));
+        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde<2>, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-        typedef DaughterCellModifier<2> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength, input_val_thresholdlength));
+        MAKE_PTR_ARGS(DaughterCellModifier<2>, p_daughtercell_modifier, (input_val_anastomosislength, input_val_thresholdlength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
-        typedef DirectionalPersistenceCellModifier<2> DirectionalPersistenceCellModifier;
-        MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
+        MAKE_PTR_ARGS(DirectionalPersistenceCellModifier<2>, p_persistenceforce_modifier, ());
         simulator.AddSimulationModifier(p_persistenceforce_modifier);
 
         cell_population.Update();
@@ -301,7 +298,7 @@ public:
         SimulationTime::Destroy();
     }
 
-    void TestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn3D() 
+    void NoTestAngiogenesisModelWithVegfConcentrationAnalyticalApproximationOfPdeIn3D() 
     {
         ///////////
         // INPUT // 
@@ -358,7 +355,7 @@ public:
         nodes.push_back(new Node<3>(2u, false, boundary_cuboid_max-2, boundary_cuboid_max/2, boundary_cuboid_max/2));
 
         NodesOnlyMesh<3> mesh;
-        mesh.ConstructNodesWithoutMesh(nodes, 1.5); // cut-off length for connectivity of the nodes (=3*Rc=15 for Perfhal's model)
+        mesh.ConstructNodesWithoutMesh(nodes, 50.0); // estimation of box domain
 
         ///////////
         // CELLS // 
@@ -384,6 +381,10 @@ public:
         cells[0]->SetMutationState(p_vessel_state);
         cells[1]->SetMutationState(p_vessel_state);
         cells[2]->SetMutationState(p_tip_state);
+
+        cells[0]->GetCellData()->SetItem("Connectivity", 0);
+        cells[1]->GetCellData()->SetItem("Connectivity", 0);
+        cells[2]->GetCellData()->SetItem("Connectivity", 1);
         
         // creation of a population of cells 
         NodeBasedCellPopulation<3> cell_population(mesh, cells);
@@ -398,13 +399,13 @@ public:
         cell_population.AddCellWriter<BirthTimeCellWriter>();
         cell_population.AddCellWriter<TortuosityWriter>();
         cell_population.AddCellWriter<AnastomosisWriter>();
+        cell_population.AddCellWriter<ConnectivityWriter>();
 
         // fully constrain the first cell using the boundary condition 
         unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
         std::vector<unsigned> pinned_node_indices;
         pinned_node_indices.push_back(node_index_tip_cell);
-        typedef PinnedCellsBoundaryCondition<3,3> PinnedCellsBoundaryCondition;
-        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition, p_boundary_condition, (&cell_population, pinned_node_indices));
+        MAKE_PTR_ARGS(PinnedCellsBoundaryCondition<3>, p_boundary_condition, (&cell_population, pinned_node_indices));
 
         //////////////
         // SETTINGS // 
@@ -432,25 +433,21 @@ public:
         // 2) UPDATING CELL POSITION 
 
         // Random force (all cells)
-        typedef RandomForce<3> RandomForce;
-        MAKE_PTR_ARGS(RandomForce, p_random_force, (input_val_sigma));
+        MAKE_PTR_ARGS(RandomForce<3>, p_random_force, (input_val_sigma));
         simulator.AddForce(p_random_force);
 
         // Chemotactic force (tip cells only) 
-        typedef ChemoForceWithAnalyticalApproximationPde<3> ChemoForceWithAnalyticalApproximationPde;
-        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde, p_chemo_force, (input_val_chi, 1e-4, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, 
+        MAKE_PTR_ARGS(ChemoForceWithAnalyticalApproximationPde<3>, p_chemo_force, (input_val_chi, 1e-4, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, 
         input_val_vegf_boundaryvalue, 
         input_val_vegf_constantbackground));
         simulator.AddForce(p_chemo_force);
 
         //Persistence force (tip cells only)
-        typedef PersistenceForce<3> PersistenceForce;
-        MAKE_PTR_ARGS(PersistenceForce, p_persistence_force, (input_val_omegap));
+        MAKE_PTR_ARGS(PersistenceForce<3>, p_persistence_force, (input_val_omegap));
         simulator.AddForce(p_persistence_force);
 
         // Mechanical force (all cells)
-        typedef LinearMechanicalForceModified<3> LinearMechanicalForceModified;
-        MAKE_PTR(LinearMechanicalForceModified, p_mechanical_force);
+        MAKE_PTR(LinearMechanicalForceModified<3>, p_mechanical_force);
         cell_population.SetMeinekeDivisionSeparation(1.0);
         p_mechanical_force->SetMeinekeSpringStiffness(15.0*input_val_S);
         p_mechanical_force->SetMeinekeDivisionRestingSpringLength(1.0);
@@ -459,26 +456,22 @@ public:
         simulator.AddForce(p_mechanical_force);
 
         // Angular force (vessel segment only)
-        typedef AngularForce<3> AngularForce;
-        MAKE_PTR_ARGS(AngularForce, p_angular_force, (-input_val_omegaa)); 
+        MAKE_PTR_ARGS(AngularForce<3>, p_angular_force, (-input_val_omegaa)); 
         simulator.AddForce(p_angular_force);
 
         // 3) DIVISION OF CELLS 
 
         // Set the division rule for our population to be the random direction division rule
-        typedef SproutingRuleWithAnalyticalApproximationPde<3,3> SproutingRuleWithAnalyticalApproximationPde;
-        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin));
+        MAKE_PTR_ARGS(SproutingRuleWithAnalyticalApproximationPde<3>, p_division_rule_to_set, (input_val_maxsproutingrate, input_val_thresholdlength, input_val_vegf_diffusioncoeff, input_val_vegf_decaycoeff, input_val_vegf_creationcoeff, input_val_vegf_consumptioncoeff, input_val_vegf_boundaryvalue, input_val_vegf_constantbackground, input_val_cmax, input_val_cmin, input_val_pmax, input_val_pmin));
 
         // Set the division rule for our population to be the new division rule implemented earlier 
         cell_population.SetCentreBasedDivisionRule(p_division_rule_to_set);
 
         // we set for each new daughter cell in the population if it is a tip cell or a vessel segment by using the function DaughterTypeofCell
-        typedef DaughterCellModifier<3> DaughterCellModifier;
-        MAKE_PTR_ARGS(DaughterCellModifier, p_daughtercell_modifier, (input_val_anastomosislength, input_val_thresholdlength));
+        MAKE_PTR_ARGS(DaughterCellModifier<3>, p_daughtercell_modifier, (input_val_anastomosislength, input_val_thresholdlength));
         simulator.AddSimulationModifier(p_daughtercell_modifier);
 
-        typedef DirectionalPersistenceCellModifier<3> DirectionalPersistenceCellModifier;
-        MAKE_PTR_ARGS(DirectionalPersistenceCellModifier, p_persistenceforce_modifier, ());
+        MAKE_PTR_ARGS(DirectionalPersistenceCellModifier<3>, p_persistenceforce_modifier, ());
         simulator.AddSimulationModifier(p_persistenceforce_modifier);
 
         cell_population.Update();

@@ -9,6 +9,30 @@ import statistics as stats
 from scipy.spatial import ConvexHull
 
 class ParametersSensitivityRunner:
+    def ConnectivityArray(file_connectivity, dim):
+        # we open the file
+        f = open(file_connectivity, 'r')
+
+        for line in f:
+            pass
+        last_line = line
+
+        list_connectivity = [float(x) for x in last_line.split()[1:]]
+
+        NumberElements = int((len(list_connectivity))/2)
+        arraylist_connectivity = np.reshape(list_connectivity, (NumberElements,2))
+
+        # creation of the list of tuples
+        array_connectivity = []
+        for k in range(NumberElements):
+            tuple_connectivity = (arraylist_connectivity[k])
+            array_connectivity.append(tuple_connectivity)
+
+        # we close the file 
+        f.close()
+
+        return array_connectivity
+        
     # function reading the file 'results.vizcelltypes' and returning a list of 0, 1, 2 corresponding to the mutation states 
     def MutationStates(file_cellmutation):
         # initialisation of the list

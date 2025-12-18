@@ -178,7 +178,6 @@ void DaughterCellModifier<DIM>::CalculateAnastomosisVector( AbstractCellPopulati
 
             pParentCell->GetCellData()->SetItem("Anastomosis", 1);
             pClosestNeighbour->GetCellData()->SetItem("Anastomosis", 1);
-
         } else if (pClosestNeighbour->GetMutationState()->IsType<VesselSegmentMutationState>() && !(IsBranchingSegmentNextToCell(rCellPopulation, p_node_population, pParentCell))){
             // if it is a vessel segment, the parent cell becomes a vessel segment and the neighbour cell becomes a branching cell 
             MAKE_PTR(VesselSegmentMutationState, p_vessel_state);
@@ -226,6 +225,7 @@ void DaughterCellModifier<DIM>::CalculateAnastomosisVector( AbstractCellPopulati
         double tortuosity_neighbour = pClosestNeighbour->GetCellData()->GetItem("TortuosityParent");
         double tortuosity_parent = tortuosity_neighbour + norm_2(x_parent-x_closest_neighbour);
         pParentCell->GetCellData()->SetItem("TortuosityParent", tortuosity_parent);
+        pParentCell->GetCellData()->SetItem("AnastomosisConnectivity", closest_indice);
 
         // TRACE("ANASTOMOSIS");
     } 
@@ -260,6 +260,7 @@ void DaughterCellModifier<DIM>::SetupSolve(AbstractCellPopulation<DIM,DIM>& rCel
         cell_iter->GetCellData()->SetItem("TortuosityDaughter", tortuosity);
         cell_iter->GetCellData()->SetItem("LoopNumber", 0.0);
         cell_iter->GetCellData()->SetItem("Anastomosis", 0); // 0 if no anastomosis, 1 if anastomosis between two tip cells, 2 if anastomosis between tip cell and stalk cell/branching cell 
+        cell_iter->GetCellData()->SetItem("AnastomosisConnectivity", 0);
     }
 
     UpdateCellData(rCellPopulation);
@@ -333,6 +334,7 @@ void DaughterCellModifier<DIM>::UpdateCellData(AbstractCellPopulation<DIM,DIM>& 
                 pDaughterCell->SetCellProliferativeType(p_vessel_type);
                 pDaughterCell->InitialiseCellCycleModel();
                 pDaughterCell->GetCellData()->SetItem("BranchingPoint", 0);
+                pParentCell->GetCellData()->SetItem("Connectivity", node_index);
             }
             pDaughterCell->GetCellData()->SetItem("node_index", node_index);
             pDaughterCell->GetCellData()->SetItem("OriginalParent", node_index_data);

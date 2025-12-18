@@ -16,6 +16,8 @@ from scipy.spatial import ConvexHull
 from scipy.stats import linregress
 import scipy.integrate as integrate
 
+import pandas as pd
+
 import os, sys
 sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 from ParametersSensitivityRunner import ParametersSensitivityRunner
@@ -59,6 +61,37 @@ main_file_path = "/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025
 #main_file_path = "/Users/coli171/Chaste/Output/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" # 2D
 #main_file_path = "/Users/coli171/Chaste/Output/PaperAngiogenesisModel2025/PaperModel2025Analysis3D/" # 3D
 
+file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(20) + "Source" + str(5)
+file_nodescoordinates = file_path_analyticalapproxpde + "/results_from_time_0/results.viznodes"
+file_branchesnumber = file_path_analyticalapproxpde + "/results_from_time_0/results.vizbranchnumber"
+file_anastomosis = file_path_analyticalapproxpde + "/results_from_time_0/results.vizanastomosis"
+file_cellmutation = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
+file_cellconnectivity = file_path_analyticalapproxpde + "/results_from_time_0/results.vizconnectivity"
+# nodes coordinates
+data = runner.NodesCoordinates(file_nodescoordinates, 2)
+output_path = main_file_path + "Figures/NodesCoordinatesAngiogenesisModel.csv"
+df = pd.DataFrame(data)
+df.to_csv(output_path, index=False)
+# branches number
+data_branches = runner.BranchNumber(file_branchesnumber)
+output_path_branches = main_file_path + "Figures/BranchesNumberAngiogenesisModel.csv"
+df = pd.DataFrame(data_branches)
+df.to_csv(output_path_branches, index=False)
+# anastomosis 
+data_anastomosis = runner.AnastomosisTypes(file_anastomosis)
+output_path_anastomosis = main_file_path + "Figures/AnastomosisAngiogenesisModel.csv"
+df = pd.DataFrame(data_anastomosis)
+df.to_csv(output_path_anastomosis, index=False)
+# cell mutation
+data_cellmutation = runner.MutationStates(file_cellmutation)
+output_path_cellmutation = main_file_path + "Figures/CellMutationAngiogenesisModel.csv"
+df = pd.DataFrame(data_cellmutation)
+df.to_csv(output_path_cellmutation, index=False)
+# cell connectivity
+data_cellconnectivity = runner.ConnectivityArray(file_cellconnectivity, 2)
+output_path_cellconnectivity = main_file_path + "Figures/CellConnectivityAngiogenesisModel.csv"
+df = pd.DataFrame(data_cellconnectivity)
+df.to_csv(output_path_cellconnectivity, index=False)
 
 ## Settings
 TestBaseline = False
@@ -105,7 +138,7 @@ GraphConvergenceTime = False
 GraphFirstTimeCellReachingCentreLesion = False
 GraphFirstTimeCellReachingLesion = False
 GraphErrorFirstTimeCellReachingLesionPositionLesion = False
-GraphVascularisation = True
+GraphVascularisation = False
 
 ## Functions 
 

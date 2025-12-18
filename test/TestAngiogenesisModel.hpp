@@ -68,7 +68,7 @@
 #include "CellMutationStatesWriter.hpp"
 #include "BirthTimeCellWriter.hpp"
 #include "TortuosityWriter.hpp"
-
+#include "ConnectivityWriter.hpp"
 
 // PDE solvers
 #include "BoundaryConditionsContainer.hpp"
@@ -135,6 +135,10 @@ public:
           cells[0]->SetMutationState(p_vessel_state);
           cells[1]->SetMutationState(p_vessel_state);
           cells[2]->SetMutationState(p_tip_state);
+
+          cells[0]->GetCellData()->SetItem("Connectivity", 0);
+          cells[1]->GetCellData()->SetItem("Connectivity", 0);
+          cells[2]->GetCellData()->SetItem("Connectivity", 1);
           
           // creation of a population of cells 
           NodeBasedCellPopulation<2> cell_population(mesh, cells);
@@ -145,6 +149,7 @@ public:
           cell_population.AddCellWriter<BranchNumberWriter>();
           cell_population.AddCellWriter<BirthTimeCellWriter>();
           cell_population.AddCellWriter<TortuosityWriter>();
+          cell_population.AddCellWriter<ConnectivityWriter>();
 
           unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
 
@@ -269,6 +274,10 @@ public:
           cells[0]->SetMutationState(p_vessel_state);
           cells[1]->SetMutationState(p_vessel_state);
           cells[2]->SetMutationState(p_tip_state);
+
+          cells[0]->GetCellData()->SetItem("Connectivity", 0);
+          cells[1]->GetCellData()->SetItem("Connectivity", 0);
+          cells[2]->GetCellData()->SetItem("Connectivity", 1);
           
           // creation of a population of cells 
           NodeBasedCellPopulation<3> cell_population(mesh, cells);
@@ -279,6 +288,7 @@ public:
           cell_population.AddCellWriter<BranchNumberWriter>();
           cell_population.AddCellWriter<BirthTimeCellWriter>();
           cell_population.AddCellWriter<TortuosityWriter>();
+          cell_population.AddCellWriter<ConnectivityWriter>();
 
           unsigned node_index_tip_cell = cell_population.GetLocationIndexUsingCell(0);
 
