@@ -45,6 +45,27 @@ class DataExtractionFetoFlow:
         f.close()
 
         return dict_nodes
+    
+    def NodesCoordinates(file_nodescoordinates, dim):
+        # initialisation of the list
+        list_nodescoordinates = []
+
+        # we open the file
+        f = open(file_nodescoordinates, 'r')
+
+        for line in f:
+            pass
+        last_line = line
+
+        list_nodescoordinates = [float(x) for x in last_line.split()[1:]]
+
+        NumberNodes = int((len(list_nodescoordinates))/dim)
+        array_nodescoordinates = np.reshape(list_nodescoordinates, (NumberNodes,dim))
+
+        # we close the file 
+        f.close()
+
+        return array_nodescoordinates
 
     def ConnectivityArray(file_connectivity, dim):
         # we open the file
@@ -69,4 +90,16 @@ class DataExtractionFetoFlow:
         f.close()
 
         return array_connectivity
+    
+    def read_viznodes_to_csv(file_nodes, main_file_path, dim):
+        data_nodes = DataExtractionFetoFlow.NodesCoordinates(file_nodes, 2)
+        output_path_nodes = main_file_path + "NodesCoordinatesAngiogenesisModel.csv"
+        df = pd.DataFrame(data_nodes)
+        df.to_csv(output_path_nodes, index=False)     
+        
+    def read_vizconnectivity_to_csv(file_connectivity, main_file_path, dim):
+        data_connectivity = DataExtractionFetoFlow.ConnectivityArray(file_connectivity, 2)
+        output_path_cellconnectivity = main_file_path + "CellConnectivityAngiogenesisModel.csv"
+        df = pd.DataFrame(data_connectivity)
+        df.to_csv(output_path_cellconnectivity, index=False)
 
