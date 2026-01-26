@@ -34,7 +34,7 @@ TotalTestNb = 17
 dim = 2
 # According to Stratton et al., 2002: "87% were less than 1 cm wide and 47% were less than 5 mm wide." + "97% less than 1 cm deep, and 60% were less than 5 mm deep" [in 2D] i.e. since 1 CD = 10 micrometers = 1e-2 mm therefore 5 mm = 500 CD
 # According to literature, for cancer, the tumour and the main blood vessel are separated by 40-140 micrometer, above that, necrosis and death of the tumour i.e. we can use that for the endometriotic model
-ref_point = 60
+ref_point = 40
 ref_point_centre_lesion = 0 # do not really correspond to the centre of the lesion per se  
 AreaPlane = ref_point*250
 
