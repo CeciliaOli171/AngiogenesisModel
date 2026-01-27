@@ -126,13 +126,13 @@ if QuantitativeAnalysis:
         fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
 
         sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        comparisonflow_analyticalapproxpde_average = np.zeros(10)
-        comparisonflow_constant_average = np.zeros(10)
+        flow_analyticalapproxpde_average = np.zeros(10)
+        flow_constant_average = np.zeros(10)
 
         # Constant 
         for SourceNb in range(1, 7):
-            comparisonflow_analyticalapproxpde_list = []
-            comparisonflow_constant_list = []
+            flow_analyticalapproxpde_list = []
+            flow_constant_list = []
             for SeedNb in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]: 
                 if hpc:
                     main_pathway_constant = "/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" + "CoupledModel2DConstant/CoupledModel2DConstantSeed" 
@@ -149,18 +149,12 @@ if QuantitativeAnalysis:
                 nodes_analyticalapproxpde, edges_analyticalapproxpde = runner.nodes_elements_calculation(main_pathway_analyticalapproxpde, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
                 nodes_constant, edges_constant = runner.nodes_elements_calculation(main_pathway_constant, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
 
-                indices_vesseltips_constant = runner.find_vesseltips(nodes_constant, edges_constant)
-                indices_vesseltips_analyticalapproxpde = runner.find_vesseltips(nodes_analyticalapproxpde, edges_analyticalapproxpde)
-
                 # calculate flow and pressure for one random seed and one source term
                 nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, pressure_analyticalapproxpde_ps, flow_analyticalapproxpde_ps = runner.flow_pressure_calculation(main_pathway_analyticalapproxpde, nodes_analyticalapproxpde, edges_analyticalapproxpde, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
                 nodes_constant_ps, edges_constant_ps, pressure_constant_ps, flow_constant_ps = runner.flow_pressure_calculation(main_pathway_constant, nodes_constant, edges_constant, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
 
-                flow_constant_vesseltips = [flow_constant[i] for i in indices_vesseltips_constant]
-                flow_analyticalapproxpde_vesseltips = [flow_analyticalapproxpde[i] for i in indices_vesseltips_analyticalapproxpde]
-
-                flow_analyticalapproxpde = stats.mean(flow_analyticalapproxpde_vesseltips)/flow_analyticalapproxpde_ps[0]
-                flow_constant = stats.mean(flow_constant_vesseltips)/flow_constant_ps[0]
+                flow_analyticalapproxpde = stats.mean(flow_analyticalapproxpde_ps)
+                flow_constant = stats.mean(flow_constant_ps)
 
                 # get the average flow for this realisation 
                 flow_analyticalapproxpde_list.append(flow_analyticalapproxpde)

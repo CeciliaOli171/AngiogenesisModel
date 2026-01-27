@@ -34,7 +34,7 @@ TotalTestNb = 17
 dim = 2
 # According to Stratton et al., 2002: "87% were less than 1 cm wide and 47% were less than 5 mm wide." + "97% less than 1 cm deep, and 60% were less than 5 mm deep" [in 2D] i.e. since 1 CD = 10 micrometers = 1e-2 mm therefore 5 mm = 500 CD
 # According to literature, for cancer, the tumour and the main blood vessel are separated by 40-140 micrometer, above that, necrosis and death of the tumour i.e. we can use that for the endometriotic model
-ref_point = 40
+ref_point = 20
 ref_point_centre_lesion = 0 # do not really correspond to the centre of the lesion per se  
 AreaPlane = ref_point*250
 
@@ -61,37 +61,37 @@ main_file_path = "/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025
 #main_file_path = "/Users/coli171/Chaste/Output/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" # 2D
 #main_file_path = "/Users/coli171/Chaste/Output/PaperAngiogenesisModel2025/PaperModel2025Analysis3D/" # 3D
 
-file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(20) + "Source" + str(5)
-file_nodescoordinates = file_path_analyticalapproxpde + "/results_from_time_0/results.viznodes"
-file_branchesnumber = file_path_analyticalapproxpde + "/results_from_time_0/results.vizbranchnumber"
-file_anastomosis = file_path_analyticalapproxpde + "/results_from_time_0/results.vizanastomosis"
-file_cellmutation = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
-file_cellconnectivity = file_path_analyticalapproxpde + "/results_from_time_0/results.vizconnectivity"
-# nodes coordinates
-data = runner.NodesCoordinates(file_nodescoordinates, 2)
-output_path = main_file_path + "Figures/NodesCoordinatesAngiogenesisModel.csv"
-df = pd.DataFrame(data)
-df.to_csv(output_path, index=False)
-# branches number
-data_branches = runner.BranchNumber(file_branchesnumber)
-output_path_branches = main_file_path + "Figures/BranchesNumberAngiogenesisModel.csv"
-df = pd.DataFrame(data_branches)
-df.to_csv(output_path_branches, index=False)
-# anastomosis 
-data_anastomosis = runner.AnastomosisTypes(file_anastomosis)
-output_path_anastomosis = main_file_path + "Figures/AnastomosisAngiogenesisModel.csv"
-df = pd.DataFrame(data_anastomosis)
-df.to_csv(output_path_anastomosis, index=False)
-# cell mutation
-data_cellmutation = runner.MutationStates(file_cellmutation)
-output_path_cellmutation = main_file_path + "Figures/CellMutationAngiogenesisModel.csv"
-df = pd.DataFrame(data_cellmutation)
-df.to_csv(output_path_cellmutation, index=False)
-# cell connectivity
-data_cellconnectivity = runner.ConnectivityArray(file_cellconnectivity, 2)
-output_path_cellconnectivity = main_file_path + "Figures/CellConnectivityAngiogenesisModel.csv"
-df = pd.DataFrame(data_cellconnectivity)
-df.to_csv(output_path_cellconnectivity, index=False)
+# file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(20) + "Source" + str(5)
+# file_nodescoordinates = file_path_analyticalapproxpde + "/results_from_time_0/results.viznodes"
+# file_branchesnumber = file_path_analyticalapproxpde + "/results_from_time_0/results.vizbranchnumber"
+# file_anastomosis = file_path_analyticalapproxpde + "/results_from_time_0/results.vizanastomosis"
+# file_cellmutation = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
+# file_cellconnectivity = file_path_analyticalapproxpde + "/results_from_time_0/results.vizconnectivity"
+# # nodes coordinates
+# data = runner.NodesCoordinates(file_nodescoordinates, 2)
+# output_path = main_file_path + "Figures/NodesCoordinatesAngiogenesisModel.csv"
+# df = pd.DataFrame(data)
+# df.to_csv(output_path, index=False)
+# # branches number
+# data_branches = runner.BranchNumber(file_branchesnumber)
+# output_path_branches = main_file_path + "Figures/BranchesNumberAngiogenesisModel.csv"
+# df = pd.DataFrame(data_branches)
+# df.to_csv(output_path_branches, index=False)
+# # anastomosis 
+# data_anastomosis = runner.AnastomosisTypes(file_anastomosis)
+# output_path_anastomosis = main_file_path + "Figures/AnastomosisAngiogenesisModel.csv"
+# df = pd.DataFrame(data_anastomosis)
+# df.to_csv(output_path_anastomosis, index=False)
+# # cell mutation
+# data_cellmutation = runner.MutationStates(file_cellmutation)
+# output_path_cellmutation = main_file_path + "Figures/CellMutationAngiogenesisModel.csv"
+# df = pd.DataFrame(data_cellmutation)
+# df.to_csv(output_path_cellmutation, index=False)
+# # cell connectivity
+# data_cellconnectivity = runner.ConnectivityArray(file_cellconnectivity, 2)
+# output_path_cellconnectivity = main_file_path + "Figures/CellConnectivityAngiogenesisModel.csv"
+# df = pd.DataFrame(data_cellconnectivity)
+# df.to_csv(output_path_cellconnectivity, index=False)
 
 ## Settings
 TestBaseline = False
@@ -130,7 +130,7 @@ GraphTimeNormFirstVesselTip = False
 
 GraphNbCellsPlane = False
 GraphCellDensityInsideLesion = False
-GraphDensityCellInsideLesionComparedToTotalCells = False
+GraphDensityCellInsideLesionComparedToTotalCells = True
 GraphBarCellsInPlane = False
 GraphErrorNbCellsPlanePositionLesion = False
 
@@ -405,8 +405,8 @@ if GraphNbBranches:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
-            file_branchesnumber_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizbranchesnumber"
-            file_branchesnumber_constant = file_path_constant + "/results_from_time_0/results.vizbranchesnumber"
+            file_branchesnumber_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizbranchnumber"
+            file_branchesnumber_constant = file_path_constant + "/results_from_time_0/results.vizbranchnumber"
             file_anastomosis_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizanastomosis"
             file_anastomosis_constant = file_path_constant + "/results_from_time_0/results.vizanastomosis"
 
@@ -1205,12 +1205,12 @@ if GraphNbCellsPlane:
     ax.plot(sourceterm, cellsafterplane_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
 
     ax.set_xlabel(r'$c_{max}$', fontsize = 26)
-    ax.set_ylabel('Cells In Lesion', fontsize = 26)
+    ax.set_ylabel('Vessel Segments Inside Lesion', fontsize = 26)
     ax.set_xticks(sourceterm)
     ax.legend(loc='upper left', fontsize = 24)
     ax.tick_params(axis = 'both', labelsize = 24)
     plt.show()
-    plt.savefig(main_file_path + "Figures/CellsAfterPlane.png")
+    plt.savefig(main_file_path + "Figures/CellsAfterPlane" + str(ref_point) + ".png")
 
 if GraphCellDensityInsideLesion:
     # plot 
@@ -1292,7 +1292,7 @@ if GraphDensityCellInsideLesionComparedToTotalCells:
     ax.plot(sourceterm, celldensitytotal_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
 
     ax.set_xlabel(r'$c_{max}$', fontsize = 30)
-    ax.set_ylabel("Percentage of Network's Cells Inside Lesion", fontsize = 24)
+    ax.set_ylabel("Percentage of Networks' Cells \n Inside Lesion", fontsize = 24)
     ax.set_xticks(sourceterm)
     ax.legend(loc='upper left', fontsize = 24)
     ax.tick_params(axis = 'both', labelsize = 24)
@@ -1761,9 +1761,9 @@ if GraphVascularisation:
     bp_constant = ax.bar(position_constant, vascularisation_constant, width=barWidth, color = '#008080', label = 'ECM Hypothesis') 
    
     ax.set_xlabel(r'$c_{max}$', fontsize = 26)
-    ax.set_ylabel('Vascularisation Percentage', fontsize = 26)
+    ax.set_ylabel('Number of Realisations with \n Lesion Vascularised', fontsize = 26)
     ax.legend(loc='upper left', fontsize = 24)
     ax.set_xticks(SourceTermTicks)
     ax.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     ax.tick_params(axis = 'both', labelsize = 24)
-    plt.savefig(main_file_path + "Figures/VascularisationBarPlot.png")
+    plt.savefig(main_file_path + "Figures/VascularisationBarPlot" + str(ref_point) + ".png")
