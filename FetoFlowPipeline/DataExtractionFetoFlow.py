@@ -313,3 +313,24 @@ class DataExtractionFetoFlow:
                 indices_vesseltips.append(potential_vesseltip_indice)
 
         return indices_vesseltips
+    
+    def find_vesseltips_insidelesion(nodes, elements, ref_point):
+        indices_vesseltips = []
+        for k in range(len(nodes)):
+            potential_vesseltip_indice = k
+            n = 0
+            for elem in elements:
+                if(elem[0] == potential_vesseltip_indice):
+                    n += 1
+                if(elem[1] == potential_vesseltip_indice):
+                    n += 1
+            if(n == 1):
+                indices_vesseltips.append(potential_vesseltip_indice)
+        
+        indices_vesseltips_insidelesion = []
+        for i in indices_vesseltips:
+            x = nodes[i]
+            if x[0] < ref_point:
+                indices_vesseltips_insidelesion.append(i)
+
+        return indices_vesseltips_insidelesion
