@@ -7,8 +7,8 @@ from DataExtractionFetoFlow import DataExtractionFetoFlow
 runner = DataExtractionFetoFlow
 
 ## Settings ##
-hpc = False
-local = True
+hpc = True
+local = False
 
 InitialisationFiles = True
 Visualisation = False
@@ -16,10 +16,10 @@ Visualisation = False
 QuantitativeAnalysis = True
 AverageFlow = False
 FlowDistributionOneRealisation = False
-FlowInsideLesion = True
+FlowInsideLesion = False
 FlowInsideLesionTwoGraphs = False
-ComparisonInletFlowOutletFlow = False
-NbVesselTipsInsideLesion = True
+ComparisonInletFlowOutletFlow = True
+NbVesselTipsInsideLesion = False
 
 dim = 2
 ref_point = 40
@@ -384,8 +384,13 @@ if QuantitativeAnalysis:
                 nodes_analyticalapproxpde, edges_analyticalapproxpde = runner.nodes_elements_calculation(main_pathway_analyticalapproxpde, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
                 nodes_constant, edges_constant = runner.nodes_elements_calculation(main_pathway_constant, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
 
-                indices_vesseltips_constant = runner.find_vesseltips(nodes_constant, edges_constant)
-                indices_vesseltips_analyticalapproxpde = runner.find_vesseltips(nodes_analyticalapproxpde, edges_analyticalapproxpde)
+                # indices_vesseltips_constant = runner.find_vesseltips(nodes_constant, edges_constant)
+                # indices_vesseltips_analyticalapproxpde = runner.find_vesseltips(nodes_analyticalapproxpde, edges_analyticalapproxpde)
+                file_cellmutation_constant = main_pathway_constant_seedsource + "results.vizmutationstates"
+                file_cellmutation_analyticalapproxpde = main_pathway_analyticalapproxpde_seedsource + "results.vizmutationstates"
+
+                indices_vesseltips_constant = runner.IndiceVesselTipsInsideLesion(file_cellmutation_constant)
+                indices_vesseltips_analyticalapproxpde = runner.IndiceVesselTipsInsideLesion(file_cellmutation_analyticalapproxpde)
 
                 # calculate flow and pressure for one random seed and one source term
                 nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, pressure_analyticalapproxpde_ps, flow_analyticalapproxpde_ps = runner.flow_pressure_calculation(main_pathway_analyticalapproxpde, nodes_analyticalapproxpde, edges_analyticalapproxpde, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
@@ -434,7 +439,7 @@ if QuantitativeAnalysis:
         ax.set_xticks(sourceterm)
         ax.tick_params(axis = 'both', labelsize = 12)
         plt.show()
-        #plt.savefig("/Users/coli171/Library/CloudStorage/OneDrive-TheUniversityofAuckland/Images/ANZIAM2026" + "ProportionFlowInsideLesion.png")
+        plt.savefig("/Users/coli171/Library/CloudStorage/OneDrive-TheUniversityofAuckland/Images/ANZIAM2026" + "ComparisonInletOutletFlow.png")
 
 
 

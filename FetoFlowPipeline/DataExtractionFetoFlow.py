@@ -334,3 +334,31 @@ class DataExtractionFetoFlow:
                 indices_vesseltips_insidelesion.append(i)
 
         return indices_vesseltips_insidelesion
+
+    def IndiceVesselTipsInsideLesion(file_cellmutation, file_nodescoordinates, ref_point, dim):
+        IndiceVesselTips = []
+
+        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
+        list_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
+
+        count = 0
+        for elem in list_cellmutation:
+            x = list_nodescoordinates[count][0]
+            if(int(elem) == 0 and x < ref_point):
+                IndiceVesselTips.append(count)
+            count += 1
+
+        return IndiceVesselTips
+
+    def IndiceVesselTipsInsideLesion(file_cellmutation):
+        IndiceVesselTips = []
+
+        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
+
+        count = 0
+        for elem in list_cellmutation:
+            if(int(elem) == 0):
+                IndiceVesselTips.append(count)
+            count += 1
+
+        return IndiceVesselTips
