@@ -114,6 +114,7 @@ GraphAnastomosisRatioBranches = False
 GraphTotalAnastomosisSource = False
 
 GraphNbBranches = False
+GraphNbVesselTips = True
 GraphNbVesselTipsTime = False
 GraphNbBranchesNbVesselTips = False
 GraphBarNbBranches = False
@@ -128,7 +129,7 @@ GraphFurthestCell = False
 GraphTimeReachingFurthestCell = False
 GraphTimeNormFirstVesselTip = False
 
-GraphNbCellsPlane = True
+GraphNbCellsPlane = False
 GraphCellDensityInsideLesion = False
 GraphDensityCellInsideLesionComparedToTotalCells = False
 GraphBarCellsInPlane = False
@@ -320,6 +321,49 @@ if GraphNbBranches:
     ax.tick_params(axis = 'both', labelsize = 24)
     plt.show()
     plt.savefig(main_file_path + "Figures/NbBranches.png")
+
+if GraphNbVesselTips:
+    # plot 
+    fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
+
+    # variable 
+    sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
+    # loop over all the files 
+    totalnumbervesseltips_analyticalapproxpde_average = np.zeros(10)
+    totalnumbervesseltips_constant_average = np.zeros(10)
+
+    for k in range(1, 11):
+        totalnumbervesseltips_analyticalapproxpde = []
+        totalnumbervesseltips_constant = []
+        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+            file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
+            file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
+
+            file_cellmutation_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizmutationstates"
+            file_cellmutation_constant = file_path_constant + "/results_from_time_0/results.vizmutationstates"
+
+            totalnumbervesseltips_analyticalapproxpde.append(runner.TotalNumberVesselTips(file_cellmutation_analyticalapproxpde))
+            totalnumbervesseltips_constant.append(runner.TotalNumberVesselTips(file_cellmutation_constant))
+
+        # scatter plot 
+        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumbervesseltips_analyticalapproxpde, alpha=0.75, color='#757575', marker='.', s = 180.0)
+        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumbervesseltips_constant, alpha=0.75, color='#c90000', marker='D', s = 35)
+
+        # average of the results for one source term 
+        totalnumbervesseltips_analyticalapproxpde_average[k-1] = stats.mean(totalnumbervesseltips_analyticalapproxpde)
+        totalnumbervesseltips_constant_average[k-1] = stats.mean(totalnumbervesseltips_constant)
+ 
+    ax.plot(sourceterm, totalnumbervesseltips_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#c90000')
+    ax.plot(sourceterm, totalnumbervesseltips_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#757575')
+
+    ax.legend(loc='upper left', fontsize = 24)
+    ax.set_xlabel(r'$c_{max}$', fontsize = 30)
+    ax.set_ylabel('Number of Vessel Tips', fontsize = 26)
+    ax.set_xticks(sourceterm)
+    ax.tick_params(axis = 'both', labelsize = 24)
+    plt.show()
+    plt.savefig(main_file_path + "Figures/NbVesselTips.png")
 
 if GraphAnastomosisVesselTips:
     # plot 
