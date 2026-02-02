@@ -135,7 +135,7 @@ if QuantitativeAnalysis:
         flowinlet_constant_average = np.zeros(10)
 
         # Constant 
-        for SourceNb in range(1, 7):
+        for SourceNb in range(1, 11):
             flow_analyticalapproxpde_list = []
             flow_constant_list = []
             flowinlet_analyticalapproxpde_list = []
@@ -147,8 +147,9 @@ if QuantitativeAnalysis:
                     main_pathway_constant_seedsource = main_pathway_constant + str(SeedNb) + "Source" + str(SourceNb) + "/results_from_time_0/"
                     main_pathway_analyticalapproxpde_seedsource = main_pathway_analyticalapproxpde + str(SeedNb) + "Source" + str(SourceNb) + "/results_from_time_0/"
                 elif local:
-                    main_pathway_constant = "/Users/coli171/Desktop/test/Constant/Seed" 
-                    main_pathway_analyticalapproxpde = "/Users/coli171/Desktop/test/AnalyticalApproxPde/Seed" 
+                    main_pathway = "/Users/coli171/Desktop/test/"
+                    main_pathway_constant = main_pathway + "Constant/Seed" 
+                    main_pathway_analyticalapproxpde = main_pathway + "AnalyticalApproxPde/Seed" 
                     main_pathway_constant_seedsource = main_pathway_constant + str(SeedNb) + "Source" + str(SourceNb) + "/"
                     main_pathway_analyticalapproxpde_seedsource = main_pathway_analyticalapproxpde + str(SeedNb) + "Source" + str(SourceNb) + "/"
 
@@ -157,7 +158,9 @@ if QuantitativeAnalysis:
                 nodes_constant, edges_constant = runner.nodes_elements_calculation(main_pathway_constant, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
 
                 indices_vesseltips_constant = runner.find_vesseltips_insidelesion(nodes_constant, edges_constant, ref_point)
+                print(len(indices_vesseltips_constant))
                 indices_vesseltips_analyticalapproxpde = runner.find_vesseltips_insidelesion(nodes_analyticalapproxpde, edges_analyticalapproxpde, ref_point)
+                print(len(indices_vesseltips_analyticalapproxpde))
 
                 # calculate flow and pressure for one random seed and one source term
                 nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, pressure_analyticalapproxpde_ps, flow_analyticalapproxpde_ps = runner.flow_pressure_calculation(main_pathway_analyticalapproxpde, nodes_analyticalapproxpde, edges_analyticalapproxpde, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
@@ -183,6 +186,8 @@ if QuantitativeAnalysis:
             # scatter plots 
             ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flow_analyticalapproxpde_list, alpha=0.75, color='#757575', marker='.', s = 90)
             ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flow_constant_list, alpha=0.75, color='#c90000', marker='D', s = 17.5)
+            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flowinlet_analyticalapproxpde_list, marker = '.', color='xkcd:teal', alpha=0.75)
+            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flowinlet_constant_list, marker = '.', color='xkcd:green', alpha=0.75)
             
             # add it to the average for this source term
             flow_analyticalapproxpde_average[SourceNb-1] = stats.mean(flow_analyticalapproxpde_list)
@@ -193,12 +198,14 @@ if QuantitativeAnalysis:
         # Steady-state
         ax.plot(sourceterm, flow_constant_average, marker = 'D', markersize = 3, label = 'ECM Hypothesis', color='#c90000')
         ax.plot(sourceterm, flow_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 7.5, color='#757575')
-        ax.plot(sourceterm, flowinlet_analyticalapproxpde_average, label = 'Inlet Flow', marker = '.', markersize = 7.5, color='xkcd:teal')
+        ax.plot(sourceterm, flowinlet_analyticalapproxpde_average, label = 'Inlet Flow Lesion Hyp', marker = '.', markersize = 7.5, color='xkcd:teal')
+        ax.plot(sourceterm, flowinlet_constant_average, label = 'Inlet Flow ECM Hyp', marker = 'D', markersize = 7.5, color='xkcd:green')
 
         ax.set_title('Comparison Outlet Flow / Inlet Flow')
         ax.legend(loc='upper right', fontsize = 12)
         ax.set_xlabel(r'$c_{max}$', fontsize = 15)
         ax.set_ylabel('Flow', fontsize = 13)
+        #ax.set_yscale('log')
         ax.set_xticks(sourceterm)
         ax.tick_params(axis = 'both', labelsize = 12)
         plt.show()
