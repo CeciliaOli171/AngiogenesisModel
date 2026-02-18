@@ -265,7 +265,8 @@ void DaughterCellModifier<DIM>::SetupSolve(AbstractCellPopulation<DIM,DIM>& rCel
         cell_iter->GetCellData()->SetItem("LoopNumber", 0.0);
         cell_iter->GetCellData()->SetItem("Anastomosis", 0); // 0 if no anastomosis, 1 if anastomosis between two tip cells, 2 if anastomosis between tip cell and stalk cell/branching cell 
         cell_iter->GetCellData()->SetItem("AnastomosisConnectivity", 0);
-    }
+    } 
+    // store in cell cycle model (create subclass) and add the cell data -> more efficient
 
     UpdateCellData(rCellPopulation);
 }

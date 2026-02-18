@@ -2,23 +2,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 import statistics as stats
 import polyscope as ps
+import networkx as nx
 
 from DataExtractionFetoFlow import DataExtractionFetoFlow
 runner = DataExtractionFetoFlow
 
 ## Settings ##
-hpc = True
-local = False
+hpc = False
+local = True
 
-InitialisationFiles = True
+InitialisationFiles = False
 Visualisation = False
 
 QuantitativeAnalysis = True
 AverageFlow = False
 FlowDistributionOneRealisation = False
-FlowInsideLesion = False
+FlowInsideLesion = True
 FlowInsideLesionTwoGraphs = False
-ComparisonInletFlowOutletFlow = True
+ComparisonInletFlowOutletFlow = False
 NbVesselTipsInsideLesion = False
 
 dim = 2
@@ -28,13 +29,53 @@ ref_point = 40
 # at the inlet, we have an arterioles (pressure between 30 and 60 mmHg) and at the outlet, we have capillaries (average of 20 mmHg) -> Al-Nuaimi et al.
 # pressure in Pa, 50 mmHg = 6666.1 Pa and 20 mmHg = 2666.45 Pa
 # pressure difference between inlet and outlet of 30 mmHg -> Bazmara et al. but pressure difference of 9mmHg -> Chaplain et al.
-inlet_pressure, outlet_pressure = 6666.1, 1333.22*4 
+inlet_pressure, outlet_pressure = 1333.22*5, 1333.22*4 
 umbilical_artery_radius, decay_factor = 5e-6, 1.38 # capillaries have a radius of approx. 5 micrometers, 5e-6
 viscosity_type = 'constant'
 SmallSystem = False
 
 
 ## Quantitative Analysis ## 
+
+# Test flow calculation:
+# We consider the realisation with seed 10 and a source of 0.7 in the case of the lesion hypothesis 
+# we have a network with 13 vessel tips 
+# there are 2 loops 
+SeedNb = 10
+SourceNb = 7
+
+main_pathway = "/Users/coli171/Desktop/test/"
+main_pathway_analyticalapproxpde = main_pathway + "AnalyticalApproxPde/Seed" 
+main_pathway_analyticalapproxpde_seedsource = main_pathway_analyticalapproxpde + str(SeedNb) + "Source" + str(SourceNb) + "/"
+
+file_branchesnumber = main_pathway_analyticalapproxpde_seedsource + "results.vizbranchnumber"
+
+# nodes and elements calculations 
+nodes_analyticalapproxpde, edges_analyticalapproxpde = runner.nodes_elements_calculation(main_pathway_analyticalapproxpde, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
+
+# calculate flow and pressure for one random seed and one source term
+nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, pressure_analyticalapproxpde_ps, flow_analyticalapproxpde_ps = runner.flow_pressure_calculation(main_pathway_analyticalapproxpde, nodes_analyticalapproxpde, edges_analyticalapproxpde, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
+
+# calculates the indices of the edges of the vascular tree 
+# uses the manual method with the find_vesseltips function
+indices_vesseltips_analyticalapproxpde = runner.find_vesseltips(nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps)
+print("manual indices")
+print(len(edges_analyticalapproxpde_ps))
+print(len(indices_vesseltips_analyticalapproxpde))
+print(indices_vesseltips_analyticalapproxpde)
+print([edges_analyticalapproxpde_ps[i] for i in indices_vesseltips_analyticalapproxpde])
+
+# calculates the flow at outlets with the indices previously implemented
+flow_analyticalapproxpde_vesseltips = [flow_analyticalapproxpde_ps[i] for i in indices_vesseltips_analyticalapproxpde]
+
+print("flow values")
+print(edges_analyticalapproxpde_ps[0]) # we check here that the first element is the inlet element i.e. [0 1]
+print(flow_analyticalapproxpde_ps[0]) # inlet flow = 0.002073850512329894
+print(len(flow_analyticalapproxpde_vesseltips)) # we found exactly 13 vessel tips 
+print(flow_analyticalapproxpde_vesseltips)
+print(sum(flow_analyticalapproxpde_vesseltips)) # outlet flow = 0.0012 i.e. less than the inlet flow 
+
+
 if QuantitativeAnalysis:
     if AverageFlow:
         fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
@@ -128,7 +169,7 @@ if QuantitativeAnalysis:
         plt.show()
 
     if FlowInsideLesion:
-        fig, ax = plt.subplots(dpi = 300, layout='constrained')
+        fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
 
         sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         flow_analyticalapproxpde_average = np.zeros(10)
@@ -159,14 +200,12 @@ if QuantitativeAnalysis:
                 nodes_analyticalapproxpde, edges_analyticalapproxpde = runner.nodes_elements_calculation(main_pathway_analyticalapproxpde, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
                 nodes_constant, edges_constant = runner.nodes_elements_calculation(main_pathway_constant, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
 
-                indices_vesseltips_constant = runner.find_vesseltips_insidelesion(nodes_constant, edges_constant, ref_point)
-                print(len(indices_vesseltips_constant))
-                indices_vesseltips_analyticalapproxpde = runner.find_vesseltips_insidelesion(nodes_analyticalapproxpde, edges_analyticalapproxpde, ref_point)
-                print(len(indices_vesseltips_analyticalapproxpde))
-
                 # calculate flow and pressure for one random seed and one source term
                 nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, pressure_analyticalapproxpde_ps, flow_analyticalapproxpde_ps = runner.flow_pressure_calculation(main_pathway_analyticalapproxpde, nodes_analyticalapproxpde, edges_analyticalapproxpde, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
                 nodes_constant_ps, edges_constant_ps, pressure_constant_ps, flow_constant_ps = runner.flow_pressure_calculation(main_pathway_constant, nodes_constant, edges_constant, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
+
+                indices_vesseltips_constant = runner.find_vesseltips_insidelesion(nodes_constant_ps, edges_constant_ps, ref_point)
+                indices_vesseltips_analyticalapproxpde = runner.find_vesseltips_insidelesion(nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, ref_point)
 
                 flow_constant_vesseltips = [flow_constant_ps[i-1] for i in indices_vesseltips_constant]
                 flow_analyticalapproxpde_vesseltips = [flow_analyticalapproxpde_ps[i-1] for i in indices_vesseltips_analyticalapproxpde]
@@ -186,10 +225,8 @@ if QuantitativeAnalysis:
                 flowinlet_constant_list.append(flow_constant_ps[0])
 
             # scatter plots 
-            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flow_analyticalapproxpde_list, alpha=0.75, color='#757575', marker='.', s = 90)
-            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flow_constant_list, alpha=0.75, color='#c90000', marker='D', s = 17.5)
-            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flowinlet_analyticalapproxpde_list, marker = '.', color='xkcd:teal', alpha=0.75)
-            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flowinlet_constant_list, marker = '.', color='xkcd:green', alpha=0.75)
+            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flow_analyticalapproxpde_list, alpha=0.75, color='#757575', marker='.', s = 30)
+            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flow_constant_list, alpha=0.75, color='#c90000', marker='D', s = 8)
             
             # add it to the average for this source term
             flow_analyticalapproxpde_average[SourceNb-1] = stats.mean(flow_analyticalapproxpde_list)
@@ -198,18 +235,16 @@ if QuantitativeAnalysis:
             flowinlet_constant_average[SourceNb-1] = stats.mean(flowinlet_constant_list)
 
         # Steady-state
-        ax.plot(sourceterm, flow_constant_average, marker = 'D', markersize = 3, label = 'ECM Hypothesis', color='#c90000')
-        ax.plot(sourceterm, flow_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 7.5, color='#757575')
-        ax.plot(sourceterm, flowinlet_analyticalapproxpde_average, label = 'Inlet Flow Lesion Hyp', marker = '.', markersize = 7.5, color='xkcd:teal')
-        ax.plot(sourceterm, flowinlet_constant_average, label = 'Inlet Flow ECM Hyp', marker = 'D', markersize = 7.5, color='xkcd:green')
+        ax.plot(sourceterm, flow_constant_average, linewidth=1, marker = 'D', markersize = 2, label = 'ECM Hypothesis', color='#c90000')
+        ax.plot(sourceterm, flow_analyticalapproxpde_average, linewidth=1, label = 'Lesion Hypothesis', marker = '.', markersize = 3, color='#757575')
 
-        ax.set_title('Comparison Outlet Flow / Inlet Flow')
-        ax.legend(loc='upper right', fontsize = 12)
-        ax.set_xlabel(r'$c_{max}$', fontsize = 15)
-        ax.set_ylabel('Flow', fontsize = 13)
+        #ax.set_title('Flow Reaching Lesion')
+        ax.legend(loc='upper left', fontsize = 10)
+        ax.set_xlabel(r'$c_{max}$', fontsize = 12)
+        ax.set_ylabel(r'Flow Reaching Lesion $(mm^3.h)$', fontsize = 11)
         #ax.set_yscale('log')
         ax.set_xticks(sourceterm)
-        ax.tick_params(axis = 'both', labelsize = 12)
+        ax.tick_params(axis = 'both', labelsize = 10)
         plt.show()
         #plt.savefig("/Users/coli171/Library/CloudStorage/OneDrive-TheUniversityofAuckland/Images/ANZIAM2026" + "ProportionFlowInsideLesion.png")
 
@@ -384,13 +419,9 @@ if QuantitativeAnalysis:
                 nodes_analyticalapproxpde, edges_analyticalapproxpde = runner.nodes_elements_calculation(main_pathway_analyticalapproxpde, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
                 nodes_constant, edges_constant = runner.nodes_elements_calculation(main_pathway_constant, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
 
-                # indices_vesseltips_constant = runner.find_vesseltips(nodes_constant, edges_constant)
-                # indices_vesseltips_analyticalapproxpde = runner.find_vesseltips(nodes_analyticalapproxpde, edges_analyticalapproxpde)
-                file_cellmutation_constant = main_pathway_constant_seedsource + "results.vizmutationstates"
-                file_cellmutation_analyticalapproxpde = main_pathway_analyticalapproxpde_seedsource + "results.vizmutationstates"
-
-                indices_vesseltips_constant = runner.IndiceVesselTipsInsideLesion(file_cellmutation_constant)
-                indices_vesseltips_analyticalapproxpde = runner.IndiceVesselTipsInsideLesion(file_cellmutation_analyticalapproxpde)
+                indices_vesseltips_constant = runner.find_vesseltips(nodes_constant, edges_constant)
+                indices_vesseltips_analyticalapproxpde = runner.find_vesseltips(nodes_analyticalapproxpde, edges_analyticalapproxpde)
+                print(indices_vesseltips_analyticalapproxpde)
 
                 # calculate flow and pressure for one random seed and one source term
                 nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, pressure_analyticalapproxpde_ps, flow_analyticalapproxpde_ps = runner.flow_pressure_calculation(main_pathway_analyticalapproxpde, nodes_analyticalapproxpde, edges_analyticalapproxpde, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
@@ -439,8 +470,7 @@ if QuantitativeAnalysis:
         ax.set_xticks(sourceterm)
         ax.tick_params(axis = 'both', labelsize = 12)
         plt.show()
-        plt.savefig("/Users/coli171/Library/CloudStorage/OneDrive-TheUniversityofAuckland/Images/ANZIAM2026" + "ComparisonInletOutletFlow.png")
-
+        #plt.savefig("/Users/coli171/Library/CloudStorage/OneDrive-TheUniversityofAuckland/Images/ANZIAM2026" + "ComparisonInletOutletFlow.png")
 
 
 ## Visualisation ##
@@ -448,8 +478,8 @@ if Visualisation:
     # enter pathway, seed and source term to visualise
     SeedNb = 10
     SourceNb = 7
-    SteadyState = False
-    Constant = True 
+    SteadyState = True
+    Constant = False 
 
     if hpc:
         if SteadyState:
@@ -475,9 +505,12 @@ if Visualisation:
 
     # calculate flow and pressure for one random seed and one source term
     nodes_ps, edges_ps, pressure_ps, flow_ps = runner.flow_pressure_calculation(main_pathway, nodes, edges, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
+    edge_vecs_ps = [nodes_ps[edges_ps[k,1]] - nodes_ps[edges_ps[k,0]] for k in range(len(edges_ps[:,0]))]
+    edge_vecs_ps = np.asarray(edge_vecs_ps, dtype=float)
 
     # represent vascular tree 
     tree = ps.register_curve_network("vascular tree", nodes_ps, edges_ps, color=[155/255,155/255,155/255])
+    vec = tree.add_vector_quantity("edge direction", edge_vecs_ps, defined_on="edges", enabled =True)
 
     # represent flow and pressure
     tree.add_scalar_quantity("flow", flow_ps, defined_on='edges', cmap='reds', enabled=True)

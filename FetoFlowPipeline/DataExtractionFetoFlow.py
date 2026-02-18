@@ -111,95 +111,6 @@ class DataExtractionFetoFlow:
         df = pd.DataFrame(data_connectivity)
         df.to_csv(output_path_cellconnectivity, index=False)
 
-    # from copilot
-    def orient_downstream_by_bfs_no_reindex(
-        edges_dir: Iterable[Tuple[Hashable, Hashable]],
-        inlet: Hashable,
-        *,
-        weight: Optional[str] = None  # None: unweighted; else edge attribute name for Dijkstra on undirected view
-    ) -> List[Tuple[Hashable, Hashable]]:
-        """
-        Force a downstream orientation from `inlet` without renumbering nodes.
-        - Computes levels from the inlet on the UNDIRECTED view (so we don't get stuck by current directions).
-        - Creates a strict total order: (distance, discovery_index, node_id).
-        - Flips any edge that violates that order.
-
-        Parameters
-        ----------
-        edges_dir : iterable[(u, v)]
-            Your CURRENT directed connectivity (tuples).
-        inlet : hashable
-            The inlet node id.
-        weight : str or None
-            If you have edge weights (e.g., 'length'), compute distances by Dijkstra on the UNDIRECTED graph.
-
-        Returns
-        -------
-        new_edges : list[(u, v)]
-            Same node IDs, same connected pairs; only directions flipped to follow downstream.
-        """
-        # Build directed and undirected views
-        DG = nx.DiGraph()
-        DG.add_edges_from(edges_dir)
-        if inlet not in DG:
-            raise ValueError("Inlet node is not present in the graph.")
-
-        UG = nx.Graph()
-        UG.add_edges_from(DG.edges())
-
-        # Compute distances from inlet on UNDIRECTED view (so we get a full outward notion)
-        if weight is None:
-            # Unweighted shortest path distances
-            dist = nx.single_source_shortest_path_length(UG, inlet)
-        else:
-            # Weighted distances: construct a weighted undirected graph
-            # Expect edges_dir to be (u, v) and weights stored elsewhere, or
-            # pre-attach weights in a separate step before calling this function.
-            # If you already have a Graph with weights, you can modify this section accordingly.
-            # Fallback to treating edges as weight=1 if not present.
-            # Here we assume weight attributes are on DG; copy to UG:
-            for u, v in DG.edges():
-                w = DG[u][v].get(weight, 1.0)
-                UG.add_edge(u, v, **{weight: w})
-            dist = nx.single_source_dijkstra_path_length(UG, inlet, weight=weight)
-
-        # BFS discovery order on UNDIRECTED view to break ties
-        discovery_index: Dict[Hashable, int] = {}
-        idx = 0
-        for n in nx.bfs_tree(UG, source=inlet):
-            discovery_index[n] = idx
-            idx += 1
-
-        # For any nodes not reached by BFS (disconnected), we’ll place them after reachable ones
-        for n in UG.nodes():
-            if n not in discovery_index:
-                discovery_index[n] = idx
-                idx += 1
-
-        # Build a strict rank key for every node
-        # Use very large value for dist if unreachable from inlet
-        def node_key(n):
-            d = dist.get(n, float('inf'))
-            di = discovery_index.get(n, float('inf'))
-            return (d, di, n)
-
-        # Flip edges that go "upstream" in this order
-        new_edges: List[Tuple[Hashable, Hashable]] = []
-        seen = set()
-        for (u, v) in DG.edges():
-            ku, kv = node_key(u), node_key(v)
-            if ku <= kv:
-                e = (u, v)
-            else:
-                e = (v, u)
-            if e not in seen:
-                # Optionally: if the reverse is already present, you can choose to drop it
-                # seen.add((e[1], e[0]))   # uncomment to forbid both directions between same pair
-                seen.add(e)
-                new_edges.append(e)
-
-        return new_edges
-
     def nodes_elements_calculation(main_pathway, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim):
         if hpc:
             main_pathway_seedsource = main_pathway + str(SeedNb) + "Source" + str(SourceNb) + "/results_from_time_0/"
@@ -207,7 +118,9 @@ class DataExtractionFetoFlow:
             main_pathway_seedsource = main_pathway + str(SeedNb) + "Source" + str(SourceNb) + "/"
         file_nodes = main_pathway_seedsource + "results.viznodes"
         file_connectivity = main_pathway_seedsource + "results.vizconnectivity"
+        file_branches_number = main_pathway_seedsource + "results.vizbranchnumber"
 
+        # convert the files into csv to use later on placentagen for edges directions
         if InitialisationFiles:
             DataExtractionFetoFlow.read_viznodes_to_csv(file_nodes, main_pathway_seedsource, dim)
             DataExtractionFetoFlow.read_vizconnectivity_to_csv(file_connectivity, main_pathway_seedsource, dim)
@@ -228,17 +141,12 @@ class DataExtractionFetoFlow:
         elif local:
             elems = DataExtractionFetoFlow.read_csv_to_numpy(main_pathway_seedsource + "CellConnectivityAngiogenesisModel.csv")
         elems = elems.astype(int)
-        elems = elems[1:]
         indices = np.arange(len(elems)).reshape(-1, 1)
         indices = indices.astype(int)
         elems = np.concatenate((indices, elems), axis=1)
 
-        elems,branch_id,branch_start,branch_end,cycle_bool,seen_elements = pg.fix_elem_direction(nodes_indexed[0,1:4],elems,nodes_indexed)
-
-        pg.export_ex_coords(nodes_indexed,'nodes', main_pathway_seedsource + 'nodes','exnode')
-        pg.export_exelem_1d(elems, 'elems', main_pathway_seedsource + 'elems')
-        pg.export_ip_coords(nodes_indexed,'nodes', main_pathway_seedsource + 'N_ipelem')
-        pg.export_ipelem_1d(elems,'elems', main_pathway_seedsource + 'E_ipelem')
+        # fix the directions of elements 
+        #elems,branch_id,branch_start,branch_end,cycle_bool,seen_elements = pg.fix_elem_direction(nodes_indexed[0,1:4],elems,nodes_indexed)
 
         df = pd.DataFrame(elems, columns=['Index', 'N1', 'N2'])
         df.to_csv(main_pathway_seedsource + "elems.csv", index=False, header=True)
@@ -248,34 +156,35 @@ class DataExtractionFetoFlow:
         # FetoFlow 
         nodes = DataExtractionFetoFlow.NodesDictionary(file_nodes, dim)
 
-        # also not optimised at all but works for the moment
+        # this part makes sure that the edges are oriented downstream and are all the same directions in the same branch
+        #elems = np.array([(elem[1], elem[2]) for elem in elems])
         elements = DataExtractionFetoFlow.ConnectivityArray(file_connectivity, dim)
-        Graphnx = nx.DiGraph()
-        Graphnx.add_edges_from(elements)
 
         # removing elements that appear twice
+        Graphnx = nx.DiGraph()
+        Graphnx.add_edges_from(elements)
         to_remove = set()
         for u, v in Graphnx.edges():
             if Graphnx.has_edge(v, u):
                 to_remove.add((u, v))
                 to_remove.add((v, u))
         Graphnx.remove_edges_from(to_remove)
-        elements = Graphnx.edges()
+        elements_reordered = Graphnx.edges()
 
-        edges = elements
-        inlet = 0
-        edges_downstream = DataExtractionFetoFlow.orient_downstream_by_bfs_no_reindex(edges, inlet, weight=None)
-        elements_reordered = np.array(edges_downstream, dtype=object)
+        # elems_reordered = DataExtractionFetoFlow.get_branches(nodes, elems, file_branches_number)
+        # elements_reordered = DataExtractionFetoFlow.EdgesOrientation(elems_reordered)
 
         return nodes, elements_reordered
 
     def flow_pressure_calculation(main_pathway, nodes, elements, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim):
+        # function calculating the flow and pressure in a vascular network using FetoFlow
         if hpc:
             main_pathway_seedsource = main_pathway + str(SeedNb) + "Source" + str(SourceNb) + "/results_from_time_0/"
         elif local:
             main_pathway_seedsource = main_pathway + str(SeedNb) + "Source" + str(SourceNb) + "/"
         file_nodes = main_pathway_seedsource + "results.viznodes"
         
+        # initialise geometry
         bcs = generate_boundary_conditions(inlet_pressure = inlet_pressure, outlet_pressure = outlet_pressure, inlet_flow=None)
         G = create_geometry(nodes, elements, umbilical_artery_radius, decay_factor, True, 5e-6, 1.46) 
         G = calculate_resistance(G, viscosity_model=viscosity_type)
@@ -289,43 +198,56 @@ class DataExtractionFetoFlow:
 
         pressures = pd.DataFrame([{"Node" : node, "Pressure" : pressure} for node,pressure in p.items()])
         pressures.to_csv(main_pathway_seedsource + "simulation_pressures.csv")
-        flows = pd.DataFrame([{"Element" : element, "Flow" : flow} for element,flow in q.items()])
+        flows = pd.DataFrame([{"Element" : element, "Flow" : flow*3600e9} for element,flow in q.items()])
         flows.to_csv(main_pathway_seedsource + "simulation_flows.csv")
 
-        nodes_ps = DataExtractionFetoFlow.NodesCoordinates(file_nodes,dim)
-        edges_ps = np.array([element for element in elements])
+        # extracts nodes coordinates, edges, pressure and flow in arrays 
+        nodes_ps = DataExtractionFetoFlow.NodesCoordinates(file_nodes, dim)
+        edges_ps = np.array([elem for elem in elements])
         pressure_ps = np.array([pressure[1] for pressure in p.items()])
         flow_ps = np.array([flow[1]*3600e9 for flow in q.items()]) # we convert it into Chaste dimensions (mm^3.h)
 
         return nodes_ps, edges_ps, pressure_ps, flow_ps
-    
+
     def find_vesseltips(nodes, elements):
+         # function selecting all the indices of the outlet edges for a graph defined by the nodes and elements lists 
         indices_vesseltips = []
-        for k in range(len(nodes)):
-            potential_vesseltip_indice = k
+        for k in range(1,len(nodes)):
+            potential_vesseltip_indice = k # it is the indice of the node not the edge
             n = 0
+            edge_indice = []
+            m = 0
             for elem in elements:
                 if(elem[0] == potential_vesseltip_indice):
                     n += 1
+                    edge_indice.append(m)
                 if(elem[1] == potential_vesseltip_indice):
                     n += 1
+                    edge_indice.append(m)
+                m +=1
             if(n == 1):
-                indices_vesseltips.append(potential_vesseltip_indice)
+                indices_vesseltips.append(edge_indice[0])
 
         return indices_vesseltips
     
     def find_vesseltips_insidelesion(nodes, elements, ref_point):
+        # function selecting all the indices of the outlet edges inside the lesion (located at x < ref_point) for a graph defined by the nodes and elements lists 
         indices_vesseltips = []
-        for k in range(len(nodes)):
-            potential_vesseltip_indice = k
+        for k in range(1,len(nodes)):
+            potential_vesseltip_indice = k # it is the indice of the node not the edge
             n = 0
+            edge_indice = []
+            m = 0
             for elem in elements:
                 if(elem[0] == potential_vesseltip_indice):
                     n += 1
+                    edge_indice.append(m)
                 if(elem[1] == potential_vesseltip_indice):
                     n += 1
+                    edge_indice.append(m)
+                m +=1
             if(n == 1):
-                indices_vesseltips.append(potential_vesseltip_indice)
+                indices_vesseltips.append(k)
         
         indices_vesseltips_insidelesion = []
         for i in indices_vesseltips:
@@ -334,31 +256,205 @@ class DataExtractionFetoFlow:
                 indices_vesseltips_insidelesion.append(i)
 
         return indices_vesseltips_insidelesion
+    
+    def BranchNumber(file_branchesnumber):
+        # initialisation of the list
+        list_branchesnumber = []
 
-    def IndiceVesselTipsInsideLesion(file_cellmutation, file_nodescoordinates, ref_point, dim):
-        IndiceVesselTips = []
+        # we open the file
+        f = open(file_branchesnumber, 'r')
 
-        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
-        list_nodescoordinates = ParametersSensitivityRunner.NodesCoordinates(file_nodescoordinates, dim)
+        for line in f:
+            pass
+        last_line = line
 
-        count = 0
-        for elem in list_cellmutation:
-            x = list_nodescoordinates[count][0]
-            if(int(elem) == 0 and x < ref_point):
-                IndiceVesselTips.append(count)
-            count += 1
+        list_branchesnumber = np.array([int(x) for x in last_line.split()[1:]])
 
-        return IndiceVesselTips
+        # we close the file 
+        f.close()
 
-    def IndiceVesselTipsInsideLesion(file_cellmutation):
-        IndiceVesselTips = []
+        return list_branchesnumber
 
-        list_cellmutation = ParametersSensitivityRunner.MutationStates(file_cellmutation)
+    def BranchesList(file_branchesnumber):
+        branches_list = []
+        branchnumbers_list = DataExtractionFetoFlow.BranchNumber(file_branchesnumber)
 
-        count = 0
-        for elem in list_cellmutation:
-            if(int(elem) == 0):
-                IndiceVesselTips.append(count)
-            count += 1
+        maxbranchnumber = int(max(branchnumbers_list))
+        for k in range(maxbranchnumber):
+            branch = np.where(branchnumbers_list == k)
+            # we add it to the single branch list 
+            # we add the branch to the whole branches list
+            branches_list.append(branch)
 
-        return IndiceVesselTips
+        return branches_list
+
+    def get_branches(nodes, elems, file_branches_number):
+        branches_list_connectivity = []
+        branches_list = DataExtractionFetoFlow.BranchesList(file_branches_number)
+
+        # for all nodes from the list of branches, we extract the connectivity list 
+        for branch in branches_list:
+            branch_connectivity = []
+            for elem in elems:
+                if(np.isin(elem[0],branch) and np.isin(elem[1],branch)):
+                    branch_connectivity.append(elem)
+            branches_list_connectivity.append(branch_connectivity)
+
+        # we extract all the vessel tips of the network
+        vesseltips_list = []
+        for n in range(len(elems)):
+            if(sum(n in s for s in elems) == 1):
+                vesseltips_list.append(n)
+
+        # we extract all the branching vessels of the network
+        branchingvessels_list = []
+        for n in range(len(elems)):
+            if(sum(n in s for s in elems) > 2):
+                branchingvessels_list.append(n)
+
+        # we loop over the branches
+        branchesconnectivity_reordered_list = []
+        BranchTotalNb = len(branches_list)
+        for k in range(BranchTotalNb):
+            branchconnectivity_reordered = []
+            branches_list_final, branches_list_connectivity_final, branchconnectivity_reordered_final, vesseltips_list = DataExtractionFetoFlow.BranchesConnectivity(branches_list[k], branches_list_connectivity[k], branchconnectivity_reordered, vesseltips_list, branchingvessels_list)
+            branchesconnectivity_reordered_list.append(branchconnectivity_reordered_final)
+        
+        return branchesconnectivity_reordered_list
+
+    def BranchesConnectivity(branch_list, branchconnectivity_list, branchconnectivity_reordered, vesseltips_list, branchingvessels_list):
+        branch_list_final = branch_list
+        branchconnectivity_list_final = branchconnectivity_list
+
+        if not branch_list or not branchconnectivity_list:
+            return branch_list_final, branchconnectivity_list_final, branchconnectivity_reordered, vesseltips_list, branchingvessels_list
+        else:
+            # case 0: branch with the INLET tip cell 
+            if(np.isin(0, branch_list)):
+                # we orient the other from this tip cell until the next branching cell:
+                # we search for the edge containing the cell, we flip it if necessary 
+                # if there is another branching cell, we repeat the process 
+                cell_considered = 0
+                branchconnectivity_reordered_part = []
+                while(sum(cell_considered in s for s in branchconnectivity_list) == 2):
+                    for elem in branchconnectivity_list:
+                        if(elem[0] == cell_considered):
+                            branchconnectivity_reordered_part.append((cell_considered, elem[0]))
+                            branch_list.remove(cell_considered)
+                            cell_considered = elem[0]
+                            branchconnectivity_list.remove(elem)
+                            break 
+                        elif(elem[1] == cell_considered):
+                            branchconnectivity_reordered_part.append((cell_considered, elem[1]))
+                            branch_list.remove(cell_considered)
+                            cell_considered = elem[1]
+                            branchconnectivity_list.remove(elem)
+                            break
+                branchconnectivity_reordered.append(branchconnectivity_reordered_part)
+                print(branchconnectivity_reordered)
+                print(branch_list)
+                print(branchconnectivity_list)
+                
+            # case 1: branch with an OUTLET tip cell 
+            elif(any(x in vesseltips_list for x in branch_list)):
+                # we orient the other towards the tip cell 
+                cell_considered = next((x for x in vesseltips_list if x in branch_list), None)
+                branchconnectivity_reordered_part = []
+                while(sum(cell_considered in s for s in branchconnectivity_list) == 2):
+                    for elem in branchconnectivity_list:
+                        if(elem[0] == cell_considered):
+                            branchconnectivity_reordered_part.append((elem[0], cell_considered))
+                            branch_list.remove(cell_considered)
+                            cell_considered = elem[0]
+                            branchconnectivity_list.remove(elem)
+                            break 
+                        elif(elem[1] == cell_considered):
+                            branchconnectivity_reordered_part.append((elem[1], cell_considered))
+                            branch_list.remove(cell_considered)
+                            cell_considered = elem[1]
+                            branchconnectivity_list.remove(elem)
+                            break
+                branchconnectivity_reordered.append(branchconnectivity_reordered_part)
+
+            # case 2: branch between two branching vessels 
+            else:
+                # we orient the other towards the next branching segment 
+                cell_considered = next((x for x in branchingvessels_list if x in branch_list), None)
+                branchconnectivity_reordered_part = []
+                while(sum(cell_considered in s for s in branchconnectivity_list) == 2):
+                    for elem in branchconnectivity_list:
+                        if(elem[0] == cell_considered):
+                            branchconnectivity_reordered_part.append((cell_considered, elem[0]))
+                            branch_list.remove(cell_considered)
+                            cell_considered = elem[0]
+                            branchconnectivity_list.remove(elem)
+                            break 
+                        elif(elem[1] == cell_considered):
+                            branchconnectivity_reordered_part.append((cell_considered, elem[1]))
+                            branch_list.remove(cell_considered)
+                            cell_considered = elem[1]
+                            branchconnectivity_list.remove(elem)
+                            break
+                branchconnectivity_reordered.append(branchconnectivity_reordered_part)
+        
+        branch_list_final, branchconnectivity_list_final, branchconnectivity_reordered, vesseltips_list, branchingvessels_list = DataExtractionFetoFlow.BranchesConnectivity(branch_list, branchconnectivity_list, branchconnectivity_reordered, vesseltips_list, branchingvessels_list)
+
+        return branch_list_final, branchconnectivity_list_final, branchconnectivity_reordered, vesseltips_list, branchingvessels_list
+
+
+    def EdgesOrientation(elems):
+        # if node connected to only one other node = edge 
+        # if node connected to 2 other nodes = inside branch, must be the same direction as the others 
+        # if node connected to 3 other nodes = branching node, probably different directions 
+        elems_reordered = elems
+
+        nodesinsidebranch = []
+        for n in range(len(elems)):
+            if(sum(n in s for s in elems) == 2):
+                nodesinsidebranch.append(n) # we initialise the list of branching nodes indices with the inlet and outlet nodes
+
+        for node in nodesinsidebranch:
+            edgesinsidebranch0 = []
+            edgesinsidebranch1 = []
+            for e in elems_reordered:
+                if(e[0] == node):
+                    edgesinsidebranch0.append(e)
+                if(e[1] == node):
+                    edgesinsidebranch1.append(e)
+            if(len(edgesinsidebranch0) == 0):
+                neighbours = [n[0] for n in edgesinsidebranch1]
+                for i in neighbours:
+                    if(sum(i in s for s in elems) == 2):
+                        elems_reordered.remove((i, node))
+                        elems_reordered.append((node,i))
+                        break
+            if(len(edgesinsidebranch1) == 0):
+                neighbours = [n[1] for n in edgesinsidebranch0]
+                for i in neighbours:
+                    if(sum(i in s for s in elems) == 2):
+                        elems_reordered.remove((node, i))
+                        elems_reordered.append((i,node))
+                        break
+
+        return elems_reordered
+
+    # from copilot to test the indices (no longer needed)
+    def output_edges_to_leaves(G: nx.DiGraph):
+        # function selecting all the indices of the outlet edges for a networkx graph (type of graph used by FetoFlow)
+
+        # nodes with no outgoing edges
+        leaves = {n for n in G.nodes if G.out_degree(n) == 0}
+
+        # edges whose target is a leaf
+        indices_vesseltips = []
+        for k in leaves:
+            edge_indice = []
+            m = 0
+            for elem in G.edges:
+                if(elem[0] == k):
+                    edge_indice.append(m)
+                if(elem[1] == k):
+                    edge_indice.append(m)
+                m +=1
+            indices_vesseltips.append(edge_indice[0])
+        return indices_vesseltips, leaves

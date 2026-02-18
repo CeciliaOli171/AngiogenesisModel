@@ -342,7 +342,7 @@ public:
         nodes.push_back(new Node<3>(2u, false, boundary_cuboid_max-2, boundary_cuboid_max/2, boundary_cuboid_max/2));
 
         NodesOnlyMesh<3> mesh;
-        mesh.ConstructNodesWithoutMesh(nodes, 50.0); // estimation of box domain
+        mesh.ConstructNodesWithoutMesh(nodes, 50.0); // estimation of box domain: go back to 1.5 or at least smaller than 50, try different numbers 
 
         ///////////
         // CELLS // 

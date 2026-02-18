@@ -477,6 +477,11 @@ public:
         cell_population.Update();
 
         simulator.Solve();
+        // to add blood flow look at TestGenerateSteadyState
+        // loop to load simulations + load python flow script + load flow, pressure etc 
+        // or loop in python 
+        // look at EMBC 2018 for python loop
+        // look at MutableMesh in 2D (line 776) etc to add python call inside chaste 
 
         // Output run time data
         CellBasedEventHandler::Headings();
