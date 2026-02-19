@@ -4,6 +4,8 @@ import statistics as stats
 import polyscope as ps
 import networkx as nx
 
+from matplotlib.lines import Line2D
+
 from DataExtractionFetoFlow import DataExtractionFetoFlow
 runner = DataExtractionFetoFlow
 
@@ -17,7 +19,11 @@ Visualisation = False
 QuantitativeAnalysis = True
 AverageFlow = False
 FlowDistributionOneRealisation = False
-FlowInsideLesion = True
+FlowInsideLesion = False
+FlowInsideLesionBoxPlot = True
+FlowOutsideLesion = False
+FlowOutsideLesionBoxPlot = False
+FlowInsideOutsideLesion = False
 FlowInsideLesionTwoGraphs = False
 ComparisonInletFlowOutletFlow = False
 NbVesselTipsInsideLesion = False
@@ -244,6 +250,166 @@ if QuantitativeAnalysis:
         ax.set_ylabel(r'Flow Reaching Lesion $(mm^3.h)$', fontsize = 11)
         #ax.set_yscale('log')
         ax.set_xticks(sourceterm)
+        ax.set_yticks([0.000, 0.002, 0.004, 0.006, 0.008, 0.010])
+        ax.tick_params(axis = 'both', labelsize = 10)
+        plt.show()
+        #plt.savefig("/Users/coli171/Library/CloudStorage/OneDrive-TheUniversityofAuckland/Images/ANZIAM2026" + "ProportionFlowInsideLesion.png")
+
+    if FlowInsideLesionBoxPlot:
+        fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
+
+        color_analyticalapproxpde='#757575'
+        color_constant='#c90000'
+        box_width = 0.35
+        group_gap = 1.2
+
+        sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        flow_analyticalapproxpde_average = []
+        flow_constant_average = []
+
+        pos_constant = [i * group_gap - box_width/2 for i in sourceterm]
+        pos_analyticalapproxpde = [i * group_gap + box_width/2 for i in sourceterm]
+
+        # Constant 
+        for SourceNb in range(1, 11):
+            flow_analyticalapproxpde_list = []
+            flow_constant_list = []
+            for SeedNb in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]: 
+                if hpc:
+                    main_pathway_constant = "/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" + "CoupledModel2DConstant/CoupledModel2DConstantSeed" 
+                    main_pathway_analyticalapproxpde = "/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed"
+                    main_pathway_constant_seedsource = main_pathway_constant + str(SeedNb) + "Source" + str(SourceNb) + "/results_from_time_0/"
+                    main_pathway_analyticalapproxpde_seedsource = main_pathway_analyticalapproxpde + str(SeedNb) + "Source" + str(SourceNb) + "/results_from_time_0/"
+                elif local:
+                    main_pathway = "/Users/coli171/Desktop/test/"
+                    main_pathway_constant = main_pathway + "Constant/Seed" 
+                    main_pathway_analyticalapproxpde = main_pathway + "AnalyticalApproxPde/Seed" 
+                    main_pathway_constant_seedsource = main_pathway_constant + str(SeedNb) + "Source" + str(SourceNb) + "/"
+                    main_pathway_analyticalapproxpde_seedsource = main_pathway_analyticalapproxpde + str(SeedNb) + "Source" + str(SourceNb) + "/"
+
+                # nodes and elements calculations 
+                nodes_analyticalapproxpde, edges_analyticalapproxpde = runner.nodes_elements_calculation(main_pathway_analyticalapproxpde, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
+                nodes_constant, edges_constant = runner.nodes_elements_calculation(main_pathway_constant, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
+
+                # calculate flow and pressure for one random seed and one source term
+                nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, pressure_analyticalapproxpde_ps, flow_analyticalapproxpde_ps = runner.flow_pressure_calculation(main_pathway_analyticalapproxpde, nodes_analyticalapproxpde, edges_analyticalapproxpde, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
+                nodes_constant_ps, edges_constant_ps, pressure_constant_ps, flow_constant_ps = runner.flow_pressure_calculation(main_pathway_constant, nodes_constant, edges_constant, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
+
+                indices_vesseltips_constant = runner.find_vesseltips_insidelesion(nodes_constant_ps, edges_constant_ps, ref_point)
+                indices_vesseltips_analyticalapproxpde = runner.find_vesseltips_insidelesion(nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, ref_point)
+
+                flow_constant_vesseltips = [flow_constant_ps[i-1] for i in indices_vesseltips_constant]
+                flow_analyticalapproxpde_vesseltips = [flow_analyticalapproxpde_ps[i-1] for i in indices_vesseltips_analyticalapproxpde]
+
+                flow_analyticalapproxpde = 0
+                if len(flow_analyticalapproxpde_vesseltips)!=0:
+                    flow_analyticalapproxpde = sum(flow_analyticalapproxpde_vesseltips)
+                
+                flow_constant = 0
+                if len(flow_constant_vesseltips)!=0:
+                    flow_constant = sum(flow_constant_vesseltips)
+
+                # get the average flow for this realisation 
+                flow_analyticalapproxpde_list.append(flow_analyticalapproxpde)
+                flow_constant_list.append(flow_constant)
+
+            flow_analyticalapproxpde_average.append(flow_analyticalapproxpde_list)
+            flow_constant_average.append(flow_constant_list)
+
+        bp_A = ax.boxplot(flow_constant_average, positions=pos_constant, widths=box_width, vert=True, patch_artist=True, showmeans=False, manage_ticks=False)
+        runner.style_boxplot(bp_A, color_constant)
+
+        bp_B = ax.boxplot(flow_analyticalapproxpde_average, positions=pos_analyticalapproxpde, widths=box_width, vert=True, patch_artist=True, showmeans=False, manage_ticks=False)
+        runner.style_boxplot(bp_B, color_analyticalapproxpde)
+
+        ax.legend(loc='upper left', fontsize = 10)
+        legend_handles = [
+            Line2D([0], [0], color=color_constant, lw=3, label="ECM Hypothesis"),
+            Line2D([0], [0], color=color_analyticalapproxpde, lw=3, label="Lesion Hypothesis"),]
+        ax.legend(handles=legend_handles, frameon=False)
+
+        ax.set_xlim(min(pos_constant) - box_width, max(pos_analyticalapproxpde) + box_width)
+        ax.set_xlabel(r'$c_{max}$', fontsize = 12)
+        ax.set_ylabel(r'Flow Reaching Lesion $(mm^3.h)$', fontsize = 11)
+
+        centers = [(a + b) / 2 for a, b in zip(pos_constant, pos_analyticalapproxpde)]
+        ax.set_xticks(centers)
+        ax.set_xticklabels([str(x) for x in sourceterm])
+        ax.set_yticks([0.000, 0.002, 0.004, 0.006, 0.008, 0.010])
+        ax.tick_params(axis = 'both', labelsize = 10)
+
+        plt.show()
+        #plt.savefig("/Users/coli171/Library/CloudStorage/OneDrive-TheUniversityofAuckland/Images/ANZIAM2026" + "ProportionFlowInsideLesion.png")
+
+    if FlowOutsideLesion:
+        fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
+
+        sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        flow_analyticalapproxpde_average = np.zeros(10)
+        flow_constant_average = np.zeros(10)
+
+        # Constant 
+        for SourceNb in range(1, 11):
+            flow_analyticalapproxpde_list = []
+            flow_constant_list = []
+            for SeedNb in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]: 
+                if hpc:
+                    main_pathway_constant = "/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" + "CoupledModel2DConstant/CoupledModel2DConstantSeed" 
+                    main_pathway_analyticalapproxpde = "/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/" + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed"
+                    main_pathway_constant_seedsource = main_pathway_constant + str(SeedNb) + "Source" + str(SourceNb) + "/results_from_time_0/"
+                    main_pathway_analyticalapproxpde_seedsource = main_pathway_analyticalapproxpde + str(SeedNb) + "Source" + str(SourceNb) + "/results_from_time_0/"
+                elif local:
+                    main_pathway = "/Users/coli171/Desktop/test/"
+                    main_pathway_constant = main_pathway + "Constant/Seed" 
+                    main_pathway_analyticalapproxpde = main_pathway + "AnalyticalApproxPde/Seed" 
+                    main_pathway_constant_seedsource = main_pathway_constant + str(SeedNb) + "Source" + str(SourceNb) + "/"
+                    main_pathway_analyticalapproxpde_seedsource = main_pathway_analyticalapproxpde + str(SeedNb) + "Source" + str(SourceNb) + "/"
+
+                # nodes and elements calculations 
+                nodes_analyticalapproxpde, edges_analyticalapproxpde = runner.nodes_elements_calculation(main_pathway_analyticalapproxpde, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
+                nodes_constant, edges_constant = runner.nodes_elements_calculation(main_pathway_constant, InitialisationFiles, hpc, local, SeedNb, SourceNb, dim)
+
+                # calculate flow and pressure for one random seed and one source term
+                nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, pressure_analyticalapproxpde_ps, flow_analyticalapproxpde_ps = runner.flow_pressure_calculation(main_pathway_analyticalapproxpde, nodes_analyticalapproxpde, edges_analyticalapproxpde, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
+                nodes_constant_ps, edges_constant_ps, pressure_constant_ps, flow_constant_ps = runner.flow_pressure_calculation(main_pathway_constant, nodes_constant, edges_constant, inlet_pressure, outlet_pressure, umbilical_artery_radius, decay_factor, viscosity_type, SmallSystem, hpc, local, SeedNb, SourceNb, dim)
+
+                indices_vesseltips_constant = runner.find_vesseltips_outsidelesion(nodes_constant_ps, edges_constant_ps, ref_point)
+                indices_vesseltips_analyticalapproxpde = runner.find_vesseltips_outsidelesion(nodes_analyticalapproxpde_ps, edges_analyticalapproxpde_ps, ref_point)
+
+                flow_constant_vesseltips = [flow_constant_ps[i-1] for i in indices_vesseltips_constant]
+                flow_analyticalapproxpde_vesseltips = [flow_analyticalapproxpde_ps[i-1] for i in indices_vesseltips_analyticalapproxpde]
+
+                flow_analyticalapproxpde = 0
+                if len(flow_analyticalapproxpde_vesseltips)!=0:
+                    flow_analyticalapproxpde = sum(flow_analyticalapproxpde_vesseltips)
+                
+                flow_constant = 0
+                if len(flow_constant_vesseltips)!=0:
+                    flow_constant = sum(flow_constant_vesseltips)
+
+                # get the average flow for this realisation 
+                flow_analyticalapproxpde_list.append(flow_analyticalapproxpde)
+                flow_constant_list.append(flow_constant)
+
+            # scatter plots 
+            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flow_analyticalapproxpde_list, alpha=0.75, color='#757575', marker='.', s = 30)
+            ax.scatter([sourceterm[SourceNb-1] for i in range(10)], flow_constant_list, alpha=0.75, color='#c90000', marker='D', s = 8)
+            
+            # add it to the average for this source term
+            flow_analyticalapproxpde_average[SourceNb-1] = stats.mean(flow_analyticalapproxpde_list)
+            flow_constant_average[SourceNb-1] = stats.mean(flow_constant_list)
+
+        # Steady-state
+        ax.plot(sourceterm, flow_constant_average, linewidth=1, marker = 'D', markersize = 2, label = 'ECM Hypothesis', color='#c90000')
+        ax.plot(sourceterm, flow_analyticalapproxpde_average, linewidth=1, label = 'Lesion Hypothesis', marker = '.', markersize = 3, color='#757575')
+
+        #ax.set_title('Flow Reaching Lesion')
+        ax.legend(loc='upper left', fontsize = 10)
+        ax.set_xlabel(r'$c_{max}$', fontsize = 12)
+        ax.set_ylabel(r'Flow Inside ECM $(mm^3.h)$', fontsize = 11)
+        #ax.set_yscale('log')
+        ax.set_xticks(sourceterm)
+        ax.set_yticks([0.000, 0.002, 0.004, 0.006, 0.008, 0.010])
         ax.tick_params(axis = 'both', labelsize = 10)
         plt.show()
         #plt.savefig("/Users/coli171/Library/CloudStorage/OneDrive-TheUniversityofAuckland/Images/ANZIAM2026" + "ProportionFlowInsideLesion.png")

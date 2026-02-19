@@ -257,6 +257,33 @@ class DataExtractionFetoFlow:
 
         return indices_vesseltips_insidelesion
     
+    def find_vesseltips_outsidelesion(nodes, elements, ref_point):
+        # function selecting all the indices of the outlet edges inside the lesion (located at x < ref_point) for a graph defined by the nodes and elements lists 
+        indices_vesseltips = []
+        for k in range(1,len(nodes)):
+            potential_vesseltip_indice = k # it is the indice of the node not the edge
+            n = 0
+            edge_indice = []
+            m = 0
+            for elem in elements:
+                if(elem[0] == potential_vesseltip_indice):
+                    n += 1
+                    edge_indice.append(m)
+                if(elem[1] == potential_vesseltip_indice):
+                    n += 1
+                    edge_indice.append(m)
+                m +=1
+            if(n == 1):
+                indices_vesseltips.append(k)
+        
+        indices_vesseltips_insidelesion = []
+        for i in indices_vesseltips:
+            x = nodes[i]
+            if x[0] > ref_point:
+                indices_vesseltips_insidelesion.append(i)
+
+        return indices_vesseltips_insidelesion
+
     def BranchNumber(file_branchesnumber):
         # initialisation of the list
         list_branchesnumber = []
@@ -437,6 +464,22 @@ class DataExtractionFetoFlow:
                         break
 
         return elems_reordered
+
+    # from copilto to represent thebox plots
+    def style_boxplot(bp, edge_color):
+        # Make interiors transparent and edges colored
+        for box in bp["boxes"]:
+            box.set(facecolor="none", edgecolor=edge_color, linewidth=1.8)
+        for whisker in bp["whiskers"]:
+            whisker.set(color=edge_color, linewidth=1.4)
+        for cap in bp["caps"]:
+            cap.set(color=edge_color, linewidth=1.4)
+        for median in bp["medians"]:
+            median.set(color=edge_color, linewidth=2.0)
+        # Fliers (outliers)
+        for flier in bp["fliers"]:
+            flier.set(marker="o", markerfacecolor="none", markeredgecolor=edge_color, alpha=0.9)
+
 
     # from copilot to test the indices (no longer needed)
     def output_edges_to_leaves(G: nx.DiGraph):
