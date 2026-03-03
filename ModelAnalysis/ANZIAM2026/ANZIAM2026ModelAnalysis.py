@@ -34,7 +34,7 @@ TotalTestNb = 17
 dim = 2
 # According to Stratton et al., 2002: "87% were less than 1 cm wide and 47% were less than 5 mm wide." + "97% less than 1 cm deep, and 60% were less than 5 mm deep" [in 2D] i.e. since 1 CD = 10 micrometers = 1e-2 mm therefore 5 mm = 500 CD
 # According to literature, for cancer, the tumour and the main blood vessel are separated by 40-140 micrometer, above that, necrosis and death of the tumour i.e. we can use that for the endometriotic model
-ref_point = 30
+ref_point = 20
 ref_point_centre_lesion = 0 # do not really correspond to the centre of the lesion per se  
 AreaPlane = ref_point*250
 
@@ -115,7 +115,7 @@ GraphTotalAnastomosisSource = False
 
 GraphNbBranches = False
 GraphNbVesselTips = False
-GraphNbVesselTipsInsideLesion = True
+GraphNbVesselTipsInsideLesion = False
 GraphNbVesselTipsTime = False
 GraphNbBranchesNbVesselTips = False
 GraphBarNbBranches = False
@@ -138,7 +138,7 @@ GraphErrorNbCellsPlanePositionLesion = False
 
 GraphConvergenceTime = False
 GraphFirstTimeCellReachingCentreLesion = False
-GraphFirstTimeCellReachingLesion = False
+GraphFirstTimeCellReachingLesion = True
 GraphErrorFirstTimeCellReachingLesionPositionLesion = False
 GraphVascularisation = False
 
@@ -944,17 +944,17 @@ if GraphFirstTimeCellReachingLesion:
             timefirstreachinglesion_constant.append(runner.TimeFirstReachingPlane(file_nodescoordinates_constant, ref_point, dim))
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachinglesion_analyticalapproxpde, alpha=0.65, color='#C00000', marker='.', s = 180.0)
-        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachinglesion_constant, alpha=0.65, color='#008080', marker='D', s = 35)
+        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachinglesion_analyticalapproxpde, alpha=0.65, color='#757575', marker='.', s = 180.0)
+        ax.scatter([sourceterm[k-1] for i in range(10)], timefirstreachinglesion_constant, alpha=0.65, color='#c90000', marker='D', s = 35)
 
         # average of the results for one source term 
         timefirstreachinglesion_analyticalapproxpde_average[k-1] = stats.mean(timefirstreachinglesion_analyticalapproxpde)
         timefirstreachinglesion_constant_average[k-1] = stats.mean(timefirstreachinglesion_constant)
 
-    ax.plot(sourceterm, timefirstreachinglesion_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#008080')
-    ax.plot(sourceterm, timefirstreachinglesion_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#C00000')
+    ax.plot(sourceterm, timefirstreachinglesion_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#c90000')
+    ax.plot(sourceterm, timefirstreachinglesion_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 15.0, color='#757575')
  
-    ax.legend(loc='upper left', fontsize = 24)
+    ax.legend(loc='lower left', fontsize = 24)
     ax.set_xlabel(r'$c_{max}$', fontsize = 30)
     ax.set_ylabel('Time For Network to Reach Lesion', fontsize = 26)
     ax.set_xticks(sourceterm)
@@ -962,7 +962,7 @@ if GraphFirstTimeCellReachingLesion:
     ax.set_ylim(1160, 2015)
     ax.tick_params(axis = 'both', labelsize = 24)
     plt.show()
-    plt.savefig(main_file_path + "Figures/TimeFirstCellReachingLesion.png")
+    plt.savefig(main_file_path + "Figures/TimeFirstCellReachingLesion"+ str(ref_point) + ".png")
 
 if GraphVascularisation:
     # plot 

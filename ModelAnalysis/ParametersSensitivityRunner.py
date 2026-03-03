@@ -1218,3 +1218,18 @@ class ParametersSensitivityRunner:
                 list_min[k] = list_nbcells[k]
 
         return list_min
+
+    # from copilto to represent thebox plots
+    def style_boxplot(bp, edge_color):
+        # Make interiors transparent and edges colored
+        for box in bp["boxes"]:
+            box.set(facecolor="none", edgecolor=edge_color, linewidth=1.8)
+        for whisker in bp["whiskers"]:
+            whisker.set(color=edge_color, linewidth=1.4)
+        for cap in bp["caps"]:
+            cap.set(color=edge_color, linewidth=1.4)
+        for median in bp["medians"]:
+            median.set(color=edge_color, linewidth=2.0)
+        # Fliers (outliers)
+        for flier in bp["fliers"]:
+            flier.set(marker="o", markerfacecolor="none", markeredgecolor=edge_color, alpha=0.9)
