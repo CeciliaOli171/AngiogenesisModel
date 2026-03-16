@@ -120,44 +120,8 @@ class DataExtractionFetoFlow:
         file_connectivity = main_pathway_seedsource + "results.vizconnectivity"
         file_branches_number = main_pathway_seedsource + "results.vizbranchnumber"
 
-        # convert the files into csv to use later on placentagen for edges directions
-        if InitialisationFiles:
-            DataExtractionFetoFlow.read_viznodes_to_csv(file_nodes, main_pathway_seedsource, dim)
-            DataExtractionFetoFlow.read_vizconnectivity_to_csv(file_connectivity, main_pathway_seedsource, dim)
-
-        # Placentagen visualisation: check that the data is well organised for fetoflow
-        if hpc: 
-            nodes = DataExtractionFetoFlow.read_csv_to_numpy("/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/Figures/NodesCoordinatesAngiogenesisModel.csv")
-        elif local:
-            nodes = DataExtractionFetoFlow.read_csv_to_numpy(main_pathway_seedsource + "NodesCoordinatesAngiogenesisModel.csv")
-        zeros_column = np.zeros((nodes.shape[0], 1))
-        nodes_3d = np.hstack((nodes, zeros_column))
-        indices = np.arange(len(nodes_3d)).reshape(-1, 1)
-        indices = indices.astype(int)
-        nodes_indexed = np.concatenate((indices, nodes_3d), axis=1)
-
-        if hpc:
-            elems = DataExtractionFetoFlow.read_csv_to_numpy("/hpc/coli171/Results/PaperAngiogenesisModel2025/PaperModel2025Analysis2D/Figures/CellConnectivityAngiogenesisModel.csv") # to modify for more than just one test
-        elif local:
-            elems = DataExtractionFetoFlow.read_csv_to_numpy(main_pathway_seedsource + "CellConnectivityAngiogenesisModel.csv")
-        elems = elems.astype(int)
-        indices = np.arange(len(elems)).reshape(-1, 1)
-        indices = indices.astype(int)
-        elems = np.concatenate((indices, elems), axis=1)
-
-        # fix the directions of elements 
-        #elems,branch_id,branch_start,branch_end,cycle_bool,seen_elements = pg.fix_elem_direction(nodes_indexed[0,1:4],elems,nodes_indexed)
-
-        df = pd.DataFrame(elems, columns=['Index', 'N1', 'N2'])
-        df.to_csv(main_pathway_seedsource + "elems.csv", index=False, header=True)
-        df = pd.DataFrame(nodes_indexed, columns=['Index', 'X', 'Y', 'Z'])
-        df.to_csv(main_pathway_seedsource + "nodes.csv", index=False, header=True)
-
         # FetoFlow 
         nodes = DataExtractionFetoFlow.NodesDictionary(file_nodes, dim)
-
-        # this part makes sure that the edges are oriented downstream and are all the same directions in the same branch
-        #elems = np.array([(elem[1], elem[2]) for elem in elems])
         elements = DataExtractionFetoFlow.ConnectivityArray(file_connectivity, dim)
 
         # removing elements that appear twice
@@ -171,6 +135,7 @@ class DataExtractionFetoFlow:
         Graphnx.remove_edges_from(to_remove)
         elements_reordered = Graphnx.edges()
 
+        # re-order elements no necessary anymore because edges oriented directly inside Chaste
         # elems_reordered = DataExtractionFetoFlow.get_branches(nodes, elems, file_branches_number)
         # elements_reordered = DataExtractionFetoFlow.EdgesOrientation(elems_reordered)
 
@@ -479,25 +444,3 @@ class DataExtractionFetoFlow:
         # Fliers (outliers)
         for flier in bp["fliers"]:
             flier.set(marker="o", markerfacecolor="none", markeredgecolor=edge_color, alpha=0.9)
-
-
-    # from copilot to test the indices (no longer needed)
-    def output_edges_to_leaves(G: nx.DiGraph):
-        # function selecting all the indices of the outlet edges for a networkx graph (type of graph used by FetoFlow)
-
-        # nodes with no outgoing edges
-        leaves = {n for n in G.nodes if G.out_degree(n) == 0}
-
-        # edges whose target is a leaf
-        indices_vesseltips = []
-        for k in leaves:
-            edge_indice = []
-            m = 0
-            for elem in G.edges:
-                if(elem[0] == k):
-                    edge_indice.append(m)
-                if(elem[1] == k):
-                    edge_indice.append(m)
-                m +=1
-            indices_vesseltips.append(edge_indice[0])
-        return indices_vesseltips, leaves

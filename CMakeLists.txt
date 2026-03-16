@@ -32,6 +32,9 @@
 
 # Example CMake build configuration file for a Chaste user project.
 # See also https://chaste.cs.ox.ac.uk/trac/wiki/ChasteGuides/CmakeBuildGuide for full documentation.
+cmake_minimum_required(VERSION 3.18)
+
+project(AngiogenesisModel LANGUAGES CXX)
 
 # You can set which Chaste components (or other projects) your project depends on by editing the
 # find_package() call for Chaste.  E.g.
@@ -52,3 +55,13 @@ find_package(Chaste COMPONENTS cell_based)
 # Change the project name in the line below to match the folder this file is in,
 # i.e. the name of your project.
 chaste_do_project(AngiogenesisModel)
+
+# Tell CMake where pybind11 is (override with -Dpybind11_DIR=...)
+find_package(pybind11 REQUIRED CONFIG)
+
+add_library(CouplingFetoflowChaste
+    src/CouplingFetoflowChaste.cpp
+)
+
+target_link_libraries(CouplingFetoflowChaste PRIVATE Python3::Module)
+target_compile_features(CouplingFetoflowChaste PRIVATE cxx_std_17)

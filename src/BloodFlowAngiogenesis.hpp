@@ -4,7 +4,6 @@
 // #include "TetrahedralMesh.hpp"
 // #include "TimeStepper.hpp"
 // #include "VtkMeshWriter.hpp"
-// #include "BloodFlow.hpp"
 
 // /**
 //  * TO MODIFY!!!! 
@@ -21,7 +20,7 @@
 //  */
 
 // template class<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-// class BloodFlowAngiogenesis : public BloodFlow 
+// class BloodFlowAngiogenesis : 
 // {
 //     friend class TestSolvingBloodFlow;
 
@@ -52,9 +51,6 @@
 
 //     // returns the flux for the outflow (already in the BloodFlow class)
 //     double GetFluxAtOutflow();
-
-//     // Solver
-//     void Solve();
 
 //     // organises the vector solution into flux and pressures components
 //     void GetSolutionAsFluxesAndPressures(std::vector<double>& rFluxesOnEdges, std::vector<double>& rPressuresOnNodes);

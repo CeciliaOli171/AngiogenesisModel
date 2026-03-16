@@ -35,7 +35,7 @@ TotalTestNb = 17
 dim = 2
 # According to Stratton et al., 2002: "87% were less than 1 cm wide and 47% were less than 5 mm wide." + "97% less than 1 cm deep, and 60% were less than 5 mm deep" [in 2D] i.e. since 1 CD = 10 micrometers = 1e-2 mm therefore 5 mm = 500 CD
 # According to literature, for cancer, the tumour and the main blood vessel are separated by 40-140 micrometer, above that, necrosis and death of the tumour i.e. we can use that for the endometriotic model
-ref_point = 30
+ref_point = 20
 ref_point_centre_lesion = 0 # do not really correspond to the centre of the lesion per se  
 AreaPlane = ref_point*250
 
@@ -115,6 +115,7 @@ GraphAnastomosisRatioBranches = False
 GraphTotalAnastomosisSource = False
 
 GraphNbBranches = False
+GraphNbBranchesBoxPlots = False
 GraphNbVesselTipsTime = False
 GraphNbBranchesNbVesselTips = False
 GraphBarNbBranches = False
@@ -129,7 +130,7 @@ GraphFurthestCell = False
 GraphTimeReachingFurthestCell = False
 GraphTimeNormFirstVesselTip = False
 
-GraphNbCellsPlane = False
+GraphNbCellsPlane = False # boxplots
 GraphCellDensityInsideLesion = False
 GraphDensityCellInsideLesionComparedToTotalCells = False
 GraphDensityCellInsideLesionComparedToTotalCellsBoxPlots = False
@@ -139,9 +140,9 @@ GraphErrorNbCellsPlanePositionLesion = False
 GraphConvergenceTime = False
 GraphFirstTimeCellReachingCentreLesion = False
 GraphFirstTimeCellReachingLesion = False
-GraphFirstTimeCellReachingLesionBoxPlot = True
+GraphFirstTimeCellReachingLesionBoxPlot = False
 GraphErrorFirstTimeCellReachingLesionPositionLesion = False
-GraphErrorFirstTimeCellReachingLesionPositionLesionBoxPlots = False
+GraphErrorFirstTimeCellReachingLesionPositionLesionBoxPlots = True
 GraphVascularisation = False
 
 
@@ -406,7 +407,7 @@ if GraphNbBranches:
     for k in range(1, 11):
         totalnumberbranches_analyticalapproxpde = []
         totalnumberbranches_constant = []
-        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+        for j in [10, 11, 20, 22, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110]:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
@@ -419,8 +420,8 @@ if GraphNbBranches:
             totalnumberbranches_constant.append(runner.TotalNumberBranches(file_branchesnumber_constant, file_anastomosis_constant))
 
         # scatter plot 
-        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_analyticalapproxpde, alpha=0.75, color='#C00000', marker='.', s = 180.0)
-        ax.scatter([sourceterm[k-1] for i in range(10)], totalnumberbranches_constant, alpha=0.75, color='#008080', marker='D', s = 35)
+        ax.scatter([sourceterm[k-1] for i in range(20)], totalnumberbranches_analyticalapproxpde, alpha=0.75, color='#C00000', marker='.', s = 180.0)
+        ax.scatter([sourceterm[k-1] for i in range(20)], totalnumberbranches_constant, alpha=0.75, color='#008080', marker='D', s = 35)
 
         # average of the results for one source term 
         totalnumberbranches_analyticalapproxpde_average[k-1] = stats.mean(totalnumberbranches_analyticalapproxpde)
@@ -435,6 +436,101 @@ if GraphNbBranches:
     ax.set_xticks(sourceterm)
     ax.tick_params(axis = 'both', labelsize = 24)
     plt.show()
+    plt.savefig(main_file_path + "Figures/NbBranches.png")
+
+if GraphNbBranchesBoxPlots:
+    # plot 
+    fig, ax = plt.subplots(figsize = (12,8), dpi = 300, layout='constrained')
+
+    color_analyticalapproxpde='#C00000'
+    color_constant='#008080'
+    box_colors = [color_analyticalapproxpde, color_constant] 
+    box_width = 0.05
+    group_gap = 1.5
+
+    sourceterm = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    pos_constant = [i * group_gap - box_width/2 - 0.005 for i in sourceterm]
+    pos_analyticalapproxpde = [i * group_gap + box_width/2 + 0.005 for i in sourceterm]
+    position_total = []
+
+    # loop over all the files 
+    totalnumberbranches_analyticalapproxpde_average = np.zeros(10)
+    totalnumberbranches_constant_average = np.zeros(10)
+    totalnumberbranches_analyticalapproxpde_data = []
+    totalnumberbranches_constant_data = []
+    totalnumberbranches_total = []
+
+    vegfhyp_total = []
+
+    for k in range(1, 11):
+        totalnumberbranches_analyticalapproxpde = []
+        totalnumberbranches_constant = []
+        for j in [10, 11, 20, 22, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110]:
+            file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
+            file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
+
+            file_branchesnumber_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizbranchnumber"
+            file_branchesnumber_constant = file_path_constant + "/results_from_time_0/results.vizbranchnumber"
+            file_anastomosis_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.vizanastomosis"
+            file_anastomosis_constant = file_path_constant + "/results_from_time_0/results.vizanastomosis"
+            file_nodescoordinates_analyticalapproxpde = file_path_analyticalapproxpde + "/results_from_time_0/results.viznodes"
+            file_nodescoordinates_constant = file_path_constant + "/results_from_time_0/results.viznodes"
+
+            timeseed_analyticalapproxpde = runner.TimeFirstReachingPlane(file_nodescoordinates_analyticalapproxpde, ref_point, dim)
+            timeseed_constant = runner.TimeFirstReachingPlane(file_nodescoordinates_constant, ref_point, dim)
+
+            if timeseed_constant < 1989.0:
+                totalnumberbranches_constant.append(runner.NbCellsAfterPlane(file_nodescoordinates_constant, ref_point, dim))
+                totalnumberbranches_total.append(runner.NbCellsAfterPlane(file_nodescoordinates_constant, ref_point, dim))
+                position_total.append(pos_constant[k-1])
+                vegfhyp_total.append("ECM Hypothesis")
+            if timeseed_analyticalapproxpde < 1989.0:
+                totalnumberbranches_analyticalapproxpde.append(runner.NbCellsAfterPlane(file_nodescoordinates_analyticalapproxpde, ref_point, dim))
+                totalnumberbranches_total.append(runner.NbCellsAfterPlane(file_nodescoordinates_analyticalapproxpde, ref_point, dim))
+                position_total.append(pos_analyticalapproxpde[k-1])
+                vegfhyp_total.append("Lesion Hypothesis")
+
+        # average of the results for one source term 
+        totalnumberbranches_analyticalapproxpde_average[k-1] = stats.mean(totalnumberbranches_analyticalapproxpde)
+        totalnumberbranches_constant_average[k-1] = stats.mean(totalnumberbranches_constant)
+
+        # data lists
+        totalnumberbranches_analyticalapproxpde_data.append(totalnumberbranches_analyticalapproxpde)
+        totalnumberbranches_constant_data.append(totalnumberbranches_constant)
+ 
+    # ax.plot(pos_constant, totalnumberbranches_constant_average, ls='--', label = 'ECM Hypothesis', color='#008080')
+    # ax.plot(pos_analyticalapproxpde, totalnumberbranches_analyticalapproxpde_average, label = 'Lesion Hypothesis', ls='--', color='#C00000')
+
+    bp_A = ax.boxplot(totalnumberbranches_constant_data, positions=pos_constant, widths=box_width, vert=True, patch_artist=True, showmeans=True, manage_ticks=False, showfliers=False, meanline = True, meanprops=dict(color=color_constant, linewidth=2, ls="--"))
+    runner.style_boxplot(bp_A, color_constant)
+    bp_B = ax.boxplot(totalnumberbranches_analyticalapproxpde_data, positions=pos_analyticalapproxpde, widths=box_width, vert=True, patch_artist=True, showmeans=True, manage_ticks=False, showfliers=False, meanline = True, meanprops=dict(color=color_analyticalapproxpde, linewidth=2, ls="--"))
+    runner.style_boxplot(bp_B, color_analyticalapproxpde)
+
+    df = pd.DataFrame({'position':position_total, 'totalnumberbranches':totalnumberbranches_total,'vegfhyp':vegfhyp_total})
+    df = df.copy()
+    df['xpos'] = df['position'].astype(float) if df['position'].dtype == object else df['position']
+    positions_sorted = np.sort(df['xpos'].unique())
+    min_gap = np.diff(positions_sorted).min() if len(positions_sorted) > 1 else 0.05
+    jitter_width = min(0.25 * min_gap, 0.05)  # cap jitter so points don't overlap neighbors
+    rng = np.random.default_rng(42)
+    df['xpos_jit'] = df['xpos'] + rng.uniform(-jitter_width, jitter_width, size=len(df))
+
+    sns.scatterplot(data=df, x='xpos_jit', y='totalnumberbranches', hue='vegfhyp', alpha=1.0, s=40, palette=["#008080", "#C00000"])
+
+    ax.legend(loc='upper left', fontsize = 24) 
+    legend_handles = [
+        Line2D([0], [0], color=color_constant, lw=3, label="ECM Hypothesis"),
+        Line2D([0], [0], color=color_analyticalapproxpde, lw=3, label="Lesion Hypothesis"),]
+    ax.legend(handles=legend_handles, frameon=False, fontsize = 24)
+
+    centers = [(a + b) / 2 for a, b in zip(pos_constant, pos_analyticalapproxpde)]
+    ax.set_xticks(centers)
+    ax.set_xlim(min(pos_constant) - box_width, max(pos_analyticalapproxpde) + box_width)
+    ax.set_xticklabels([str(x) for x in sourceterm])
+    ax.tick_params(axis = 'both', labelsize = 24)
+
+    ax.set_xlabel(r'$c_{max}$', fontsize = 26)
+    ax.set_ylabel('Number of Branches', fontsize = 26)
     plt.savefig(main_file_path + "Figures/NbBranches.png")
 
 if GraphNbVesselTipsTime:
@@ -1173,7 +1269,7 @@ if GraphNbCellsPlane:
     for k in range(1,11):
         cellsafterplane_analyticalapproxpde = []
         cellsafterplane_constant = []
-        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+        for j in [10, 11, 20, 22, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110]:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
@@ -1204,8 +1300,8 @@ if GraphNbCellsPlane:
         cellsafterplane_analyticalapproxpde_data.append(cellsafterplane_analyticalapproxpde)
         cellsafterplane_constant_data.append(cellsafterplane_constant)
 
-    ax.plot(pos_constant, cellsafterplane_constant_average, ls='--', label = 'ECM Hypothesis', color='#008080')
-    ax.plot(pos_analyticalapproxpde, cellsafterplane_analyticalapproxpde_average, label = 'Lesion Hypothesis', ls='--', color='#C00000')
+    # ax.plot(pos_constant, cellsafterplane_constant_average, ls='--', label = 'ECM Hypothesis', color='#008080')
+    # ax.plot(pos_analyticalapproxpde, cellsafterplane_analyticalapproxpde_average, label = 'Lesion Hypothesis', ls='--', color='#C00000')
 
     bp_A = ax.boxplot(cellsafterplane_constant_data, positions=pos_constant, widths=box_width, vert=True, patch_artist=True, showmeans=True, manage_ticks=False, showfliers=False, meanline = True, meanprops=dict(color=color_constant, linewidth=2, ls="--"))
     runner.style_boxplot(bp_A, color_constant)
@@ -1221,7 +1317,7 @@ if GraphNbCellsPlane:
     rng = np.random.default_rng(42)
     df['xpos_jit'] = df['xpos'] + rng.uniform(-jitter_width, jitter_width, size=len(df))
 
-    #sns.scatterplot(data=df, x='xpos_jit', y='cellsafterplane', hue='vegfhyp', alpha=1.0, s=40, palette=["#008080", "#C00000"])
+    sns.scatterplot(data=df, x='xpos_jit', y='cellsafterplane', hue='vegfhyp', alpha=1.0, s=40, palette=["#008080", "#C00000"])
 
     ax.legend(loc='upper left', fontsize = 24) 
     legend_handles = [
@@ -1352,7 +1448,7 @@ if GraphDensityCellInsideLesionComparedToTotalCellsBoxPlots:
     for k in range(1,11):
         celldensitytotal_analyticalapproxpde = []
         celldensitytotal_constant = []
-        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+        for j in [10, 11, 20, 22, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110]:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
@@ -1384,8 +1480,8 @@ if GraphDensityCellInsideLesionComparedToTotalCellsBoxPlots:
         celldensitytotal_analyticalapproxpde_data.append(celldensitytotal_analyticalapproxpde)
         celldensitytotal_constant_data.append(celldensitytotal_constant)
 
-    ax.plot(pos_constant, celldensitytotal_constant_average, ls = '--', label = 'ECM Hypothesis', color='#008080')
-    ax.plot(pos_analyticalapproxpde, celldensitytotal_analyticalapproxpde_average, ls = '--', label = 'Lesion Hypothesis', color='#C00000')
+    # ax.plot(pos_constant, celldensitytotal_constant_average, ls = '--', label = 'ECM Hypothesis', color='#008080')
+    # ax.plot(pos_analyticalapproxpde, celldensitytotal_analyticalapproxpde_average, ls = '--', label = 'Lesion Hypothesis', color='#C00000')
 
     bp_A = ax.boxplot(celldensitytotal_constant_data, positions=pos_constant, widths=box_width, vert=True, patch_artist=True, showmeans=True, meanline=True, manage_ticks=False, showfliers=False, meanprops=dict(color=color_constant, linewidth=2, ls="--"))
     runner.style_boxplot(bp_A, color_constant)
@@ -1401,7 +1497,7 @@ if GraphDensityCellInsideLesionComparedToTotalCellsBoxPlots:
     rng = np.random.default_rng(42)
     df['xpos_jit'] = df['xpos'] + rng.uniform(-jitter_width, jitter_width, size=len(df))
 
-    #sns.scatterplot(data=df, x='xpos_jit', y='celldensitytotal', hue='vegfhyp', alpha=1.0, s=40, palette=["#008080", "#C00000"])
+    sns.scatterplot(data=df, x='xpos_jit', y='celldensitytotal', hue='vegfhyp', alpha=1.0, s=40, palette=["#008080", "#C00000"])
 
     legend_handles = [
         Line2D([0], [0], color=color_constant, lw=3, label="ECM Hypothesis"),
@@ -1678,7 +1774,7 @@ if GraphFirstTimeCellReachingLesionBoxPlot:
     for k in range(1,11):
         timefirstreachinglesion_analyticalapproxpde = []
         timefirstreachinglesion_constant = []
-        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+        for j in [10, 11, 20, 22, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110]:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
@@ -1705,24 +1801,24 @@ if GraphFirstTimeCellReachingLesionBoxPlot:
         timefirstreachinglesion_analyticalapproxpde_data.append(timefirstreachinglesion_analyticalapproxpde)
         timefirstreachinglesion_constant_data.append(timefirstreachinglesion_constant)
 
-    ax.plot(pos_constant, timefirstreachinglesion_constant_average, marker = 'D', markersize = 6, label = 'ECM Hypothesis', color='#008080')
-    ax.plot(pos_analyticalapproxpde, timefirstreachinglesion_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = 'D', markersize = 6, color='#C00000')
+    # ax.plot(pos_constant, timefirstreachinglesion_constant_average, marker = '.', markersize = 6, label = 'ECM Hypothesis', color='#008080')
+    # ax.plot(pos_analyticalapproxpde, timefirstreachinglesion_analyticalapproxpde_average, label = 'Lesion Hypothesis', marker = '.', markersize = 6, color='#C00000')
 
     bp_A = ax.boxplot(timefirstreachinglesion_constant_data, positions=pos_constant, widths=box_width, vert=True, patch_artist=True, showmeans=False, manage_ticks=False, showfliers=False)
     runner.style_boxplot(bp_A, color_constant)
     bp_B = ax.boxplot(timefirstreachinglesion_analyticalapproxpde_data, positions=pos_analyticalapproxpde, widths=box_width, vert=True, patch_artist=True, showmeans=False, manage_ticks=False, showfliers=False)
     runner.style_boxplot(bp_B, color_analyticalapproxpde)
 
-    # df = pd.DataFrame({'position':position_total, 'timefirstreachinglesion':timefirstreachinglesion_total,'vegfhyp':vegfhyp_total})
-    # df = df.copy()
-    # df['xpos'] = df['position'].astype(float) if df['position'].dtype == object else df['position']
-    # positions_sorted = np.sort(df['xpos'].unique())
-    # min_gap = np.diff(positions_sorted).min() if len(positions_sorted) > 1 else 0.05
-    # jitter_width = min(0.25 * min_gap, 0.05)  # cap jitter so points don't overlap neighbors
-    # rng = np.random.default_rng(42)
-    # df['xpos_jit'] = df['xpos'] + rng.uniform(-jitter_width, jitter_width, size=len(df))
+    df = pd.DataFrame({'position':position_total, 'timefirstreachinglesion':timefirstreachinglesion_total,'vegfhyp':vegfhyp_total})
+    df = df.copy()
+    df['xpos'] = df['position'].astype(float) if df['position'].dtype == object else df['position']
+    positions_sorted = np.sort(df['xpos'].unique())
+    min_gap = np.diff(positions_sorted).min() if len(positions_sorted) > 1 else 0.05
+    jitter_width = min(0.25 * min_gap, 0.05)  # cap jitter so points don't overlap neighbors
+    rng = np.random.default_rng(42)
+    df['xpos_jit'] = df['xpos'] + rng.uniform(-jitter_width, jitter_width, size=len(df))
 
-    # sns.scatterplot(data=df, x='xpos_jit', y='timefirstreachinglesion', hue='vegfhyp', alpha=1.0, s=40, palette=["#008080", "#C00000"])
+    sns.scatterplot(data=df, x='xpos_jit', y='timefirstreachinglesion', hue='vegfhyp', alpha=1.0, s=40, palette=["#008080", "#C00000"])
 
     ax.legend(loc='upper left', fontsize = 24) 
     legend_handles = [
@@ -1797,7 +1893,7 @@ if GraphTimeNormFirstVesselTip:
     slopes_velocity = []
 
     for k in range(1,11):
-        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+        for j in [10, 11, 20, 22, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110]:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
@@ -1963,7 +2059,7 @@ if GraphErrorFirstTimeCellReachingLesionPositionLesionBoxPlots:
 
         k = 10
 
-        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+        for j in [10, 11, 20, 22, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110]:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
@@ -2032,7 +2128,7 @@ if GraphVascularisation:
         time_analyticalapproxpde = []
         vascularisationvalue_constant = 0
         vascularisationvalue_analyticalapproxpde = 0
-        for j in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+        for j in [10, 11, 20, 22, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110]:
             file_path_analyticalapproxpde = main_file_path + "CoupledModel2DAnalyticalApproxPde/CoupledModel2DAnalyticalApproxPdeSeed" + str(j) + "Source" + str(k)
             file_path_constant = main_file_path + "CoupledModel2DConstant/CoupledModel2DConstantSeed" + str(j) + "Source" + str(k)
 
@@ -2063,8 +2159,8 @@ if GraphVascularisation:
    
     ax.set_xlabel(r'$c_{max}$', fontsize = 26)
     ax.set_ylabel('Number of Realisations with \n Lesion Vascularised', fontsize = 26)
-    ax.legend(loc='upper left', fontsize = 24)
+    ax.legend(loc='lower left', fontsize = 24)
     ax.set_xticks(SourceTermTicks)
-    ax.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    ax.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
     ax.tick_params(axis = 'both', labelsize = 24)
     plt.savefig(main_file_path + "Figures/VascularisationBarPlot" + str(ref_point) + ".png")

@@ -5,31 +5,12 @@
 // #include "Debug.hpp"
 
 // template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-// BloodFlowAngiogenesis<ELEMENT_DIM, SPACE_DIM>::BloodFlowAngiogenesis(): AbstractVentilationProblem(rMeshDirFilePath, rootIndex), mpLinearSystem(nullptr), mSolution(nullptr)
+// BloodFlowAngiogenesis<ELEMENT_DIM, SPACE_DIM>::BloodFlowAngiogenesis()
 // {
-//     // We solve for flux at every edge and for pressure at each node/bifurcation
-//     // Note pipe flow equation has 3 variables and flux balance has 3 variables (at a bifurcation)
-//     // preallocating 5 non-zeros allows for 4-way branching
-//     mSolution = PetscTools::CreateVec(mMesh.GetNumNodes()+mMesh.GetNumElements());
-//     mpLinearSystem = new LinearSystem(mSolution, 5u);
-//     mpLinearSystem->SetAbsoluteTolerance(1e-5);
 // }
 
 // template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
 // BloodFlowAngiogenesis<ELEMENT_DIM, SPACE_DIM>::~BloodFlowAngiogenesis()
-// {
-//     if (mpLinearSystem)
-//     {
-//         delete mpLinearSystem;
-//     }
-//     if (mSolution)
-//     {
-//         PetscTools::Destroy(mSolution);
-//     }
-// }
-
-// template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-// void BloodFlowAngiogenesis<ELEMENT_DIM, SPACE_DIM>::Assemble(bool dynamicReassemble)
 // {
 // }
 
@@ -70,11 +51,6 @@
 // double BloodFlowAngiogenesis<ELEMENT_DIM, SPACE_DIM>::GetWSSAtNode(const Node<SPACE_DIM>& rNode)
 // {
 //     // calculates the WSS for one node 
-// }
-
-// template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-// void BloodFlowAngiogenesis<ELEMENT_DIM, SPACE_DIM>::Solve()
-// {
 // }
 
 // // Explicit instantiation
