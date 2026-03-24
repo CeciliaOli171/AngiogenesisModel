@@ -32,36 +32,26 @@
 
 # Example CMake build configuration file for a Chaste user project.
 # See also https://chaste.cs.ox.ac.uk/trac/wiki/ChasteGuides/CmakeBuildGuide for full documentation.
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.16)
 
 project(AngiogenesisModel LANGUAGES CXX)
 
-# You can set which Chaste components (or other projects) your project depends on by editing the
-# find_package() call for Chaste.  E.g.
-#   find_package(Chaste COMPONENTS cell_based)
-# for a project just using the cell_based component (and its dependencies), or
-#   find_package(Chaste COMPONENTS heart lung)
-# for a project combining heart & lung simulations.
-#
-# Note that the order in which components are specified does not matter.
+set(PYBIND11_FIND_STRATEGY NEVER)
+set(PYBIND11_USE_NEW_TOOLS OFF)
+
+add_subdirectory(pybind11)
 
 # Here we just depend on core components (nothing application-specific).
-#find_package(Chaste COMPONENTS cell_based)
-
-# Alternatively, to specify a Chaste installation directory use a line like that below.
-# This is needed if your project is not contained in the projects folder within a Chaste source tree.
-#find_package(Chaste COMPONENTS heart crypt PATHS /path/to/chaste-install NO_DEFAULT_PATH)
+find_package(Chaste COMPONENTS cell_based)
 
 # Change the project name in the line below to match the folder this file is in,
 # i.e. the name of your project.
-#chaste_do_project(AngiogenesisModel)
+chaste_do_project(AngiogenesisModel)
 
-# Tell CMake where pybind11 is (override with -Dpybind11_DIR=...)
-find_package(pybind11 REQUIRED CONFIG)
 
-add_library(CouplingFetoflowChaste
+pybind11_add_module(CouplingFetoflowChaste
     src/CouplingFetoflowChaste.cpp
 )
-
-target_link_libraries(CouplingFetoflowChaste PRIVATE Python3::Module)
 target_compile_features(CouplingFetoflowChaste PRIVATE cxx_std_17)
+
+add_compile_options(-Wno-error)
