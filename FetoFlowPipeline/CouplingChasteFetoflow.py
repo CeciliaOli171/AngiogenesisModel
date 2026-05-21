@@ -14,16 +14,6 @@ from scipy.spatial import ConvexHull
 
 class CouplingChasteFetoflow:
 
-    # this one should be inside Chaste 
-    def ChasteDataForFetoflow(data_chaste):
-        # converts c_vector to list
-        return data_fetoflow
-
-    # this should also be inside Chaste 
-    def FetoflowDataForChaste(data_fetoflow):
-        # converts list to c_vector 
-        return data_chaste
-
     def NodesDictionary(nodes_chaste, dim):
         NumberNodes = int((len(nodes_chaste))/dim)
         array_nodes = np.reshape(nodes_chaste, (NumberNodes,dim))

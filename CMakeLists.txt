@@ -39,19 +39,28 @@ project(AngiogenesisModel LANGUAGES CXX)
 set(PYBIND11_FIND_STRATEGY NEVER)
 set(PYBIND11_USE_NEW_TOOLS OFF)
 
-add_subdirectory(pybind11)
-
 # Here we just depend on core components (nothing application-specific).
 find_package(Chaste COMPONENTS cell_based)
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+
+add_subdirectory(pybind11)
 
 # Change the project name in the line below to match the folder this file is in,
 # i.e. the name of your project.
 chaste_do_project(AngiogenesisModel)
 
 
-pybind11_add_module(CouplingFetoflowChaste
-    src/CouplingFetoflowChaste.cpp
+pybind11_add_module(CouplingFetoflowChaste src/CouplingFetoflowChaste.cpp)
+
+execute_process(
+  COMMAND ${Python3_EXECUTABLE} -c
+          "import site; print(site.getusersitepackages())"
+  OUTPUT_VARIABLE USER_SITE
+  OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+
+install(TARGETS CouplingFetoflowChaste DESTINATION ${USER_SITE})
+
 target_compile_features(CouplingFetoflowChaste PRIVATE cxx_std_17)
 
 add_compile_options(-Wno-error)
